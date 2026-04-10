@@ -41,11 +41,20 @@ class RelaxStorage implements IRelaxStorage {
   ///
   /// If no [encryptionKey] is provided, a default key is used.
   /// For production use, always provide a unique encryption key.
-  factory RelaxStorage([String? encryptionKey]) =>
-      RelaxStorage._internal(encryptionKey);
+  factory RelaxStorage([
+    String? encryptionKey,
+    String container = 'RelaxStorage',
+    String? path,
+    Map<String, dynamic>? initialData,
+  ]) => RelaxStorage._internal(container, path, initialData, encryptionKey);
 
-  RelaxStorage._internal([String? encryptionKey]) {
-    _box = GetStorage();
+  RelaxStorage._internal([
+    String container = 'RelaxStorage',
+    String? path,
+    Map<String, dynamic>? initialData,
+    String? encryptionKey,
+  ]) {
+    _box = GetStorage(container, path, initialData);
     _encryptionKey = encryptionKey ?? 'encryption_default_salt';
   }
 
@@ -67,9 +76,8 @@ class RelaxStorage implements IRelaxStorage {
   ///   runApp(MyApp());
   /// }
   /// ```
-  static Future<void> init([String? encryptionKey]) async {
-    await GetStorage.init();
-    RelaxStorage._internal(encryptionKey);
+  static Future<void> init([String container = 'RelaxStorage']) async {
+    await GetStorage.init(container);
   }
 
   @override
