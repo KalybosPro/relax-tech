@@ -51,7 +51,7 @@ class CodeGenerator {
       final comment = NamingUtils.generateCommentFromKey(key);
       fieldBuffer.write('''  /// $comment
   @EnviedField(varName: '$key', obfuscate: true)
-  static final String $keyName = _\${''}Env$className.$keyName;
+  static final String $keyName = _Env$className.$keyName;
 ''');
     }
 

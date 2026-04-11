@@ -363,6 +363,14 @@ ANOTHER_VALID=test''';
         // Assert
         expect(result, equals('apiKeyTest'));
       });
+
+      test('should handle invalid characters and make valid Dart identifier', () {
+        // Act & Assert
+        expect(NamingUtils.toCamelCase('API-KEY'), equals('apiKey'));
+        expect(NamingUtils.toCamelCase('1KEY'), equals('_1key'));
+        expect(NamingUtils.toCamelCase('key@value'), equals('keyValue'));
+        expect(NamingUtils.toCamelCase('key.value'), equals('keyValue'));
+      });
     });
 
     group('capitalizeFirst', () {

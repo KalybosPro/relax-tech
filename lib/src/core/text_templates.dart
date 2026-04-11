@@ -113,7 +113,7 @@ Crypto operations:
       'Do you want to encrypt your .env files in your env package? (y/n): ';
 
   // CLI version
-  static const String cliVersion = '1.2.1';
+  static const String cliVersion = '1.3.1';
   // Dart SDK version from prerequisites
   static const String dartSdkVersion = '3.8.1+';
 }

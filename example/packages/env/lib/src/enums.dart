@@ -6,14 +6,188 @@ enum Env {
     /// The value for Base Url.
   baseUrl('BASE_URL'),
 
-  /// The value for Api Key.
-  apiKey('API_KEY'),
+  /// The value for Google Maps Api Key.
+  googleMapsApiKey('GOOGLE_MAPS_API_KEY'),
 
-  /// The value for Login Url.
-  loginUrl('LOGIN_URL'),
+  /// The value for Google Auth Android Client Id.
+  googleAuthAndroidClientId('GOOGLE_AUTH_ANDROID_CLIENT_ID'),
 
-  /// The value for Register Url.
-  registerUrl('REGISTER_URL');
+  /// The value for Google Server Client Id.
+  googleServerClientId('GOOGLE_SERVER_CLIENT_ID'),
+
+  /// The value for Data Encryption Key.
+  dataEncryptionKey('DATA_ENCRYPTION_KEY'),
+
+  /// The value for Encryption Salt.
+  encryptionSalt('ENCRYPTION_SALT'),
+
+  /// The value for Countries Url.
+  countriesUrl('COUNTRIES_URL'),
+
+  /// The value for Check Phone Url.
+  checkPhoneUrl('CHECK_PHONE_URL'),
+
+  /// The value for Validate Otp Url.
+  validateOtpUrl('VALIDATE_OTP_URL'),
+
+  /// The value for Connection With Google Url.
+  connectionWithGoogleUrl('CONNECTION_WITH_GOOGLE_URL'),
+
+  /// The value for Complete Profile With Google Url.
+  completeProfileWithGoogleUrl('COMPLETE_PROFILE_WITH_GOOGLE_URL'),
+
+  /// The value for Account Recovery Request Url.
+  accountRecoveryRequestUrl('ACCOUNT_RECOVERY_REQUEST_URL'),
+
+  /// The value for Account Recovery Url.
+  accountRecoveryUrl('ACCOUNT_RECOVERY_URL'),
+
+  /// The value for Refresh Token Url.
+  refreshTokenUrl('REFRESH_TOKEN_URL'),
+
+  /// The value for Logout Url.
+  logoutUrl('LOGOUT_URL'),
+
+  /// The value for My Profile Url.
+  myProfileUrl('MY_PROFILE_URL'),
+
+  /// The value for Complete User Profile Url.
+  completeUserProfileUrl('COMPLETE_USER_PROFILE_URL'),
+
+  /// The value for Update Driver Profile Url.
+  updateDriverProfileUrl('UPDATE_DRIVER_PROFILE_URL'),
+
+  /// The value for Add Driver Document Url.
+  addDriverDocumentUrl('ADD_DRIVER_DOCUMENT_URL'),
+
+  /// The value for Get Driver Profile Url.
+  getDriverProfileUrl('GET_DRIVER_PROFILE_URL'),
+
+  /// The value for Vehicle Categories Url.
+  vehicleCategoriesUrl('VEHICLE_CATEGORIES_URL'),
+
+  /// The value for Service Types Url.
+  serviceTypesUrl('SERVICE_TYPES_URL'),
+
+  /// The value for Driver Vehicles Url.
+  driverVehiclesUrl('DRIVER_VEHICLES_URL'),
+
+  /// The value for Driver Active Vehicle Url.
+  driverActiveVehicleUrl('DRIVER_ACTIVE_VEHICLE_URL'),
+
+  /// The value for Available Trips Url.
+  availableTripsUrl('AVAILABLE_TRIPS_URL'),
+
+  /// The value for Driver Trips Url.
+  driverTripsUrl('DRIVER_TRIPS_URL'),
+
+  /// The value for Driver Trip Details Url.
+  driverTripDetailsUrl('DRIVER_TRIP_DETAILS_URL'),
+
+  /// The value for Trip Status Url.
+  tripStatusUrl('TRIP_STATUS_URL'),
+
+  /// The value for Vehicle Info By Category Id Url.
+  vehicleInfoByCategoryIdUrl('VEHICLE_INFO_BY_CATEGORY_ID_URL'),
+
+  /// The value for Upload Document Url.
+  uploadDocumentUrl('UPLOAD_DOCUMENT_URL'),
+
+  /// The value for Change Status Url.
+  changeStatusUrl('CHANGE_STATUS_URL'),
+
+  /// The value for Brands Url.
+  brandsUrl('BRANDS_URL'),
+
+  /// The value for Models Url.
+  modelsUrl('MODELS_URL'),
+
+  /// The value for Vehicle Colors Url.
+  vehicleColorsUrl('VEHICLE_COLORS_URL'),
+
+  /// The value for Seats Url.
+  seatsUrl('SEATS_URL'),
+
+  /// The value for Switch Role Url.
+  switchRoleUrl('SWITCH_ROLE_URL'),
+
+  /// The value for Vehicles Url.
+  vehiclesUrl('VEHICLES_URL'),
+
+  /// The value for Cloudinary Cloud Name.
+  cloudinaryCloudName('CLOUDINARY_CLOUD_NAME'),
+
+  /// The value for Cloudinary Upload Preset.
+  cloudinaryUploadPreset('CLOUDINARY_UPLOAD_PRESET'),
+
+  /// The value for Drivers Trips Url.
+  driversTripsUrl('DRIVERS_TRIPS_URL'),
+
+  /// The value for Accept Trip Url.
+  acceptTripUrl('ACCEPT_TRIP_URL'),
+
+  /// The value for Reject Trip Url.
+  rejectTripUrl('REJECT_TRIP_URL'),
+
+  /// The value for Arrived Url.
+  arrivedUrl('ARRIVED_URL'),
+
+  /// The value for Start Url.
+  startUrl('START_URL'),
+
+  /// The value for Complete Url.
+  completeUrl('COMPLETE_URL'),
+
+  /// The value for Cancel Url.
+  cancelUrl('CANCEL_URL'),
+
+  /// The value for Trips Url.
+  tripsUrl('TRIPS_URL'),
+
+  /// The value for Available Drivers Url.
+  availableDriversUrl('AVAILABLE_DRIVERS_URL'),
+
+  /// The value for Nearby Avaible Drivers Url.
+  nearbyAvaibleDriversUrl('NEARBY_AVAIBLE_DRIVERS_URL'),
+
+  /// The value for Wallet Url.
+  walletUrl('WALLET_URL'),
+
+  /// The value for Wallet Deposit Url.
+  walletDepositUrl('WALLET_DEPOSIT_URL'),
+
+  /// The value for Wallet Withdraw Url.
+  walletWithdrawUrl('WALLET_WITHDRAW_URL'),
+
+  /// The value for Wallet Transactions Url.
+  walletTransactionsUrl('WALLET_TRANSACTIONS_URL'),
+
+  /// The value for Payment Operators Url.
+  paymentOperatorsUrl('PAYMENT_OPERATORS_URL'),
+
+  /// The value for Driver Earnings Url.
+  driverEarningsUrl('DRIVER_EARNINGS_URL'),
+
+  /// The value for Notifications Url.
+  notificationsUrl('NOTIFICATIONS_URL'),
+
+  /// The value for Notifications Unread Count Url.
+  notificationsUnreadCountUrl('NOTIFICATIONS_UNREAD_COUNT_URL'),
+
+  /// The value for Driver Current Trip Url.
+  driverCurrentTripUrl('DRIVER_CURRENT_TRIP_URL'),
+
+  /// The value for Add Device Token Url.
+  addDeviceTokenUrl('ADD_DEVICE_TOKEN_URL'),
+
+  /// The value for Path Url.
+  pathUrl('PATH_URL'),
+
+  /// The value for Driver Payouts Earnings Breakdown Url.
+  driverPayoutsEarningsBreakdownUrl('DRIVER_PAYOUTS_EARNINGS_BREAKDOWN_URL'),
+
+  /// The value for Api Version Url.
+  apiVersionUrl('API_VERSION_URL');
 
   /// {@macro env}
   const Env(this.name);

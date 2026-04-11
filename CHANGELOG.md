@@ -1,3 +1,13 @@
+## 1.3.1
+
+### 🐛 Bug Fixes
+- **Code Generator Fix**: Fixed malformed template string in `code_generator.dart` that caused invalid Dart syntax in generated envied classes, preventing `build_runner` from succeeding
+- **Dart Identifier Sanitization**: Enhanced `toCamelCase` function to sanitize environment variable keys, ensuring generated field names are valid Dart identifiers (handles hyphens, dots, and numeric prefixes)
+
+### 🔧 Technical Improvements
+- **Template Correction**: Corrected the static field assignment template from invalid `_\${''}Env$className` to proper `_Env$className` reference
+- **Identifier Validation**: Added logic to replace invalid characters and prefix numeric-starting identifiers with underscore
+
 ## 1.3.0
 
 ### 🎨 Interactive CLI with Colors & Real-time Feedback

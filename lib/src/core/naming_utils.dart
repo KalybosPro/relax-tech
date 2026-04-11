@@ -18,19 +18,25 @@ class NamingUtils {
     return input[0].toUpperCase() + input.substring(1).toLowerCase();
   }
 
-  /// Converts snake_case to camelCase.
+  /// Converts a string to a valid Dart camelCase identifier.
   ///
-  /// Example: "some_key_name" -> "someKeyName"
+  /// Replaces invalid characters with underscores, ensures it starts with a letter or underscore,
+  /// and converts to camelCase.
+  ///
+  /// Example: "some_key-name" -> "someKeyName", "1key" -> "_1key"
   static String toCamelCase(String input) {
-    final parts = input.toLowerCase().split('_');
-    if (parts.isEmpty) {
-      return '';
-    }
-
-    return parts.first +
+    // Replace invalid characters with underscores
+    final sanitized = input.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    
+    // Convert to camelCase
+    final parts = sanitized.toLowerCase().split('_').where((part) => part.isNotEmpty);
+    final camel = parts.isEmpty ? '_' : parts.first +
         parts.skip(1).map((word) => word.isNotEmpty
               ? word[0].toUpperCase() + word.substring(1)
               : '').join();
+    
+    // If it starts with a digit, prefix with underscore
+    return RegExp(r'^\d').hasMatch(camel) ? '_$camel' : camel;
   }
 
   /// Generates a readable comment from a key by converting it to title case.
