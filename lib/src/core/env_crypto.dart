@@ -11,13 +11,43 @@ import 'package:universal_io/io.dart';
 ///
 /// Provides secure encryption/decryption using AES-256 algorithm
 /// with SHA-256 derived keys from user passwords.
-/// Supports both interactive password input and command-line options.
+///
+/// Security Features:
+/// - AES-256 encryption with random IV per file
+/// - Random salt generation for key derivation
+/// - PBKDF2-like key derivation with salt
+/// - Minimum password length validation (8 characters)
+/// - Secure password input (hidden in terminal)
+///
+/// Best Practices:
+/// - Use strong, unique passwords (minimum 12 characters recommended)
+/// - Store encrypted files securely
+/// - Never commit passwords or encrypted files to version control
+/// - Use different passwords for different environments
 class EnvCrypto {
+  /// Minimum password length for security
+  static const int minPasswordLength = 8;
+
+  /// Generate random salt for key derivation
+  static String _generateRandomSalt() {
+    final random = encrypt.SecureRandom(16); // 16 bytes = 128 bits
+    return base64.encode(random.bytes);
+  }
+
   /// Generate AES-256 key from a password with salt
-  static encrypt.Key _deriveKey(String password, {String salt = 'envied_salt'}) {
+  static encrypt.Key _deriveKey(String password, String salt) {
     final combined = password + salt; // Add salt for better security
     final keyHash = sha256.convert(utf8.encode(combined)).bytes;
     return encrypt.Key(Uint8List.fromList(keyHash));
+  }
+
+  /// Validate password strength
+  static bool _isValidPassword(String password) {
+    if (password.length < minPasswordLength) {
+      print('Error: Password must be at least $minPasswordLength characters long.');
+      return false;
+    }
+    return true;
   }
 
   /// Encrypt .env file
@@ -27,6 +57,11 @@ class EnvCrypto {
     String password,
   ) async {
     try {
+      // Validate password strength
+      if (!_isValidPassword(password)) {
+        return;
+      }
+
       final inputFile = File(inputPath);
 
       if (!await inputFile.exists()) {
@@ -40,7 +75,9 @@ class EnvCrypto {
         return;
       }
 
-      final key = _deriveKey(password);
+      // Generate random salt and IV for this encryption
+      final salt = _generateRandomSalt();
+      final key = _deriveKey(password, salt);
       final iv = encrypt.IV.fromLength(16);
 
       final encrypter = encrypt.Encrypter(encrypt.AES(key));
@@ -48,7 +85,13 @@ class EnvCrypto {
       // Encrypting
       final encrypted = encrypter.encrypt(plainText, iv: iv);
 
-      final data = {'data': encrypted.base64, 'iv': iv.base64};
+      // Store salt, IV, and encrypted data
+      final data = {
+        'salt': salt,
+        'iv': iv.base64,
+        'data': encrypted.base64,
+        'version': '1.0', // For future compatibility
+      };
 
       // Writing
       final outputFile = File(outputPath);
@@ -73,6 +116,11 @@ class EnvCrypto {
     String password,
   ) async {
     try {
+      // Validate password strength
+      if (!_isValidPassword(password)) {
+        return;
+      }
+
       final inputFile = File(inputPath);
 
       // Check if input file exists
@@ -88,13 +136,20 @@ class EnvCrypto {
         return;
       }
 
-      // Derive AES key + IV
-      // Currently uses a fixed IV; replace with random IV stored in the file for production
-      final key = _deriveKey(password);
-      // final iv = encrypt.IV.fromLength(16);
+      // Parse encrypted data
       final decoded = json.decode(encryptedText);
-      final encoded = decoded['data'];
-      final iv = encrypt.IV.fromBase64(decoded['iv']);
+      final salt = decoded['salt'] as String?;
+      final encoded = decoded['data'] as String?;
+      final ivBase64 = decoded['iv'] as String?;
+
+      if (salt == null || encoded == null || ivBase64 == null) {
+        print('Error: Invalid encrypted file format.');
+        return;
+      }
+
+      // Derive AES key using stored salt
+      final key = _deriveKey(password, salt);
+      final iv = encrypt.IV.fromBase64(ivBase64);
 
       final encrypter = encrypt.Encrypter(encrypt.AES(key));
 

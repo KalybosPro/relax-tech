@@ -37,32 +37,30 @@ class CodeGenerator {
   ) {
     final suffix = NamingUtils.getEnvironmentSuffix(envFileName);
     final envFileRelative = p.basename(envFileName);
-    final privateClassName = '_$envClassName';
     final className = NamingUtils.capitalizeFirst(suffix);
     final Map<String, String> envFileContent = EnvFileParser.parseEnvFile(
       envFile,
     );
     final partOf = _generatePartStatement(suffix);
 
-    final StringBuffer buffer = StringBuffer();
+    // Build all field declarations in single pass
+    final fieldBuffer = StringBuffer();
     for (final key in envFileContent.keys) {
       final keyName = NamingUtils.toCamelCase(key);
       final comment = NamingUtils.generateCommentFromKey(key);
-      buffer
-        ..writeln('/// $comment')
-        ..writeln('@EnviedField(varName: \'$key\', obfuscate: true)')
-        ..writeln('static final String $keyName = $privateClassName.$keyName;');
+      fieldBuffer.write('''  /// $comment
+  @EnviedField(varName: '$key', obfuscate: true)
+  static final String $keyName = _\${''}Env$className.$keyName;
+''');
     }
-    final fields = buffer.toString();
 
-    return '''
-import 'package:envied/envied.dart';
+    return '''import 'package:envied/envied.dart';
 
 $partOf
 
 @Envied(path: '$envFileRelative', obfuscate: true)
 abstract class Env$className {
-  $fields
+${fieldBuffer.toString()}
 }
 ''';
   }

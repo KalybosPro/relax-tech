@@ -177,213 +177,199 @@ class AssetsGenGenerator {
   }
 
   void _generateAssetGenImage(StringBuffer buffer) {
-    buffer.writeln('class AssetGenImage {');
-    buffer.writeln(
-      '  const AssetGenImage(this._bytes, {this.size, this.flavors = const {}});',
+    buffer.write('''class AssetGenImage {
+  const AssetGenImage(this._bytes, {this.size, this.flavors = const {}});
+
+  final Uint8List _bytes;
+
+  static const String package = 'app_assets';
+
+  final Size? size;
+  final Set<String> flavors;
+
+  Image image({
+    Key? key,
+    ImageFrameBuilder? frameBuilder,
+    ImageErrorWidgetBuilder? errorBuilder,
+    String? semanticLabel,
+    bool excludeFromSemantics = false,
+    double scale= 1.0,
+    double? width,
+    double? height,
+    Color? color,
+    Animation<double>? opacity,
+    BlendMode? colorBlendMode,
+    BoxFit? fit,
+    AlignmentGeometry alignment = Alignment.center,
+    ImageRepeat repeat = ImageRepeat.noRepeat,
+    Rect? centerSlice,
+    bool matchTextDirection = false,
+    bool gaplessPlayback = true,
+    bool isAntiAlias = false,
+    FilterQuality filterQuality = FilterQuality.medium,
+    int? cacheWidth,
+    int? cacheHeight,
+  }) {
+    return Image.memory(
+      _bytes,
+      key: key,
+      frameBuilder: frameBuilder,
+      errorBuilder: errorBuilder,
+      semanticLabel: semanticLabel,
+      excludeFromSemantics: excludeFromSemantics,
+      scale: scale,
+      width: width,
+      height: height,
+      color: color,
+      opacity: opacity,
+      colorBlendMode: colorBlendMode,
+      fit: fit,
+      alignment: alignment,
+      repeat: repeat,
+      centerSlice: centerSlice,
+      matchTextDirection: matchTextDirection,
+      gaplessPlayback: gaplessPlayback,
+      isAntiAlias: isAntiAlias,
+      filterQuality: filterQuality,
+      cacheWidth: cacheWidth,
+      cacheHeight: cacheHeight,
     );
-    buffer.writeln();
-    buffer.writeln('  final Uint8List _bytes;');
-    buffer.writeln();
-    buffer.writeln("  static const String package = 'app_assets';");
-    buffer.writeln();
-    buffer.writeln('  final Size? size;');
-    buffer.writeln('  final Set<String> flavors;');
-    buffer.writeln();
-    buffer.writeln('  Image image({');
-    buffer.writeln('    Key? key,');
-    buffer.writeln('    ImageFrameBuilder? frameBuilder,');
-    buffer.writeln('    ImageErrorWidgetBuilder? errorBuilder,');
-    buffer.writeln('    String? semanticLabel,');
-    buffer.writeln('    bool excludeFromSemantics = false,');
-    buffer.writeln('    double scale= 1.0,');
-    buffer.writeln('    double? width,');
-    buffer.writeln('    double? height,');
-    buffer.writeln('    Color? color,');
-    buffer.writeln('    Animation<double>? opacity,');
-    buffer.writeln('    BlendMode? colorBlendMode,');
-    buffer.writeln('    BoxFit? fit,');
-    buffer.writeln('    AlignmentGeometry alignment = Alignment.center,');
-    buffer.writeln('    ImageRepeat repeat = ImageRepeat.noRepeat,');
-    buffer.writeln('    Rect? centerSlice,');
-    buffer.writeln('    bool matchTextDirection = false,');
-    buffer.writeln('    bool gaplessPlayback = true,');
-    buffer.writeln('    bool isAntiAlias = false,');
-    buffer.writeln('    FilterQuality filterQuality = FilterQuality.medium,');
-    buffer.writeln('    int? cacheWidth,');
-    buffer.writeln('    int? cacheHeight,');
-    buffer.writeln('  }) {');
-    buffer.writeln('    return Image.memory(');
-    buffer.writeln('      _bytes,');
-    buffer.writeln('      key: key,');
-    buffer.writeln('      frameBuilder: frameBuilder,');
-    buffer.writeln('      errorBuilder: errorBuilder,');
-    buffer.writeln('      semanticLabel: semanticLabel,');
-    buffer.writeln('      excludeFromSemantics: excludeFromSemantics,');
-    buffer.writeln('      scale: scale,');
-    buffer.writeln('      width: width,');
-    buffer.writeln('      height: height,');
-    buffer.writeln('      color: color,');
-    buffer.writeln('      opacity: opacity,');
-    buffer.writeln('      colorBlendMode: colorBlendMode,');
-    buffer.writeln('      fit: fit,');
-    buffer.writeln('      alignment: alignment,');
-    buffer.writeln('      repeat: repeat,');
-    buffer.writeln('      centerSlice: centerSlice,');
-    buffer.writeln('      matchTextDirection: matchTextDirection,');
-    buffer.writeln('      gaplessPlayback: gaplessPlayback,');
-    buffer.writeln('      isAntiAlias: isAntiAlias,');
-    buffer.writeln('      filterQuality: filterQuality,');
-    buffer.writeln('      cacheWidth: cacheWidth,');
-    buffer.writeln('      cacheHeight: cacheHeight,');
-    buffer.writeln('    );');
-    buffer.writeln('  }');
-    buffer.writeln();
-    buffer.writeln('  ImageProvider provider({');
-    buffer.writeln('    double scale = 1.0,');
-    buffer.writeln('  }) {');
-    buffer.writeln('    return MemoryImage(_bytes, scale: scale);');
-    buffer.writeln('  }');
-    buffer.writeln();
-    buffer.writeln('}');
-    buffer.writeln();
+  }
+
+  ImageProvider provider({
+    double scale = 1.0,
+  }) {
+    return MemoryImage(_bytes, scale: scale);
+  }
+
+}
+
+''');
   }
 
   void _generateSvgGenImage(StringBuffer buffer) {
-    buffer.writeln('class SvgGenImage {');
-    buffer.writeln(
-      '  const SvgGenImage(this._assetName, {this.size, this.flavors = const {}});',
-    );
-    buffer.writeln();
-    buffer.writeln(
-      '  const SvgGenImage.vec(this._assetName, {this.size, this.flavors = const {}});',
-    );
-    buffer.writeln();
-    buffer.writeln('  final String _assetName;');
-    buffer.writeln('  final Size? size;');
-    buffer.writeln('  final Set<String> flavors;');
-    buffer.writeln();
-    buffer.writeln("  static const String package = 'app_assets';");
-    buffer.writeln();
-    buffer.writeln('  _svg.SvgPicture svg({');
-    buffer.writeln('    Key? key,');
-    buffer.writeln('    bool matchTextDirection = false,');
-    buffer.writeln('    double? width,');
-    buffer.writeln('    double? height,');
-    buffer.writeln('    BoxFit fit = BoxFit.contain,');
-    buffer.writeln('    AlignmentGeometry alignment = Alignment.center,');
-    buffer.writeln('    bool allowDrawingOutsideViewBox = false,');
-    buffer.writeln('    WidgetBuilder? placeholderBuilder,');
-    buffer.writeln('    String? semanticsLabel,');
-    buffer.writeln('    bool excludeFromSemantics = false,');
-    buffer.writeln('    _svg.SvgTheme? theme,');
-    buffer.writeln('    ColorFilter? colorFilter,');
-    buffer.writeln('    Clip clipBehavior = Clip.hardEdge,');
-    buffer.writeln("    Color? color,");
-    buffer.writeln("    BlendMode colorBlendMode = BlendMode.srcIn,");
-    buffer.writeln("    bool cacheColorFilter = false,");
-    buffer.writeln(
-      '    Widget Function(BuildContext, Object, StackTrace)? errorBuilder,',
-    );
-    buffer.writeln('    _svg.ColorMapper? colorMapper,');
-    buffer.writeln(
-      '    _vgc.RenderingStrategy renderingStrategy = _vgc.RenderingStrategy.picture,',
-    );
-    buffer.writeln('  }) {');
-    buffer.writeln('    return _svg.SvgPicture.string(');
-    buffer.writeln('      _assetName,');
-    buffer.writeln('      key: key,');
-    buffer.writeln('      matchTextDirection: matchTextDirection,');
-    buffer.writeln('      width: width,');
-    buffer.writeln('      height: height,');
-    buffer.writeln('      fit: fit,');
-    buffer.writeln('      alignment: alignment,');
-    buffer.writeln(
-      '      allowDrawingOutsideViewBox: allowDrawingOutsideViewBox,',
-    );
-    buffer.writeln('      placeholderBuilder: placeholderBuilder,');
-    buffer.writeln('      semanticsLabel: semanticsLabel,');
-    buffer.writeln('      excludeFromSemantics: excludeFromSemantics,');
-    buffer.writeln('      colorFilter:');
-    buffer.writeln('          colorFilter ??');
-    buffer.writeln(
-      '          (color == null ? null : ColorFilter.mode(color, colorBlendMode)),',
-    );
-    buffer.writeln('      clipBehavior: clipBehavior,');
-    buffer.writeln('      cacheColorFilter: cacheColorFilter,');
-    buffer.writeln('      theme: theme,');
-    buffer.writeln('      errorBuilder: errorBuilder,');
-    buffer.writeln('      colorMapper: colorMapper,');
-    buffer.writeln('      renderingStrategy: renderingStrategy,');
-    buffer.writeln('    );');
-    buffer.writeln('  }');
-    buffer.writeln();
+    buffer.write('''class SvgGenImage {
+  const SvgGenImage(this._assetName, {this.size, this.flavors = const {}});
 
-    buffer.writeln("p.Svg get provider => p.Svg('\${_assetName.hashCode}.svg',");
-    buffer.writeln('      source: p.SvgSource.asset,');
-    buffer.writeln('      svgGetter: (key) => Future.value(_assetName));');
-    buffer.writeln('}');
+  const SvgGenImage.vec(this._assetName, {this.size, this.flavors = const {}});
+
+  final String _assetName;
+  final Size? size;
+  final Set<String> flavors;
+
+  static const String package = 'app_assets';
+
+  _svg.SvgPicture svg({
+    Key? key,
+    bool matchTextDirection = false,
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.contain,
+    AlignmentGeometry alignment = Alignment.center,
+    bool allowDrawingOutsideViewBox = false,
+    WidgetBuilder? placeholderBuilder,
+    String? semanticsLabel,
+    bool excludeFromSemantics = false,
+    _svg.SvgTheme? theme,
+    ColorFilter? colorFilter,
+    Clip clipBehavior = Clip.hardEdge,
+    Color? color,
+    BlendMode colorBlendMode = BlendMode.srcIn,
+    bool cacheColorFilter = false,
+    Widget Function(BuildContext, Object, StackTrace)? errorBuilder,
+    _svg.ColorMapper? colorMapper,
+    _vgc.RenderingStrategy renderingStrategy = _vgc.RenderingStrategy.picture,
+  }) {
+    return _svg.SvgPicture.string(
+      _assetName,
+      key: key,
+      matchTextDirection: matchTextDirection,
+      width: width,
+      height: height,
+      fit: fit,
+      alignment: alignment,
+      allowDrawingOutsideViewBox: allowDrawingOutsideViewBox,
+      placeholderBuilder: placeholderBuilder,
+      semanticsLabel: semanticsLabel,
+      excludeFromSemantics: excludeFromSemantics,
+      colorFilter:
+          colorFilter ??
+          (color == null ? null : ColorFilter.mode(color, colorBlendMode)),
+      clipBehavior: clipBehavior,
+      cacheColorFilter: cacheColorFilter,
+      theme: theme,
+      errorBuilder: errorBuilder,
+      colorMapper: colorMapper,
+      renderingStrategy: renderingStrategy,
+    );
+  }
+
+  p.Svg get provider => p.Svg('\${_assetName.hashCode}.svg',
+      source: p.SvgSource.asset,
+      svgGetter: (key) => Future.value(_assetName));
+}
+''');
   }
 
   void _generateVideoGenImage(StringBuffer buffer) {
-    buffer.writeln('class VideoGenImage {');
-    buffer.writeln(
-      '  const VideoGenImage(this._bytes, {this.size, this.flavors = const {}});',
+    buffer.write('''class VideoGenImage {
+  const VideoGenImage(this._bytes, {this.size, this.flavors = const {}});
+
+  final Uint8List _bytes;
+  final Size? size;
+  final Set<String> flavors;
+
+  static const String package = 'app_assets';
+
+  Future<_video.VideoPlayerController> controller({
+    _video.VideoPlayerOptions? videoPlayerOptions,
+    Future<_video.ClosedCaptionFile>? closedCaptionFile,
+    _video.VideoFormat? formatHint,
+  }) async {
+    final controller = _video.VideoPlayerController.memory(
+      _bytes,
+      videoPlayerOptions: videoPlayerOptions,
+      closedCaptionFile: closedCaptionFile,
+      formatHint: formatHint,
     );
-    buffer.writeln();
-    buffer.writeln('  final Uint8List _bytes;');
-    buffer.writeln('  final Size? size;');
-    buffer.writeln('  final Set<String> flavors;');
-    buffer.writeln();
-    buffer.writeln("  static const String package = 'app_assets';");
-    buffer.writeln();
-    buffer.writeln('  Future<_video.VideoPlayerController> controller({');
-    buffer.writeln('    _video.VideoPlayerOptions? videoPlayerOptions,');
-    buffer.writeln('    Future<_video.ClosedCaptionFile>? closedCaptionFile,');
-    buffer.writeln('    _video.VideoFormat? formatHint,');
-    buffer.writeln('  }) async {');
-    buffer.writeln('    final controller = _video.VideoPlayerController.memory(');
-    buffer.writeln('      _bytes,');
-    buffer.writeln('      videoPlayerOptions: videoPlayerOptions,');
-    buffer.writeln('      closedCaptionFile: closedCaptionFile,');
-    buffer.writeln('      formatHint: formatHint,');
-    buffer.writeln('    );');
-    buffer.writeln('    await controller.initialize();');
-    buffer.writeln('    return controller;');
-    buffer.writeln('  }');
-    buffer.writeln();
-    buffer.writeln('  Future<_video.VideoPlayer> video({');
-    buffer.writeln('    Key? key,');
-    buffer.writeln('    double? width,');
-    buffer.writeln('    double? height,');
-    buffer.writeln('    BoxFit? fit,');
-    buffer.writeln('    AlignmentGeometry alignment = Alignment.center,');
-    buffer.writeln('    Widget? placeholder,');
-    buffer.writeln('    Widget? errorBuilder,');
-    buffer.writeln('    bool autoInitialize = true,');
-    buffer.writeln('    double volume = 1.0,');
-    buffer.writeln('    bool looping = false,');
-    buffer.writeln('    bool showControls = false,');
-    buffer.writeln('    bool showControlsOnInitialize = true,');
-    buffer.writeln('    Duration? seek,');
-    buffer.writeln('  }) async {');
-    buffer.writeln('    final videoController = await controller();');
-    buffer.writeln('    return _video.VideoPlayer(');
-    buffer.writeln('      key: key,');
-    buffer.writeln('      width: width,');
-    buffer.writeln('      height: height,');
-    buffer.writeln('      controller: videoController,');
-    buffer.writeln('      fit: fit,');
-    buffer.writeln('      alignment: alignment,');
-    buffer.writeln('      placeholder: placeholder,');
-    buffer.writeln('      errorBuilder: errorBuilder,');
-    buffer.writeln('      autoInitialize: autoInitialize,');
-    buffer.writeln('      volume: volume,');
-    buffer.writeln('      looping: looping,');
-    buffer.writeln('      showControls: showControls,');
-    buffer.writeln('      showControlsOnInitialize: showControlsOnInitialize,');
-    buffer.writeln('      seek: seek,');
-    buffer.writeln('    );');
-    buffer.writeln('  }');
-    buffer.writeln('}');
+    await controller.initialize();
+    return controller;
+  }
+
+  Future<_video.VideoPlayer> video({
+    Key? key,
+    double? width,
+    double? height,
+    BoxFit? fit,
+    AlignmentGeometry alignment = Alignment.center,
+    Widget? placeholder,
+    Widget? errorBuilder,
+    bool autoInitialize = true,
+    double volume = 1.0,
+    bool looping = false,
+    bool showControls = false,
+    bool showControlsOnInitialize = true,
+    Duration? seek,
+  }) async {
+    final videoController = await controller();
+    return _video.VideoPlayer(
+      key: key,
+      width: width,
+      height: height,
+      controller: videoController,
+      fit: fit,
+      alignment: alignment,
+      placeholder: placeholder,
+      errorBuilder: errorBuilder,
+      autoInitialize: autoInitialize,
+      volume: volume,
+      looping: looping,
+      showControls: showControls,
+      showControlsOnInitialize: showControlsOnInitialize,
+      seek: seek,
+    );
+  }
+}
+''');
   }
 }

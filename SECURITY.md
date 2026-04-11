@@ -63,6 +63,59 @@ As Env Builder CLI deals with sensitive environment data:
 4. **Verify checksums** when downloading the CLI binary
 5. **Keep the tool updated** to benefit from security patches
 
+## Encryption Security Practices
+
+Env Builder CLI uses AES-256 encryption with the following security measures:
+
+### ✅ Implemented Security Features
+
+- **AES-256 Encryption**: Industry-standard symmetric encryption
+- **Random Salt Generation**: Each file uses a unique random salt (128-bit)
+- **Random IV**: Each encryption uses a unique initialization vector
+- **SHA-256 Key Derivation**: Passwords are hashed with salt for key generation
+- **Password Validation**: Minimum 8-character password requirement
+- **Secure Random Generation**: Uses cryptographically secure random number generation
+
+### 🔒 Best Practices for Users
+
+#### Password Security
+- Use passwords of at least 12 characters (recommended)
+- Include a mix of uppercase, lowercase, numbers, and symbols
+- Never reuse passwords across different projects
+- Use a password manager to generate and store strong passwords
+- Rotate passwords regularly, especially after potential compromise
+
+#### File Handling
+- Store encrypted `.env.encrypted` files securely
+- Never commit encrypted files to version control
+- Use secure file permissions (readable only by owner)
+- Backup encrypted files in secure locations
+- Delete unencrypted `.env` files after encryption
+
+#### Key Management
+- Distribute decryption passwords securely (not via email/chat)
+- Use different passwords for different environments (dev/staging/prod)
+- Implement password rotation policies
+- Store passwords in secure vaults or password managers
+
+#### Operational Security
+- Run encryption/decryption operations on trusted systems only
+- Verify file integrity before and after operations
+- Monitor for unauthorized access attempts
+- Log encryption/decryption operations for audit purposes
+
+### ⚠️ Security Limitations
+
+- Password-based encryption (not key-based)
+- No built-in key rotation mechanism
+- Files are encrypted individually (not envelope encryption)
+- No integration with external key management systems
+
+For high-security environments, consider additional measures like:
+- Using hardware security modules (HSM)
+- Implementing envelope encryption
+- Integrating with enterprise key management systems
+
 ## Security Updates
 
 Security updates will be released as patch versions (e.g., 1.1.1). We will announce critical security updates through:

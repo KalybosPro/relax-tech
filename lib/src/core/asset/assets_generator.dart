@@ -41,10 +41,18 @@ class AssetsGenerator {
     buffer.writeln('// ignore_for_file: constant_identifier_names');
     buffer.writeln();
 
-    for (final asset in assets) {
-      try {
-        final encryptedAsset = await _processAsset(asset);
+    // Parallelize asset processing for better performance
+    final processedAssets = await Future.wait(
+      assets.map((asset) => _processAsset(asset)),
+      eagerError: true,
+    );
 
+    // Generate code for each asset (sequential, as order may matter for output)
+    for (int i = 0; i < assets.length; i++) {
+      final asset = assets[i];
+      final encryptedAsset = processedAssets[i];
+
+      try {
         // Generate key constant
         buffer.writeln(
           'const List<int> _assetkey${asset.variableName} = <int>${_formatByteList(encryptedAsset.key)};',
@@ -68,7 +76,7 @@ class AssetsGenerator {
 
         buffer.writeln();
       } catch (e) {
-        print('Error processing asset ${asset.path}: $e');
+        print('Error generating code for asset ${asset.path}: $e');
         // Continue with other assets
       }
     }
