@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:env_builder_cli/env_builder_cli.dart';
 import 'package:env_builder_cli/src/bin/commands/commands.dart';
+import 'package:env_builder_cli/src/core/cli_colors.dart';
 
 
 /// Application entry point
@@ -24,7 +25,7 @@ Future<void> main(List<String> args) async {
     final exitCode = await commandRunner.run(args);
     exit(exitCode ?? 0);
   } catch (e) {
-    print('Error: $e');
+    CliLogger.error(e.toString());
     exit(64);
   }
 }

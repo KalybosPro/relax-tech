@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'asset.dart' as asset_reader;
+
 import 'package:path/path.dart' as p;
+
+import 'asset.dart' as asset_reader;
 
 /// Generator for assets.gen.dart file (flutter_gen style)
 class AssetsGenGenerator {
@@ -95,7 +97,7 @@ class AssetsGenGenerator {
 
     for (final className in assetGroupClasses) {
       final fieldName = className
-          .replaceFirst('\$Assets', '')
+          .replaceFirst(r'$Assets', '')
           .replaceFirst('Gen', '')
           .toLowerCase();
       buffer.writeln('  static const $className $fieldName = $className();');
@@ -140,9 +142,8 @@ class AssetsGenGenerator {
     return groups;
   }
 
-  String _normalizeGroupName(String name) {
-    // Convert to PascalCase
-    return name
+  // Convert to PascalCase
+  String _normalizeGroupName(String name) => name
         .split(RegExp(r'[\s_-]+'))
         .map(
           (part) => part.isEmpty
@@ -150,11 +151,8 @@ class AssetsGenGenerator {
               : part[0].toUpperCase() + part.substring(1).toLowerCase(),
         )
         .join('');
-  }
 
-  String _capitalize(String s) {
-    return s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s;
-  }
+  String _capitalize(String s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s;
 
   String _generateAssetGetter(asset_reader.AssetFile asset) {
     final relativePath = p.relative(
@@ -172,9 +170,7 @@ class AssetsGenGenerator {
     }
   }
 
-  String _getAssetReference(asset_reader.AssetFile asset) {
-    return asset.variableName;
-  }
+  String _getAssetReference(asset_reader.AssetFile asset) => asset.variableName;
 
   void _generateAssetGenImage(StringBuffer buffer) {
     buffer.write('''class AssetGenImage {
@@ -248,7 +244,7 @@ class AssetsGenGenerator {
   }
 
   void _generateSvgGenImage(StringBuffer buffer) {
-    buffer.write('''class SvgGenImage {
+    buffer.write(r'''class SvgGenImage {
   const SvgGenImage(this._assetName, {this.size, this.flavors = const {}});
 
   const SvgGenImage.vec(this._assetName, {this.size, this.flavors = const {}});
@@ -304,7 +300,7 @@ class AssetsGenGenerator {
     );
   }
 
-  p.Svg get provider => p.Svg('\${_assetName.hashCode}.svg',
+  p.Svg get provider => p.Svg('${_assetName.hashCode}.svg',
       source: p.SvgSource.asset,
       svgGetter: (key) => Future.value(_assetName));
 }

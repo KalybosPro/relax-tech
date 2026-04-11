@@ -12,7 +12,9 @@ class NamingUtils {
   ///
   /// Example: "HELLO" -> "Hello"
   static String capitalizeFirst(String input) {
-    if (input.isEmpty) return input;
+    if (input.isEmpty) {
+      return input;
+    }
     return input[0].toUpperCase() + input.substring(1).toLowerCase();
   }
 
@@ -21,14 +23,14 @@ class NamingUtils {
   /// Example: "some_key_name" -> "someKeyName"
   static String toCamelCase(String input) {
     final parts = input.toLowerCase().split('_');
-    if (parts.isEmpty) return '';
+    if (parts.isEmpty) {
+      return '';
+    }
 
     return parts.first +
-        parts.skip(1).map((word) {
-          return word.isNotEmpty
+        parts.skip(1).map((word) => word.isNotEmpty
               ? word[0].toUpperCase() + word.substring(1)
-              : '';
-        }).join();
+              : '').join();
   }
 
   /// Generates a readable comment from a key by converting it to title case.
@@ -52,7 +54,9 @@ class NamingUtils {
   static String _extractEnvironmentType(String fileName) {
     final lower = fileName.toLowerCase();
     for (final envType in EnvConfig.environmentMappings.keys) {
-      if (lower.contains(envType)) return envType;
+      if (lower.contains(envType)) {
+        return envType;
+      }
     }
     return 'production'; // default
   }
@@ -84,7 +88,5 @@ class NamingUtils {
   /// Gets the flavor name from a filename.
   ///
   /// This is an alias for [_extractEnvironmentType].
-  static String getFlavor(String fileName) {
-    return _extractEnvironmentType(fileName);
-  }
+  static String getFlavor(String fileName) => _extractEnvironmentType(fileName);
 }

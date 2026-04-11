@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 // ignore_for_file: avoid_print
@@ -15,22 +16,18 @@ class ProcessRunner {
     List<String> arguments, {
     String? path,
     String engine = 'flutter',
-  }) async {
-    return await Process.run(
+  }) async => Process.run(
       engine,
       arguments,
       workingDirectory: path,
       runInShell: true,
     );
-  }
 
   /// Runs a dart command specifically
   static Future<ProcessResult> runDartCommand(
     List<String> arguments,
     String? path,
-  ) async {
-    return await runFlutterCommand(arguments, path: path, engine: 'dart');
-  }
+  ) async => runFlutterCommand(arguments, path: path, engine: 'dart');
 
   /// Runs a flutter command with real-time streaming of output
   static Future<Process> runFlutterCommandStreaming(
@@ -46,8 +43,8 @@ class ProcessRunner {
     );
 
     // Stream stdout and stderr to terminal in real-time for progress indicators
-    stdout.addStream(process.stdout);
-    stderr.addStream(process.stderr);
+    unawaited(stdout.addStream(process.stdout));
+    unawaited(stderr.addStream(process.stderr));
 
     return process;
   }

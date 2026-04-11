@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'cli_colors.dart';
 import 'core.dart';
 
 /// Handles YAML file operations
@@ -35,9 +36,9 @@ class YamlManager {
       _updateYamlField(editor, doc, 'version', EnvConfig.defaultVersion);
 
       pubspecFile.writeAsStringSync(editor.toString());
-      print(TextTemplates.pubspecUpdated);
+      CliLogger.success(TextTemplates.pubspecUpdated);
     } catch (e) {
-      print(
+      CliLogger.error(
         TextTemplates.pubspecUpdateFailed.replaceAll('{error}', e.toString()),
       );
     }
@@ -47,7 +48,7 @@ class YamlManager {
 
   static Future<void> _createNewPubspec(File pubspecFile, String path) async {
     await _addDependencies(pubspecFile, path);
-    print(TextTemplates.pubspecCreated);
+    CliLogger.success(TextTemplates.pubspecCreated);
   }
 
   static void _updateYamlField(
@@ -100,7 +101,7 @@ flutter:
   static void updateRootPubspecWithEnvPackage(String rootPubspecPath) {
     final file = File(rootPubspecPath);
     if (!file.existsSync()) {
-      print(
+      CliLogger.error(
         TextTemplates.pubspecRootNotFound.replaceAll('{path}', rootPubspecPath),
       );
       exit(1);
@@ -110,7 +111,7 @@ flutter:
     final doc = loadYaml(originalYaml);
     final editor = YamlEditor(originalYaml);
 
-    final Map? dependencies = (doc as Map?)?['dependencies'] as Map?;
+    final dependencies = (doc as Map?)?['dependencies'] as Map?;
 
     if (dependencies == null) {
       editor.update(
@@ -122,7 +123,7 @@ flutter:
         },
       );
       file.writeAsStringSync(editor.toString());
-      print(TextTemplates.pubspecDependencyAdded);
+      CliLogger.success(TextTemplates.pubspecDependencyAdded);
       return;
     }
 
@@ -132,9 +133,9 @@ flutter:
         {'path': 'packages/${TextTemplates.packageName}'},
       );
       file.writeAsStringSync(editor.toString());
-      print(TextTemplates.pubspecDependencyUpdated);
+      CliLogger.success(TextTemplates.pubspecDependencyUpdated);
     } else {
-      print(TextTemplates.pubspecDependencyExists);
+      CliLogger.info(TextTemplates.pubspecDependencyExists);
     }
   }
 }

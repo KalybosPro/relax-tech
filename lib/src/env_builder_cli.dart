@@ -63,7 +63,7 @@ class EnvBuilderCli implements EnvBuilder {
     String path = '.gitignore',
     bool includeFlutterDefaults = true,
     bool keepExample = true,
-  }) async => await FileSystemManager.createGitignoreWithEnvEntries(
+  }) async => FileSystemManager.createGitignoreWithEnvEntries(
     path: path,
     includeFlutterDefaults: includeFlutterDefaults,
     keepExample: keepExample,
@@ -74,7 +74,7 @@ class EnvBuilderCli implements EnvBuilder {
     List<String> arguments, {
     String? path,
     String engine = 'flutter',
-  }) async => await ProcessRunner.runFlutterCommand(
+  }) async => ProcessRunner.runFlutterCommand(
     arguments,
     path: path,
     engine: engine,

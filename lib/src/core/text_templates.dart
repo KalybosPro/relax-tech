@@ -27,7 +27,7 @@ Crypto operations:
   // Success messages
   static const String successMessage =
       '\nDone! Your env package is ready to use.';
-  static const String successImport = "Import it in your app like:";
+  static const String successImport = 'Import it in your app like:';
   static const String successPackage = "import 'package:env/env.dart';\n";
 
   // Error messages
@@ -113,7 +113,7 @@ Crypto operations:
       'Do you want to encrypt your .env files in your env package? (y/n): ';
 
   // CLI version
-  static const String cliVersion = '1.1.2';
+  static const String cliVersion = '1.2.1';
   // Dart SDK version from prerequisites
   static const String dartSdkVersion = '3.8.1+';
 }

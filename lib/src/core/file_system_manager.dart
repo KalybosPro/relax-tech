@@ -1,7 +1,9 @@
 // ignore_for_file: avoid_print
 
-import 'core.dart';
 import 'package:path/path.dart' as p;
+
+import 'cli_colors.dart';
+import 'core.dart';
 
 /// Handles file system operations
 ///
@@ -25,7 +27,7 @@ class FileSystemManager {
       await _updateExistingGitignore(file, content);
     } else {
       await file.writeAsString(content);
-      print('Created .gitignore with Dart/Flutter and .env rules.');
+      CliLogger.success('Created .gitignore with Dart/Flutter and .env rules.');
     }
   }
 
@@ -33,7 +35,7 @@ class FileSystemManager {
     bool includeFlutterDefaults,
     bool keepExample,
   ) {
-    final flutterIgnore = '''
+    const flutterIgnore = '''
 # Dart & Flutter
 .dart_tool/
 .packages
@@ -82,9 +84,9 @@ ${keepExample ? '!.env.example' : ''}
     final existingContent = await file.readAsString();
     if (!existingContent.contains('.env')) {
       await file.writeAsString('\n$content', mode: FileMode.append);
-      print('Appended .env rules to existing .gitignore');
+      CliLogger.success('Appended .env rules to existing .gitignore');
     } else {
-      print('.gitignore already contains .env rules.');
+      CliLogger.info('.gitignore already contains .env rules.');
     }
   }
 
@@ -99,9 +101,9 @@ ${keepExample ? '!.env.example' : ''}
       }
 
       testFile.writeAsStringSync(CodeGenerator.generateTestFileContent());
-      print('env_test.dart file created/updated at ${testFile.path}');
+      CliLogger.success('env_test.dart file created/updated at ${testFile.path}');
     } catch (e) {
-      print('Error writing env_test.dart file: $e');
+      CliLogger.error('Error writing env_test.dart file: $e');
       exit(1);
     }
   }

@@ -1,8 +1,10 @@
 // ignore_for_file: avoid_print
 
-import '../core/core.dart';
-import 'package:path/path.dart' as p;
 import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
+import 'package:path/path.dart' as p;
+
+import '../core/cli_colors.dart';
+import '../core/core.dart';
 import 'cli_config.dart';
 
 /// Handles directory operations
@@ -16,7 +18,7 @@ class DirectoryManager {
     final directory = Directory(dirPath);
     if (!directory.existsSync()) {
       if (description != null) {
-        print('Creating $description...');
+        CliLogger.step('Creating $description...');
       }
 
       try {
@@ -46,7 +48,7 @@ class DirectoryManager {
     if (!envPackageDir.existsSync()) {
       await _createEnvPackageForPath(envPackagePath, outputDirPath, envBuilder);
     } else {
-      print('Env package already exists at ${envPackageDir.path}');
+      CliLogger.info('Env package already exists at ${envPackageDir.path}');
     }
 
     return envPackageDir;
@@ -57,7 +59,7 @@ class DirectoryManager {
     String outputDirPath,
     env_builder_cli.EnvBuilder envBuilder,
   ) async {
-    print('Creating env Flutter package...');
+    CliLogger.step('Creating env Flutter package...');
 
     // Get parent directory and package name
     final parentDir = p.dirname(envPackagePath);

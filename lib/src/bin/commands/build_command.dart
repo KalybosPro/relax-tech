@@ -1,29 +1,20 @@
 import 'package:args/command_runner.dart';
 import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
+import 'package:path/path.dart' as p;
 
+import '../../core/cli_colors.dart';
 import '../../core/core.dart';
-
 import '../cli_config.dart';
 import '../dart_file_generator.dart';
 import '../directory_manager.dart';
 import '../file_copier.dart';
 import '../file_validator.dart';
 import '../package_configurator.dart';
-import 'package:path/path.dart' as p;
 
 // ignore_for_file: avoid_print
 
 /// Command for building env packages from .env files
 class BuildCommand extends Command<int> {
-  static bool _verbose = false;
-
-  static bool get isVerbose => _verbose;
-
-  @override
-  String get description => 'Build env package from .env files';
-
-  @override
-  String get name => 'build';
 
   BuildCommand() {
     argParser.addOption(
@@ -48,25 +39,46 @@ class BuildCommand extends Command<int> {
       abbr: 'v',
       help: 'Show detailed output during build process',
     );
+    argParser.addFlag(
+      'no-color',
+      help: 'Disable colored output',
+      negatable: false,
+    );
   }
+  static bool _verbose = false;
+
+  static bool get isVerbose => _verbose;
+
+  @override
+  String get description => 'Build env package from .env files';
+
+  @override
+  String get name => 'build';
 
   @override
   Future<int> run() async {
     try {
-      // Set verbose flag
+      // Set verbose flag and colors
       _verbose = argResults!['verbose'] as bool;
+      final noColor = argResults!['no-color'] as bool;
+      CliLogger.setVerbose(_verbose);
+      CliColors.setUseColors(!noColor);
+
+      CliLogger.info('Starting env package build process...');
 
       final envFileArg = argResults!['env-file'] as String?;
       List<String> envFilePaths;
 
       if (envFileArg == null || envFileArg.isEmpty) {
         // Scan for .env* files if no specific file provided
+        CliLogger.debug('Scanning for .env* files in current directory...');
         envFilePaths = _findEnvFilesInDirectory(Directory.current);
         if (envFilePaths.isEmpty) {
           throw ArgumentError(
             'No .env* files found in current directory and --env-file not specified',
           );
         }
+        CliLogger.success('Found ${envFilePaths.length} .env file(s): ${envFilePaths.join(', ')}');
       } else {
         // Extract environment file paths from argument
         envFilePaths = envFileArg
@@ -80,7 +92,9 @@ class BuildCommand extends Command<int> {
         }
 
         // Validate environment files exist
+        CliLogger.debug('Validating environment files...');
         FileValidator.validateEnvFiles(envFilePaths);
+        CliLogger.success('Validated ${envFilePaths.length} environment file(s)');
       }
 
       final outputDirArg = argResults!['output-dir'] as String;
@@ -90,6 +104,7 @@ class BuildCommand extends Command<int> {
       final packageConfigurator = PackageConfigurator(envBuilder);
 
       // Setup directories
+      CliLogger.step('Setting up package directories...');
       final currentDir = Directory.current.path;
       final envPackageDir = await DirectoryManager.getEnvPackageDirectory(
         currentDir,
@@ -100,9 +115,11 @@ class BuildCommand extends Command<int> {
       TextTemplates.packageName = p.basename(envPackageDir.path);
 
       // Copy environment files
+      CliLogger.step('Copying environment files...');
       await FileCopier.copyEnvFiles(envFilePaths, envPackageDir);
 
       // Create source directory
+      CliLogger.debug('Creating source directory structure...');
       final srcDirPath = p.join(
         envPackageDir.path,
         CliConfig.libFolderName,
@@ -112,12 +129,14 @@ class BuildCommand extends Command<int> {
       final srcDir = Directory(srcDirPath);
 
       // Generate Dart files
+      CliLogger.step('Generating Dart files...');
       await dartFileGenerator.generateEnvDartFiles(envFilePaths, srcDir);
       dartFileGenerator.generateEnumsFile(envFilePaths.first, srcDir);
       dartFileGenerator.generateLibraryExportFile(envFilePaths, envPackageDir);
       dartFileGenerator.generateAppFlavorFile(envFilePaths, srcDir);
 
       // Configure package
+      CliLogger.step('Configuring package...');
       await packageConfigurator.configureEnvPackage(envPackageDir);
       packageConfigurator.updateRootPubspec(currentDir);
       await packageConfigurator.runPubGet();
@@ -134,15 +153,15 @@ class BuildCommand extends Command<int> {
       } else {
         // Show warning about plain text .env files if encryption is skipped
         if (envFilePaths.isNotEmpty) {
-          print(
+          CliLogger.warning(
             'Skipping encryption. Consider removing plain .env files before deployment for security.',
           );
         }
       }
 
       // Success message
-      print(TextTemplates.successMessage);
-      print(TextTemplates.successImport);
+      CliLogger.success(TextTemplates.successMessage);
+      CliLogger.info(TextTemplates.successImport);
       print(TextTemplates.successPackage);
 
       return 0; // Exit success code
@@ -154,28 +173,19 @@ class BuildCommand extends Command<int> {
 
   void _handleError(dynamic error) {
     if (error is ArgumentError) {
-      print(
-        TextTemplates.errorInvalidArguments.replaceAll(
-          '{message}',
-          error.message,
-        ),
-      );
-      print(TextTemplates.errorUseFormat);
+      CliLogger.error(error.message);
+      CliLogger.info('Use --env-file=<file1>,<file2>,... to specify environment files');
     } else if (error is FileSystemException) {
-      print(
-        TextTemplates.errorFileSystem.replaceAll('{message}', error.message),
-      );
+      CliLogger.error('File system error: ${error.message}');
     } else if (error is ProcessException) {
-      print(TextTemplates.errorProcess.replaceAll('{message}', error.message));
+      CliLogger.error('Process error: ${error.message}');
     } else {
-      print(
-        TextTemplates.errorUnexpected.replaceAll('{message}', error.toString()),
-      );
+      CliLogger.error('Unexpected error: ${error.toString()}');
     }
   }
 
   Future<void> _runPubGetInEnvPackage(String envPackagePath) async {
-    print('\nRunning flutter pub get in env package...');
+    CliLogger.progress('Running flutter pub get in env package...');
 
     final pubGetResult = await ProcessRunner.runFlutterCommand(
       ['pub', 'get'],
@@ -183,8 +193,9 @@ class BuildCommand extends Command<int> {
     );
 
     if (pubGetResult.exitCode == 0) {
-      print('flutter pub get succeeded in env package');
+      CliLogger.done('flutter pub get succeeded in env package');
     } else {
+      CliLogger.error('flutter pub get failed in env package');
       stderr.write(pubGetResult.stderr);
       throw ProcessException(
         'flutter',
@@ -196,7 +207,7 @@ class BuildCommand extends Command<int> {
   }
 
   Future<void> _runBuildRunner(String envPackagePath) async {
-    print('\nRunning dart run build_runner build in env package...');
+    CliLogger.progress('Running dart run build_runner build in env package...');
 
     try {
       final result = await ProcessRunner.runDartCommand([
@@ -206,8 +217,9 @@ class BuildCommand extends Command<int> {
       ], envPackagePath);
 
       if (result.exitCode == 0) {
-        print('build_runner build succeeded in env package');
+        CliLogger.done('build_runner build succeeded in env package');
       } else {
+        CliLogger.error('build_runner build failed');
         stderr.write(result.stderr);
         throw ProcessException(
           'dart',
@@ -217,7 +229,7 @@ class BuildCommand extends Command<int> {
         );
       }
     } catch (e) {
-      print('Error running build_runner: $e');
+      CliLogger.error('Error running build_runner: $e');
       rethrow;
     }
   }
@@ -236,7 +248,7 @@ class BuildCommand extends Command<int> {
             final output = '$file.encrypted';
             await EnvCrypto.encryptFile(file, output, password);
           }
-          for (var path in FileCopier.envFiles) {
+          for (final path in FileCopier.envFiles) {
             File(path).deleteSync();
           }
           print(TextTemplates.removeFiles);

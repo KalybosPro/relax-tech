@@ -1,7 +1,8 @@
 // ignore_for_file: avoid_print
 
-import 'core.dart';
 import 'package:path/path.dart' as p;
+
+import 'core.dart';
 
 /// Handles code generation for different file types
 ///
@@ -38,7 +39,7 @@ class CodeGenerator {
     final suffix = NamingUtils.getEnvironmentSuffix(envFileName);
     final envFileRelative = p.basename(envFileName);
     final className = NamingUtils.capitalizeFirst(suffix);
-    final Map<String, String> envFileContent = EnvFileParser.parseEnvFile(
+    final envFileContent = EnvFileParser.parseEnvFile(
       envFile,
     );
     final partOf = _generatePartStatement(suffix);
@@ -67,7 +68,7 @@ ${fieldBuffer.toString()}
 
   /// Generates enum class content for environment variables
   static String generateEnumClassContent(File file) {
-    final Map<String, String> envFileContent = EnvFileParser.parseEnvFile(file);
+    final envFileContent = EnvFileParser.parseEnvFile(file);
 
     final fields = envFileContent.keys
         .map((key) {
@@ -105,7 +106,7 @@ typedef EnvValue = String Function(Env env);
 
   /// Generates app flavor content
   static String generateAppFlavorContent(List<String> paths) {
-    final flavors = paths.map((path) => NamingUtils.getFlavor(path)).join(', ');
+    final flavors = paths.map(NamingUtils.getFlavor).join(', ');
     final envContents = EnvFileParser.parseEnvFile(File(paths.first));
 
     final getEnvContent = envContents.keys
@@ -131,11 +132,9 @@ typedef EnvValue = String Function(Env env);
 
     final factories = flavors
         .split(', ')
-        .map((flavor) {
-          return '''
+        .map((flavor) => '''
 factory AppFlavor.$flavor() => const AppFlavor._(flavor: Flavor.$flavor);
-''';
-        })
+''')
         .join('\n');
 
     return '''
@@ -165,8 +164,7 @@ class AppFlavor extends AppEnv {
   }
 
   /// Generates test file content
-  static String generateTestFileContent() {
-    return '''
+  static String generateTestFileContent() => '''
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -176,5 +174,4 @@ void main() {
   });
 }
 ''';
-  }
 }

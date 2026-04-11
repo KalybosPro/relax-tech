@@ -1,7 +1,8 @@
 // ignore_for_file: avoid_print
 
-import '../core/core.dart';
 import 'package:path/path.dart' as p;
+
+import '../core/core.dart';
 import 'commands/build_command.dart';
 
 /// Handles file copying operations

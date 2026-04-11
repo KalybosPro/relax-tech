@@ -1,8 +1,10 @@
 // ignore_for_file: avoid_print
 
-import '../core/core.dart';
-import 'package:path/path.dart' as p;
 import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
+import 'package:path/path.dart' as p;
+
+import '../core/cli_colors.dart';
+import '../core/core.dart';
 
 /// Handles package configuration and dependency management
 ///
@@ -11,9 +13,9 @@ import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
 /// managing root project dependencies to properly integrate
 /// the env package.
 class PackageConfigurator {
-  final env_builder_cli.EnvBuilder envBuilder;
 
   PackageConfigurator(this.envBuilder);
+  final env_builder_cli.EnvBuilder envBuilder;
 
   /// Configures the env package (pubspec.yaml, test files, gitignore)
   Future<void> configureEnvPackage(Directory envPackageDir) async {
@@ -64,13 +66,14 @@ class PackageConfigurator {
 
   /// Runs flutter pub get in the root project
   Future<void> runPubGet() async {
-    print('\nRunning flutter pub get in root project...');
+    CliLogger.progress('Running flutter pub get in root project...');
 
     final pubGetResult = await envBuilder.flutterCommand(['pub', 'get']);
 
     if (pubGetResult.exitCode == 0) {
-      print('flutter pub get succeeded in root project');
+      CliLogger.done('flutter pub get succeeded in root project');
     } else {
+      CliLogger.error('flutter pub get failed in root project');
       stderr.write(pubGetResult.stderr);
       throw ProcessException(
         'flutter',

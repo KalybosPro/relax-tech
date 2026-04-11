@@ -3,11 +3,6 @@ import 'package:env_builder_cli/src/core/core.dart';
 
 /// Command for building Flutter APK
 class ApkBuildCommand extends Command<int> {
-  @override
-  String get name => 'apk';
-
-  @override
-  String get description => 'Build Flutter APK with release obfuscation';
 
   ApkBuildCommand() {
     argParser.addOption(
@@ -17,6 +12,11 @@ class ApkBuildCommand extends Command<int> {
       defaultsTo: 'lib/main.dart',
     );
   }
+  @override
+  String get name => 'apk';
+
+  @override
+  String get description => 'Build Flutter APK with release obfuscation';
 
   @override
   Future<int> run() async {

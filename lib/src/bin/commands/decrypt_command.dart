@@ -1,19 +1,21 @@
 import 'package:args/command_runner.dart';
+
+import '../../core/cli_colors.dart';
 import '../../core/env_crypto.dart';
 
 // ignore_for_file: avoid_print
 
 /// Command for decrypting .env files
 class DecryptCommand extends Command<int> {
+
+  DecryptCommand() {
+    argParser.addOption('password', abbr: 'p', help: 'Secret key for decryption', mandatory: true);
+  }
   @override
   String get description => 'Decrypt .env.encrypted files';
 
   @override
   String get name => 'decrypt';
-
-  DecryptCommand() {
-    argParser.addOption('password', abbr: 'p', help: 'Secret key for decryption', mandatory: true);
-  }
 
   @override
   Future<int> run() async {
@@ -23,10 +25,10 @@ class DecryptCommand extends Command<int> {
       final output = argResults!.rest.length > 1 ? argResults!.rest[1] : '.env.decrypted';
 
       await EnvCrypto.decryptFile(input, output, password);
-      print('Decryption completed successfully');
+      CliLogger.success('Decryption completed successfully');
       return 0;
     } catch (e) {
-      print('Decryption failed: $e');
+      CliLogger.error('Decryption failed: $e');
       return 64;
     }
   }

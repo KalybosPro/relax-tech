@@ -90,7 +90,9 @@ class AssetReader {
         final buffer = List<int>.filled(readSize, 0);
         final readResult = await raf.readInto(buffer);
 
-        if (readResult == 0) break;
+        if (readResult == 0) {
+          break;
+        }
 
         yield buffer.sublist(0, readResult);
         bytesRead += readResult;
@@ -129,7 +131,9 @@ class AssetReader {
   static List<int> compressImage(List<int> bytes, String extension) {
     try {
       final image = img.decodeImage(Uint8List.fromList(bytes));
-      if (image == null) return bytes;
+      if (image == null) {
+        return bytes;
+      }
 
       // Compress based on format
       switch (extension.toLowerCase()) {

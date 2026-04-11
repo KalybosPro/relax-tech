@@ -3,9 +3,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:universal_io/io.dart';
+
+import 'cli_colors.dart';
 
 /// Handles encryption and decryption of environment files
 ///
@@ -44,7 +46,7 @@ class EnvCrypto {
   /// Validate password strength
   static bool _isValidPassword(String password) {
     if (password.length < minPasswordLength) {
-      print('Error: Password must be at least $minPasswordLength characters long.');
+      CliLogger.error('Password must be at least $minPasswordLength characters long.');
       return false;
     }
     return true;
@@ -65,13 +67,13 @@ class EnvCrypto {
       final inputFile = File(inputPath);
 
       if (!await inputFile.exists()) {
-        print('Error: File "$inputPath" does not exist.');
+        CliLogger.error('File "$inputPath" does not exist.');
         return;
       }
 
       final plainText = await inputFile.readAsString();
       if (plainText.trim().isEmpty) {
-        print('Warning: File "$inputPath" is empty, nothing to encrypt.');
+        CliLogger.warning('File "$inputPath" is empty, nothing to encrypt.');
         return;
       }
 
@@ -97,15 +99,15 @@ class EnvCrypto {
       final outputFile = File(outputPath);
       await outputFile.writeAsString(json.encode(data));
 
-      print('File successfully encrypted to: $outputPath');
+      CliLogger.success('File successfully encrypted to: $outputPath');
     } on FileSystemException catch (e) {
-      print('File system error: ${e.message} (path: ${e.path})');
+      CliLogger.error('File system error: ${e.message} (path: ${e.path})');
     } on FormatException catch (e) {
-      print('Encoding error: ${e.message}');
+      CliLogger.error('Encoding error: ${e.message}');
     } on ArgumentError catch (e) {
-      print('Invalid argument: ${e.message}');
+      CliLogger.error('Invalid argument: ${e.message}');
     } catch (e) {
-      print('Unexpected error: $e');
+      CliLogger.error('Unexpected error: $e');
     }
   }
 
@@ -125,14 +127,14 @@ class EnvCrypto {
 
       // Check if input file exists
       if (!await inputFile.exists()) {
-        print('Error: File "$inputPath" does not exist.');
+        CliLogger.error('File "$inputPath" does not exist.');
         return;
       }
 
       // Read encrypted content
       final encryptedText = await inputFile.readAsString();
       if (encryptedText.trim().isEmpty) {
-        print('Warning: File "$inputPath" is empty, nothing to decrypt.');
+        CliLogger.warning('File "$inputPath" is empty, nothing to decrypt.');
         return;
       }
 
@@ -143,7 +145,7 @@ class EnvCrypto {
       final ivBase64 = decoded['iv'] as String?;
 
       if (salt == null || encoded == null || ivBase64 == null) {
-        print('Error: Invalid encrypted file format.');
+        CliLogger.error('Invalid encrypted file format.');
         return;
       }
 
@@ -158,10 +160,10 @@ class EnvCrypto {
       try {
         decrypted = encrypter.decrypt64(encoded, iv: iv);
       } on ArgumentError catch (_) {
-        print('Error: Invalid password or corrupted file.');
+        CliLogger.error('Invalid password or corrupted file.');
         return;
       } on FormatException catch (_) {
-        print('Error: File content is not valid Base64.');
+        CliLogger.error('File content is not valid Base64.');
         return;
       }
 
@@ -169,15 +171,15 @@ class EnvCrypto {
       final outputFile = File(outputPath);
       await outputFile.writeAsString(decrypted);
 
-      print('File successfully decrypted to: $outputPath');
+      CliLogger.success('File successfully decrypted to: $outputPath');
     } on FileSystemException catch (e) {
-      print('File system error: ${e.message} (path: ${e.path})');
+      CliLogger.error('File system error: ${e.message} (path: ${e.path})');
     } on ArgumentError catch (e) {
-      print('Invalid argument: ${e.message}');
+      CliLogger.error('Invalid argument: ${e.message}');
     } on FormatException catch (e) {
-      print('Encoding error: ${e.message}');
+      CliLogger.error('Encoding error: ${e.message}');
     } catch (e) {
-      print('Unexpected error: $e');
+      CliLogger.error('Unexpected error: $e');
     }
   }
 

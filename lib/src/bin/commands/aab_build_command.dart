@@ -3,11 +3,6 @@ import 'package:env_builder_cli/src/core/core.dart';
 
 /// Command for building Flutter AAB
 class AabBuildCommand extends Command<int> {
-  @override
-  String get name => 'aab';
-
-  @override
-  String get description => 'Build Flutter AAB with release obfuscation';
 
   AabBuildCommand() {
     argParser.addOption(
@@ -17,6 +12,11 @@ class AabBuildCommand extends Command<int> {
       defaultsTo: 'lib/main.dart',
     );
   }
+  @override
+  String get name => 'aab';
+
+  @override
+  String get description => 'Build Flutter AAB with release obfuscation';
 
   @override
   Future<int> run() async {

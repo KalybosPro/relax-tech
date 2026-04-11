@@ -1,8 +1,9 @@
 import 'dart:io';
-import 'package:test/test.dart';
+
 import 'package:env_builder_cli/src/core/asset/assets_generator.dart';
 import 'package:env_builder_cli/src/core/asset/models/encryption_method.dart';
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 
 void main() {
   group('Asset Parallelization Tests', () {
@@ -26,7 +27,7 @@ void main() {
       const assetCount = 5;
       final stopwatch = Stopwatch()..start();
 
-      for (int i = 0; i < assetCount; i++) {
+      for (var i = 0; i < assetCount; i++) {
         final testFile = File(p.join(assetsDir.path, 'image_$i.png'));
         // Create dummy PNG files (valid magic bytes)
         testFile.writeAsBytesSync([
@@ -70,7 +71,7 @@ void main() {
       // Create many test assets to observe parallelization benefits
       const assetCount = 20;
 
-      for (int i = 0; i < assetCount; i++) {
+      for (var i = 0; i < assetCount; i++) {
         final testFile = File(p.join(assetsDir.path, 'asset_$i.png'));
         testFile.writeAsBytesSync([
           137, 80, 78, 71, 13, 10, 26, 10, // PNG magic
@@ -135,7 +136,7 @@ void main() {
 
     test('Generated code from parallel processing is valid', () async {
       // Create test assets
-      for (int i = 0; i < 3; i++) {
+      for (var i = 0; i < 3; i++) {
         final testFile = File(p.join(assetsDir.path, 'icon_$i.png'));
         testFile.writeAsBytesSync([
           137, 80, 78, 71, 13, 10, 26, 10, // PNG magic
@@ -194,7 +195,7 @@ void main() {
         
         // Run generation multiple times
         final results = <String>[];
-        for (int i = 0; i < 2; i++) {
+        for (var i = 0; i < 2; i++) {
           results.add(await generator.generate());
         }
 
@@ -214,7 +215,7 @@ void main() {
       const assetCount = 10;
       final files = <File>[];
 
-      for (int i = 0; i < assetCount; i++) {
+      for (var i = 0; i < assetCount; i++) {
         final file = File(p.join(assetsDir.path, 'concurrent_$i.png'));
         file.writeAsBytesSync([
           137, 80, 78, 71, 13, 10, 26, 10, // PNG magic

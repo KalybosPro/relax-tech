@@ -1,9 +1,8 @@
 // ignore_for_file: avoid_print
 
 import 'package:env_builder_cli/src/core/core.dart';
-import 'package:test/test.dart';
-import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 
 void main() {
   late Directory tempDir;
@@ -48,7 +47,7 @@ void main() {
     group('generateEnvClassContent', () {
       test('should generate valid Dart class for env file', () async {
         // Arrange
-        final envContent = 'API_KEY=test_key\nDATABASE_URL=localhost';
+        const envContent = 'API_KEY=test_key\nDATABASE_URL=localhost';
         final envFile = File(p.join(tempDir.path, '.env.prod'));
         await envFile.writeAsString(envContent);
 
@@ -74,7 +73,7 @@ void main() {
 
       test('should handle special characters in keys', () async {
         // Arrange
-        final envContent = 'API_KEY_V2=value\nDB_HOST_NAME=localhost';
+        const envContent = 'API_KEY_V2=value\nDB_HOST_NAME=localhost';
         final envFile = File(p.join(tempDir.path, '.env.special'));
         await envFile.writeAsString(envContent);
 
@@ -94,7 +93,7 @@ void main() {
 
       test('should generate obfuscate flag', () async {
         // Arrange
-        final envContent = 'SECRET_KEY=hidden';
+        const envContent = 'SECRET_KEY=hidden';
         final envFile = File(p.join(tempDir.path, '.env.secret'));
         await envFile.writeAsString(envContent);
 
@@ -129,7 +128,7 @@ void main() {
 
       test('should handle multiline env content', () async {
         // Arrange
-        final envContent = '''API_KEY=abc123
+        const envContent = '''API_KEY=abc123
 DATABASE_URL=postgres://localhost
 CACHE_ENABLED=true
 DEBUG_LEVEL=verbose
@@ -163,7 +162,7 @@ TIMEOUT_SECONDS=30''';
     group('parseEnvFile', () {
       test('should parse basic env file', () async {
         // Arrange
-        final envContent = 'API_KEY=secret123\nDB_PORT=5432';
+        const envContent = 'API_KEY=secret123\nDB_PORT=5432';
         final envFile = File(p.join(tempDir.path, '.env'));
         await envFile.writeAsString(envContent);
 
@@ -178,7 +177,7 @@ TIMEOUT_SECONDS=30''';
 
       test('should ignore comment lines', () async {
         // Arrange
-        final envContent = '''# This is a comment
+        const envContent = '''# This is a comment
 API_KEY=secret123
 # Another comment
 DB_PORT=5432''';
@@ -196,7 +195,7 @@ DB_PORT=5432''';
 
       test('should trim whitespace from keys and values', () async {
         // Arrange
-        final envContent = '  API_KEY  =  secret123  \nDB_PORT = 5432 ';
+        const envContent = '  API_KEY  =  secret123  \nDB_PORT = 5432 ';
         final envFile =
             File(p.join(tempDir.path, '.env.whitespace'));
         await envFile.writeAsString(envContent);
@@ -212,7 +211,7 @@ DB_PORT=5432''';
 
       test('should handle quoted values', () async {
         // Arrange
-        final envContent = '''API_KEY="secret123"
+        const envContent = '''API_KEY="secret123"
 DB_PASSWORD='pass456'
 NORMAL_VALUE=unquoted''';
         final envFile = File(p.join(tempDir.path, '.env.quoted'));
@@ -231,7 +230,7 @@ NORMAL_VALUE=unquoted''';
 
       test('should handle empty values', () async {
         // Arrange
-        final envContent = 'EMPTY_VALUE=\nFILLED_VALUE=something';
+        const envContent = 'EMPTY_VALUE=\nFILLED_VALUE=something';
         final envFile = File(p.join(tempDir.path, '.env.empty'));
         await envFile.writeAsString(envContent);
 
@@ -245,7 +244,7 @@ NORMAL_VALUE=unquoted''';
 
       test('should skip lines without equals sign', () async {
         // Arrange
-        final envContent = '''VALID_KEY=value
+        const envContent = '''VALID_KEY=value
 INVALID_LINE_NO_EQUALS
 ANOTHER_VALID=test''';
         final envFile = File(p.join(tempDir.path, '.env.invalid'));
@@ -262,7 +261,7 @@ ANOTHER_VALID=test''';
 
       test('should handle special characters in values', () async {
         // Arrange
-        final envContent =
+        const envContent =
             'DATABASE_URL=postgres://user:p@ss!@localhost:5432/db\nAPI_KEY=sk!@#\$%^&*()';
         final envFile =
             File(p.join(tempDir.path, '.env.special'));
@@ -274,12 +273,12 @@ ANOTHER_VALID=test''';
         // Assert
         expect(result['DATABASE_URL'],
             equals('postgres://user:p@ss!@localhost:5432/db'));
-        expect(result['API_KEY'], equals('sk!@#\$%^&*()'));
+        expect(result['API_KEY'], equals(r'sk!@#$%^&*()'));
       });
 
       test('should handle values with equals signs', () async {
         // Arrange
-        final envContent = 'FORMULA=E=mc2\nJWT_TOKEN=header.payload.signature';
+        const envContent = 'FORMULA=E=mc2\nJWT_TOKEN=header.payload.signature';
         final envFile = File(p.join(tempDir.path, '.env.equals'));
         await envFile.writeAsString(envContent);
 
@@ -307,7 +306,7 @@ ANOTHER_VALID=test''';
 
       test('should handle file with only comments', () async {
         // Arrange
-        final envContent = '''# Comment 1
+        const envContent = '''# Comment 1
 # Comment 2
 # Comment 3''';
         final envFile = File(p.join(tempDir.path, '.env.onlycomments'));

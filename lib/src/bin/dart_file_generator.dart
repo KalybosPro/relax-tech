@@ -1,11 +1,13 @@
 // ignore_for_file: avoid_print
 
+import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
+import 'package:path/path.dart' as p;
+
+import '../core/cli_colors.dart';
 import '../core/core.dart';
 import 'cli_config.dart';
 import 'commands/build_command.dart';
 import 'directory_manager.dart';
-import 'package:path/path.dart' as p;
-import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
 
 /// Handles Dart file generation
 ///
@@ -15,9 +17,9 @@ import 'package:env_builder_cli/env_builder_cli.dart' as env_builder_cli;
 /// - Library export files for clean imports
 /// - Application flavor classes for runtime configuration switching
 class DartFileGenerator {
-  final env_builder_cli.EnvBuilder envBuilder;
 
   DartFileGenerator(this.envBuilder);
+  final env_builder_cli.EnvBuilder envBuilder;
 
   /// Generates all Dart environment files
   Future<void> generateEnvDartFiles(
@@ -49,7 +51,7 @@ class DartFileGenerator {
     try {
       envDartFile.writeAsStringSync(envContent);
       if (BuildCommand.isVerbose) {
-        print('Generated $envDartFilePath');
+        CliLogger.debug('Generated $envDartFilePath');
       }
     } catch (e) {
       throw FileSystemException(
@@ -69,7 +71,7 @@ class DartFileGenerator {
     try {
       enumsFile.writeAsStringSync(enumContent);
       if (BuildCommand.isVerbose) {
-        print('Generated $enumsFilePath');
+        CliLogger.debug('Generated $enumsFilePath');
       }
     } catch (e) {
       throw FileSystemException('Error writing enums.dart file: $e');
@@ -97,7 +99,7 @@ class DartFileGenerator {
     try {
       envExportFile.writeAsStringSync(exports);
       if (BuildCommand.isVerbose) {
-        print('Generated ${envExportFile.path}');
+        CliLogger.debug('Generated ${envExportFile.path}');
       }
     } catch (e) {
       throw FileSystemException('Error writing env.dart export file: $e');
@@ -135,7 +137,7 @@ $envExports
       DirectoryManager.ensureDirectoryExists(configDir.path);
       appFlavorFile.writeAsStringSync(appFlavorContent);
       if (BuildCommand.isVerbose) {
-        print('Generated ${appFlavorFile.path}');
+        CliLogger.debug('Generated ${appFlavorFile.path}');
       }
     } catch (e) {
       throw FileSystemException('Error writing app_flavor.dart file: $e');

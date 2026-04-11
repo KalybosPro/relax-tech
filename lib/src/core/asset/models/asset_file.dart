@@ -4,12 +4,6 @@ import 'models.dart' show AssetType;
 
 /// Asset file information
 class AssetFile {
-  final String path;
-  final String name;
-  final String extension;
-  final AssetType type;
-  final int size;
-  final DateTime lastModified;
 
   AssetFile({
     required this.path,
@@ -19,6 +13,12 @@ class AssetFile {
     required this.size,
     required this.lastModified,
   });
+  final String path;
+  final String name;
+  final String extension;
+  final AssetType type;
+  final int size;
+  final DateTime lastModified;
 
   String get variableName {
     // Convert filename to camelCase variable name

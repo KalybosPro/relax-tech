@@ -1,10 +1,11 @@
 // ignore_for_file: avoid_print
 
-import 'package:env_builder_cli/src/core/env_crypto.dart';
-import 'package:test/test.dart';
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:env_builder_cli/src/core/env_crypto.dart';
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 
 void main() {
   late Directory tempDir;
@@ -23,13 +24,13 @@ void main() {
     group('encryptFile', () {
       test('should encrypt a valid env file', () async {
         // Arrange
-        final testContent = 'API_KEY=secret123\nDB_PASSWORD=pass456';
+        const testContent = 'API_KEY=secret123\nDB_PASSWORD=pass456';
         final inputFile =
             File(p.join(tempDir.path, '.env'));
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.encrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act
         await EnvCrypto.encryptFile(inputFile.path, outputFile.path, password);
@@ -46,22 +47,21 @@ void main() {
 
       test('should create valid JSON format for encrypted file', () async {
         // Arrange
-        final testContent = 'TEST_VAR=value';
+        const testContent = 'TEST_VAR=value';
         final inputFile =
             File(p.join(tempDir.path, '.env'));
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.encrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act
         await EnvCrypto.encryptFile(inputFile.path, outputFile.path, password);
 
         // Assert
         final encryptedContent = await outputFile.readAsString();
-        final jsonData = encryptedContent as String;
-        expect(jsonData, isNotNull, reason: 'Should be valid JSON');
-        final parsed = json.decode(jsonData);
+        expect(encryptedContent, isNotNull, reason: 'Should be valid JSON');
+        final parsed = json.decode(encryptedContent);
         expect(parsed, contains('salt'), reason: 'Should contain salt field');
         expect(parsed, contains('iv'), reason: 'Should contain iv field');
         expect(parsed, contains('data'), reason: 'Should contain data field');
@@ -73,7 +73,7 @@ void main() {
         final nonExistentFile = p.join(tempDir.path, 'non_existent.env');
         final outputFile =
             File(p.join(tempDir.path, '.env.encrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act & Assert
         expect(
@@ -90,7 +90,7 @@ void main() {
         await emptyFile.writeAsString('');
         final outputFile =
             File(p.join(tempDir.path, '.env.encrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act & Assert
         expect(
@@ -102,13 +102,13 @@ void main() {
 
       test('should reject passwords shorter than minimum length', () async {
         // Arrange
-        final testContent = 'TEST_VAR=value';
+        const testContent = 'TEST_VAR=value';
         final inputFile =
             File(p.join(tempDir.path, '.env'));
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.encrypted'));
-        final shortPassword = 'short'; // Less than 8 characters
+        const shortPassword = 'short'; // Less than 8 characters
 
         // Act
         await EnvCrypto.encryptFile(inputFile.path, outputFile.path, shortPassword);
@@ -122,14 +122,14 @@ void main() {
     group('decryptFile', () {
       test('should decrypt a previously encrypted file', () async {
         // Arrange
-        final originalContent = 'API_KEY=secret123\nDB_PASSWORD=pass456';
+        const originalContent = 'API_KEY=secret123\nDB_PASSWORD=pass456';
         final testFile = File(p.join(tempDir.path, '.env'));
         await testFile.writeAsString(originalContent);
         final encryptedFile =
             File(p.join(tempDir.path, '.env.encrypted'));
         final decryptedFile =
             File(p.join(tempDir.path, '.env.decrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act - Encrypt then decrypt
         await EnvCrypto.encryptFile(testFile.path, encryptedFile.path, password);
@@ -146,15 +146,15 @@ void main() {
 
       test('should fail with wrong password', () async {
         // Arrange
-        final originalContent = 'API_KEY=secret123';
+        const originalContent = 'API_KEY=secret123';
         final testFile = File(p.join(tempDir.path, '.env'));
         await testFile.writeAsString(originalContent);
         final encryptedFile =
             File(p.join(tempDir.path, '.env.encrypted'));
         final wrongDecryptedFile =
             File(p.join(tempDir.path, '.env.wrongdecrypt'));
-        final correctPassword = 'correctPassword';
-        final wrongPassword = 'wrongPassword';
+        const correctPassword = 'correctPassword';
+        const wrongPassword = 'wrongPassword';
 
         // Act - Encrypt with correct password
         await EnvCrypto.encryptFile(
@@ -176,15 +176,15 @@ void main() {
 
       test('should reject short passwords during decryption', () async {
         // Arrange
-        final originalContent = 'API_KEY=secret123';
+        const originalContent = 'API_KEY=secret123';
         final testFile = File(p.join(tempDir.path, '.env'));
         await testFile.writeAsString(originalContent);
         final encryptedFile =
             File(p.join(tempDir.path, '.env.encrypted'));
         final decryptedFile =
             File(p.join(tempDir.path, '.env.decrypted'));
-        final longPassword = 'longEnoughPassword123';
-        final shortPassword = 'short';
+        const longPassword = 'longEnoughPassword123';
+        const shortPassword = 'short';
 
         // Act - Encrypt with long password
         await EnvCrypto.encryptFile(
@@ -204,7 +204,7 @@ void main() {
         final nonExistentFile = p.join(tempDir.path, 'non_existent.enc');
         final outputFile =
             File(p.join(tempDir.path, '.env.decrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act & Assert
         expect(
@@ -221,7 +221,7 @@ void main() {
         await invalidFile.writeAsString('not valid json at all');
         final outputFile =
             File(p.join(tempDir.path, '.env.decrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act & Assert
         expect(
@@ -235,7 +235,7 @@ void main() {
     group('encryption with various content types', () {
       test('should encrypt multiline env file', () async {
         // Arrange
-        final testContent = '''DATABASE_URL=postgres://user:pass@localhost:5432/db
+        const testContent = '''DATABASE_URL=postgres://user:pass@localhost:5432/db
 API_KEY=sk_live_123456789
 SECRET_TOKEN=token_xyz_abc
 DEBUG_MODE=false
@@ -245,7 +245,7 @@ LOG_LEVEL=info''';
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.prod.encrypted'));
-        final password = 'complex@Password#123';
+        const password = 'complex@Password#123';
 
         // Act
         await EnvCrypto.encryptFile(inputFile.path, outputFile.path, password);
@@ -260,14 +260,14 @@ LOG_LEVEL=info''';
 
       test('should encrypt file with special characters', () async {
         // Arrange
-        final testContent =
+        const testContent =
             'DATABASE_URL=postgres://user:p@ssw0rd!@localhost:5432/d@t@base\nAPI_KEY=sk!@#\$%^&*()_+-=[]{}|;:,.<>?';
         final inputFile =
             File(p.join(tempDir.path, '.env.special'));
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.special.encrypted'));
-        final password = 'p@ssw0rd_with_spec1al_ch@rs!';
+        const password = 'p@ssw0rd_with_spec1al_ch@rs!';
 
         // Act
         await EnvCrypto.encryptFile(inputFile.path, outputFile.path, password);
@@ -291,7 +291,7 @@ LOG_LEVEL=info''';
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.long.encrypted'));
-        final password = 'testPassword123';
+        const password = 'testPassword123';
 
         // Act
         await EnvCrypto.encryptFile(inputFile.path, outputFile.path, password);
@@ -310,7 +310,7 @@ LOG_LEVEL=info''';
     group('password variations', () {
       test('should use same key for same password', () async {
         // Arrange
-        final content = 'TEST=value';
+        const content = 'TEST=value';
         final inputFile =
             File(p.join(tempDir.path, '.env'));
         await inputFile.writeAsString(content);
@@ -319,7 +319,7 @@ LOG_LEVEL=info''';
             File(p.join(tempDir.path, '.env.enc1'));
         final encFile2 =
             File(p.join(tempDir.path, '.env.enc2'));
-        final password = 'samePassword';
+        const password = 'samePassword';
 
         // Act - Encrypt same content twice with same password
         await EnvCrypto.encryptFile(inputFile.path, encFile1.path, password);
@@ -339,13 +339,13 @@ LOG_LEVEL=info''';
 
       test('should handle passwords with unicode characters', () async {
         // Arrange
-        final testContent = 'API_KEY=secret123';
+        const testContent = 'API_KEY=secret123';
         final inputFile =
             File(p.join(tempDir.path, '.env.unicode'));
         await inputFile.writeAsString(testContent);
         final outputFile =
             File(p.join(tempDir.path, '.env.unicode.encrypted'));
-        final unicodePassword = 'pässwörd_with_üñíçödé';
+        const unicodePassword = 'pässwörd_with_üñíçödé';
 
         // Act
         await EnvCrypto.encryptFile(

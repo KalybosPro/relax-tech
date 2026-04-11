@@ -1,9 +1,10 @@
 // ignore_for_file: avoid_print
 
-import 'package:env_builder_cli/src/core/env_file_parser.dart';
-import 'package:test/test.dart';
 import 'dart:io';
+
+import 'package:env_builder_cli/src/core/env_file_parser.dart';
 import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
 
 void main() {
   late Directory tempDir;
@@ -25,7 +26,7 @@ void main() {
   group('EnvFileParser Caching', () {
     test('should cache parsed file on first read', () async {
       // Arrange
-      final envContent = 'API_KEY=test123\nDB_HOST=localhost';
+      const envContent = 'API_KEY=test123\nDB_HOST=localhost';
       final envFile = File(p.join(tempDir.path, '.env'));
       await envFile.writeAsString(envContent);
 
@@ -42,7 +43,7 @@ void main() {
 
     test('should return different instance from cache (not reference)', () async {
       // Arrange
-      final envContent = 'KEY=value';
+      const envContent = 'KEY=value';
       final envFile = File(p.join(tempDir.path, '.env'));
       await envFile.writeAsString(envContent);
 
@@ -68,7 +69,7 @@ void main() {
 
       // Modify file with sufficient delay to ensure different timestamp
       // (File system timestamp resolution can be ~1000ms on some systems)
-      await Future.delayed(Duration(milliseconds: 1100));
+      await Future.delayed(const Duration(milliseconds: 1100));
       await envFile.writeAsString('KEY=modified');
 
       // Second read should get new value
@@ -99,7 +100,7 @@ void main() {
     test('should improve performance with cached files', () async {
       // Arrange
       final largeContent = StringBuffer();
-      for (int i = 0; i < 1000; i++) {
+      for (var i = 0; i < 1000; i++) {
         largeContent.writeln('KEY_$i=value$i');
       }
       final envFile = File(p.join(tempDir.path, '.env.large'));
@@ -136,7 +137,7 @@ void main() {
       expect(firstRead['KEY'], equals('value1'));
 
       // Modify file
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
       await envFile.writeAsString('KEY=value2');
 
       // Clear cache
@@ -163,7 +164,7 @@ void main() {
       EnvFileParser.parseEnvFile(envFile2);
 
       // Modify file 1 and clear its cache
-      await Future.delayed(Duration(milliseconds: 1100));
+      await Future.delayed(const Duration(milliseconds: 1100));
       await envFile1.writeAsString('FILE=1_modified');
       EnvFileParser.clearCacheForFile(envFile1);
 
@@ -190,7 +191,7 @@ void main() {
 
       // Delete and recreate file with sufficient delay
       await envFile.delete();
-      await Future.delayed(Duration(milliseconds: 1100));
+      await Future.delayed(const Duration(milliseconds: 1100));
       await envFile.writeAsString('KEY=second');
 
       // Second parse
