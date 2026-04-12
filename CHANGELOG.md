@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Allow users to define a custom `container`, `path`, and `initialData` when creating storage.
+
 ## 1.0.0
 
 * Initial stable release.
