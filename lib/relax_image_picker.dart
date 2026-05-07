@@ -1,4 +1,4 @@
-library relax_image_picker;
+library;
 
 export 'src/relax_image_picker.dart';
 export 'src/models/models.dart';

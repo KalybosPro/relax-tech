@@ -12,9 +12,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Relax Image Picker Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: const HomePage(),
     );
   }
@@ -42,7 +40,7 @@ class _HomePageState extends State<HomePage> {
       enableCompression: false,
     );
 
-    if (result != null) {
+    if (mounted) {
       setState(() {
         _result = result;
       });
@@ -52,12 +50,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Relax Image Picker Demo'),
-      ),
+      appBar: AppBar(title: const Text('Relax Image Picker Demo')),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: .center,
           children: [
             ElevatedButton(
               onPressed: _pickMedia,

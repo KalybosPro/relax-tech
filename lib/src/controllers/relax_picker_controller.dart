@@ -1,9 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 
-import '../models/relax_media_file.dart';
 import '../models/relax_picker_result.dart';
 import '../services/camera_service.dart';
-import '../services/document_service.dart';
 import '../services/gallery_service.dart';
 import '../services/permission_service.dart';
 
@@ -11,7 +11,6 @@ class RelaxPickerController {
   final PermissionService permissionService = PermissionService();
   final GalleryService galleryService = GalleryService();
   final CameraService cameraService = CameraService();
-  final DocumentService documentService = DocumentService();
 
   Future<RelaxPickerResult> pick(
     BuildContext context, {
@@ -23,6 +22,13 @@ class RelaxPickerController {
     int maxSelection = 30,
     bool enableCompression = false,
     List<String>? acceptedDocumentTypes,
+    required String title,
+    required String confirmButtonText,
+    required String cancelButtonText,
+    required String validateButtonText,
+    required String galleryTabText,
+    required String cameraTabText,
+    required String documentsTabText,
   }) async {
     final permissionsGranted = await permissionService.requestMediaPermissions(
       allowImages: allowImages,
@@ -47,26 +53,21 @@ class RelaxPickerController {
       enablePreview: enablePreview,
       maxSelection: maxSelection,
       enableCompression: enableCompression,
+      allowDocuments: allowDocuments,
+      title: title,
+      confirmButtonText: confirmButtonText,
+      cancelButtonText: cancelButtonText,
+      validateButtonText: validateButtonText,
+      galleryTabText: galleryTabText,
+      cameraTabText: cameraTabText,
+      documentsTabText: documentsTabText,
     );
 
-    final documentResult = allowDocuments
-        ? await documentService.pickDocuments(
-            acceptedTypes: acceptedDocumentTypes,
-            maxSelection: maxSelection,
-          )
-        : null;
-
-    final allFiles = <RelaxMediaFile>[];
-    allFiles.addAll(galleryResult.files);
-    if (documentResult != null) {
-      allFiles.addAll(documentResult);
-    }
-
     return RelaxPickerResult(
-      files: List.unmodifiable(allFiles),
+      files: List.unmodifiable(galleryResult.files),
       images: List.unmodifiable(galleryResult.images),
       videos: List.unmodifiable(galleryResult.videos),
-      documents: List.unmodifiable(documentResult ?? []),
+      documents: List.unmodifiable(galleryResult.documents),
     );
   }
 }

@@ -15,6 +15,13 @@ class RelaxImagePicker {
     int maxSelection = 30,
     bool enableCompression = false,
     List<String>? acceptedDocumentTypes,
+    String title = 'Select media',
+    String confirmButtonText = 'Confirm',
+    String cancelButtonText = 'Cancel',
+    String validateButtonText = 'Validate',
+    String galleryTabText = 'Gallery',
+    String cameraTabText = 'Camera',
+    String documentsTabText = 'Documents',
   }) async {
     final controller = RelaxPickerController();
 
@@ -28,6 +35,13 @@ class RelaxImagePicker {
       maxSelection: maxSelection,
       enableCompression: enableCompression,
       acceptedDocumentTypes: acceptedDocumentTypes,
+      title: title,
+      confirmButtonText: confirmButtonText,
+      cancelButtonText: cancelButtonText,
+      validateButtonText: validateButtonText,
+      galleryTabText: galleryTabText,
+      cameraTabText: cameraTabText,
+      documentsTabText: documentsTabText,
     );
   }
 }

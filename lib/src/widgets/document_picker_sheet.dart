@@ -25,7 +25,7 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         allowMultiple: true,
         type: FileType.any,
       );

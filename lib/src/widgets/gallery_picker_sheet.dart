@@ -15,14 +15,6 @@ import 'document_picker_sheet.dart';
 enum PickerTab { gallery, camera, documents }
 
 class GalleryPickerSheet extends StatefulWidget {
-  final bool allowImages;
-  final bool allowVideos;
-  final bool enableCamera;
-  final bool enablePreview;
-  final int maxSelection;
-  final bool enableCompression;
-  final bool allowDocuments;
-
   const GalleryPickerSheet({
     super.key,
     this.allowImages = true,
@@ -32,13 +24,36 @@ class GalleryPickerSheet extends StatefulWidget {
     this.maxSelection = 30,
     this.enableCompression = false,
     this.allowDocuments = true,
+    required this.title,
+    required this.confirmButtonText,
+    required this.cancelButtonText,
+    required this.validateButtonText,
+    required this.galleryTabText,
+    required this.cameraTabText,
+    required this.documentsTabText,
   });
+
+  final bool allowImages;
+  final bool allowVideos;
+  final bool enableCamera;
+  final bool enablePreview;
+  final int maxSelection;
+  final bool enableCompression;
+  final bool allowDocuments;
+  final String title;
+  final String confirmButtonText;
+  final String cancelButtonText;
+  final String validateButtonText;
+  final String galleryTabText;
+  final String cameraTabText;
+  final String documentsTabText;
 
   @override
   State<GalleryPickerSheet> createState() => _GalleryPickerSheetState();
 }
 
-class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProviderStateMixin {
+class _GalleryPickerSheetState extends State<GalleryPickerSheet>
+    with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final int _pageSize = 84;
 
@@ -55,7 +70,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
   // Thumbnail cache for better performance
   final Map<String, Uint8List?> _thumbnailCache = {};
   final Map<String, bool> _thumbnailLoading = {};
-  static const int _maxCacheSize = 200; // Limit cache size to prevent memory issues
+  static const int _maxCacheSize =
+      200; // Limit cache size to prevent memory issues
   int _currentPage = 0;
   late TabController _tabController;
   PickerTab _currentTab = PickerTab.gallery;
@@ -94,13 +110,21 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
     setState(() => _isLoading = true);
 
     final filterOption = FilterOptionGroup(
-      imageOption: widget.allowImages ? const FilterOption() : const FilterOption(needTitle: false),
-      videoOption: widget.allowVideos ? const FilterOption() : const FilterOption(needTitle: false),
+      imageOption: widget.allowImages
+          ? const FilterOption()
+          : const FilterOption(needTitle: false),
+      videoOption: widget.allowVideos
+          ? const FilterOption()
+          : const FilterOption(needTitle: false),
       orders: [const OrderOption(type: OrderOptionType.createDate, asc: false)],
     );
 
     final albums = await PhotoManager.getAssetPathList(
-      type: widget.allowImages && widget.allowVideos ? RequestType.common : widget.allowImages ? RequestType.image : RequestType.video,
+      type: widget.allowImages && widget.allowVideos
+          ? RequestType.common
+          : widget.allowImages
+          ? RequestType.image
+          : RequestType.video,
       filterOption: filterOption,
       hasAll: true,
     );
@@ -123,7 +147,10 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
       _assets.clear();
     }
 
-    final nextAssets = await _currentAlbum!.getAssetListPaged(page: _currentPage, size: _pageSize);
+    final nextAssets = await _currentAlbum!.getAssetListPaged(
+      page: _currentPage,
+      size: _pageSize,
+    );
     _assets.addAll(nextAssets);
     _currentPage += 1;
     _isLoadingNext = false;
@@ -132,7 +159,10 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
     _preloadThumbnails(nextAssets);
 
     // Check if we can load more by trying to load the next page
-    final nextPageAssets = await _currentAlbum!.getAssetListPaged(page: _currentPage, size: 1);
+    final nextPageAssets = await _currentAlbum!.getAssetListPaged(
+      page: _currentPage,
+      size: 1,
+    );
     final canLoadMore = nextPageAssets.isNotEmpty;
     if (!canLoadMore) {
       _currentPage = -1; // Mark as no more pages
@@ -144,11 +174,14 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
   void _preloadThumbnails(List<AssetEntity> assets) {
     for (final asset in assets) {
       final cacheKey = asset.id;
-      if (!_thumbnailCache.containsKey(cacheKey) && _thumbnailLoading[cacheKey] != true) {
+      if (!_thumbnailCache.containsKey(cacheKey) &&
+          _thumbnailLoading[cacheKey] != true) {
         // Check cache size limit
         if (_thumbnailCache.length >= _maxCacheSize) {
           // Remove oldest entries (simple LRU approximation)
-          final keysToRemove = _thumbnailCache.keys.take(_thumbnailCache.length - _maxCacheSize + 20);
+          final keysToRemove = _thumbnailCache.keys.take(
+            _thumbnailCache.length - _maxCacheSize + 20,
+          );
           for (final key in keysToRemove) {
             _thumbnailCache.remove(key);
             _thumbnailLoading.remove(key);
@@ -156,21 +189,23 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
         }
 
         _thumbnailLoading[cacheKey] = true;
-        asset.thumbnailData.then((data) {
-          if (mounted) {
-            setState(() {
-              _thumbnailCache[cacheKey] = data;
-              _thumbnailLoading[cacheKey] = false;
+        asset.thumbnailData
+            .then((data) {
+              if (mounted) {
+                setState(() {
+                  _thumbnailCache[cacheKey] = data;
+                  _thumbnailLoading[cacheKey] = false;
+                });
+              }
+            })
+            .catchError((error) {
+              if (mounted) {
+                setState(() {
+                  _thumbnailCache[cacheKey] = null;
+                  _thumbnailLoading[cacheKey] = false;
+                });
+              }
             });
-          }
-        }).catchError((error) {
-          if (mounted) {
-            setState(() {
-              _thumbnailCache[cacheKey] = null;
-              _thumbnailLoading[cacheKey] = false;
-            });
-          }
-        });
       }
     }
   }
@@ -187,7 +222,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
       if (compressedData != null) {
         // Save compressed data to a temporary file
         final tempDir = await getTemporaryDirectory();
-        final compressedFile = File('${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        final compressedFile = File(
+          '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
         await compressedFile.writeAsBytes(compressedData);
         return compressedFile.path;
       }
@@ -199,7 +236,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients || _isLoadingNext || _currentPage == -1) return;
+    if (!_scrollController.hasClients || _isLoadingNext || _currentPage == -1)
+      return;
     final threshold = _scrollController.position.maxScrollExtent - 300;
     if (_scrollController.position.pixels >= threshold) {
       _loadPage();
@@ -256,10 +294,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
               isExpanded: true,
               value: _currentAlbum,
               items: _albums.map((album) {
-                return DropdownMenuItem(
-                  value: album,
-                  child: Text(album.name),
-                );
+                return DropdownMenuItem(value: album, child: Text(album.name));
               }).toList(),
               onChanged: _onAlbumChanged,
             ),
@@ -293,10 +328,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
     if (_thumbnailCache.containsKey(cacheKey)) {
       final cachedData = _thumbnailCache[cacheKey];
       if (cachedData != null) {
-        return Image.memory(
-          cachedData,
-          fit: BoxFit.cover,
-        );
+        return Image.memory(cachedData, fit: BoxFit.cover);
       }
       return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
     }
@@ -308,33 +340,37 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
 
     // Start loading thumbnail
     _thumbnailLoading[cacheKey] = true;
-    asset.thumbnailData.then((data) {
-      if (mounted) {
-        setState(() {
-          _thumbnailCache[cacheKey] = data;
-          _thumbnailLoading[cacheKey] = false;
+    asset.thumbnailData
+        .then((data) {
+          if (mounted) {
+            setState(() {
+              _thumbnailCache[cacheKey] = data;
+              _thumbnailLoading[cacheKey] = false;
+            });
+          }
+        })
+        .catchError((error) {
+          if (mounted) {
+            setState(() {
+              _thumbnailCache[cacheKey] = null;
+              _thumbnailLoading[cacheKey] = false;
+            });
+          }
         });
-      }
-    }).catchError((error) {
-      if (mounted) {
-        setState(() {
-          _thumbnailCache[cacheKey] = null;
-          _thumbnailLoading[cacheKey] = false;
-        });
-      }
-    });
 
     return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildAssetTile(AssetEntity asset) {
     final isSelected = _selectedAssets.containsKey(asset.id);
-    final duration = asset.type == AssetType.video ? asset.videoDuration : Duration.zero;
+    final duration = asset.type == AssetType.video
+        ? asset.videoDuration
+        : Duration.zero;
 
     return GestureDetector(
       onTap: () => _toggleSelection(asset),
       child: Stack(
-        fit: StackFit.expand,
+        fit: .expand,
         children: [
           _buildThumbnail(asset),
           if (asset.type == AssetType.video)
@@ -360,7 +396,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
               radius: 12,
               backgroundColor: isSelected ? Colors.blueAccent : Colors.black45,
               child: Text(
-                isSelected ? '${_selectedAssets.keys.toList().indexOf(asset.id) + 1}' : '',
+                isSelected
+                    ? '${_selectedAssets.keys.toList().indexOf(asset.id) + 1}'
+                    : '',
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
@@ -385,12 +423,12 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
       height: maxHeight,
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: .vertical(top: .circular(24)),
       ),
       child: SafeArea(
         top: false,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: .stretch,
           children: [
             const SizedBox(height: 12),
             Center(
@@ -399,18 +437,18 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
                 height: 4,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: .circular(4),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const .symmetric(horizontal: 16.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: .spaceBetween,
                 children: [
                   Text(
-                    'Sélectionner des médias',
+                    widget.title,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(
@@ -426,10 +464,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
               tabs: [
                 if (widget.allowImages || widget.allowVideos)
                   const Tab(text: 'Galerie'),
-                if (widget.enableCamera)
-                  const Tab(text: 'Caméra'),
-                if (widget.allowDocuments)
-                  const Tab(text: 'Documents'),
+                if (widget.enableCamera) const Tab(text: 'Caméra'),
+                if (widget.allowDocuments) const Tab(text: 'Documents'),
               ],
             ),
             Expanded(
@@ -454,20 +490,30 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () => Navigator.of(context).pop<RelaxPickerResult>(null),
-                      child: const Text('Annuler'),
+                      onPressed: () =>
+                          Navigator.of(context).pop<RelaxPickerResult>(null),
+                      child: Text(widget.cancelButtonText),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: (_selectedAssets.isEmpty && _capturedImages.isEmpty && _capturedVideos.isEmpty && _selectedDocuments.isEmpty) ? null : _onDone,
-                      child: const Text('Valider'),
+                      onPressed:
+                          (_selectedAssets.isEmpty &&
+                              _capturedImages.isEmpty &&
+                              _capturedVideos.isEmpty &&
+                              _selectedDocuments.isEmpty)
+                          ? null
+                          : _onDone,
+                      child: Text(widget.validateButtonText),
                     ),
                   ),
                 ],
@@ -480,6 +526,10 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
   }
 
   Future<void> _onDone() async {
+    await _processAndReturnResult();
+  }
+
+  Future<void> _processAndReturnResult() async {
     setState(() => _isLoading = true);
 
     final images = <RelaxImageFile>[];
@@ -496,18 +546,23 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
         final thumbnailPath = null;
 
         if (asset.type == AssetType.video) {
-          videos.add(RelaxVideoFile(
-            id: asset.id,
-            path: path,
-            mimeType: mimeType,
-            size: asset.size.width.toInt() * asset.size.height.toInt() * 4, // Approximate file size
-            duration: asset.videoDuration,
-            width: asset.size.width.toInt(),
-            height: asset.size.height.toInt(),
-            thumbnailPath: thumbnailPath,
-            creationDate: creationDate,
-            albumId: _currentAlbum?.id,
-          ));
+          videos.add(
+            RelaxVideoFile(
+              id: asset.id,
+              path: path,
+              mimeType: mimeType,
+              size:
+                  asset.size.width.toInt() *
+                  asset.size.height.toInt() *
+                  4, // Approximate file size
+              duration: asset.videoDuration,
+              width: asset.size.width.toInt(),
+              height: asset.size.height.toInt(),
+              thumbnailPath: thumbnailPath,
+              creationDate: creationDate,
+              albumId: _currentAlbum?.id,
+            ),
+          );
         } else {
           // Apply compression if enabled
           String finalPath = path;
@@ -516,17 +571,22 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
             finalPath = await _compressImage(path);
           }
 
-          images.add(RelaxImageFile(
-            id: asset.id,
-            path: finalPath,
-            mimeType: mimeType,
-            size: asset.size.width.toInt() * asset.size.height.toInt() * 4, // Approximate file size
-            width: asset.size.width.toInt(),
-            height: asset.size.height.toInt(),
-            thumbnailPath: thumbnailPath,
-            creationDate: creationDate,
-            albumId: _currentAlbum?.id,
-          ));
+          images.add(
+            RelaxImageFile(
+              id: asset.id,
+              path: finalPath,
+              mimeType: mimeType,
+              size:
+                  asset.size.width.toInt() *
+                  asset.size.height.toInt() *
+                  4, // Approximate file size
+              width: asset.size.width.toInt(),
+              height: asset.size.height.toInt(),
+              thumbnailPath: thumbnailPath,
+              creationDate: creationDate,
+              albumId: _currentAlbum?.id,
+            ),
+          );
         }
       }
     } catch (e) {
@@ -546,12 +606,14 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with TickerProv
     setState(() => _isLoading = false);
 
     if (mounted) {
-      Navigator.of(context).pop(RelaxPickerResult(
-        files: List.unmodifiable(files),
-        images: List.unmodifiable(images),
-        videos: List.unmodifiable(videos),
-        documents: List.unmodifiable(_selectedDocuments),
-      ));
+      Navigator.of(context).pop(
+        RelaxPickerResult(
+          files: List.unmodifiable(files),
+          images: List.unmodifiable(images),
+          videos: List.unmodifiable(videos),
+          documents: List.unmodifiable(_selectedDocuments),
+        ),
+      );
     }
   }
 }
