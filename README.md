@@ -21,10 +21,10 @@ Inspired by Firebase and PowerSync — but free, self-hosted, and with no SaaS d
 
 ```yaml
 dependencies:
-  relax_orm: ^0.1.0
+  relax_orm: ^0.1.4
 
 dev_dependencies:
-  relax_orm_generator: ^0.1.0
+  relax_orm_generator: ^0.1.6
   build_runner: ^2.4.0
 ```
 
@@ -194,6 +194,7 @@ engine.register(SyncConfig<User>(
   adapter: UserSyncAdapter(api),
   conflictResolver: ConflictResolver.remoteWins(), // default
   autoSyncInterval: Duration(minutes: 5),          // optional
+  maxRetries: 5,                                   // optional, default 5
 ));
 
 // Connect your connectivity stream (e.g. from connectivity_plus)
@@ -212,6 +213,14 @@ await engine.start();
 ### 3. That's it
 
 All CRUD operations on synced collections are automatically queued and pushed when connectivity is restored.
+
+### Manual sync
+
+```dart
+await engine.syncAll();               // sync all registered tables
+await engine.syncTable('users');      // sync a specific table
+final pending = await engine.pendingCount(); // number of queued operations
+```
 
 ### Conflict Resolution
 
@@ -281,10 +290,13 @@ final db = await RelaxDB.open(name: 'app', schemas: [...]);
 // Custom file path
 final db = await RelaxDB.openFile(file: File('path.db'), schemas: [...]);
 
-// In-memory (testing)
+// In-memory (testing) — encryption not supported in-memory
 final db = await RelaxDB.openInMemory(schemas: [...]);
 
-// Close when done
+// Check if the linked SQLite library supports encryption
+final supported = await db.isEncryptionAvailable();
+
+// Close when done (also disposes sync engine)
 await db.close();
 ```
 
