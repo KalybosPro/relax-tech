@@ -32,7 +32,7 @@ String sdkCachePath(String version) => p.join(sdkCacheHome, version);
 /// Global config: ~/.relax/sdk_config.json
 String get globalConfigPath => p.join(_userHome, '.relax', 'sdk_config.json');
 
-/// Project config: <cwd>/.dart_tool/relax_sdk.json
+/// Project config: `<cwd>`/.dart_tool/relax_sdk.json
 String get projectConfigPath =>
     p.join(Directory.current.path, '.dart_tool', 'relax_sdk.json');
 
@@ -40,7 +40,7 @@ String get projectConfigPath =>
 String get _legacyProjectConfigPath =>
     p.join(Directory.current.path, '.fvm', 'fvm_config.json');
 
-/// Project SDK link: <cwd>/.dart_tool/flutter_sdk
+/// Project SDK link: `<cwd>`/.dart_tool/flutter_sdk
 String get projectSdkLinkPath =>
     p.join(Directory.current.path, '.dart_tool', 'flutter_sdk');
 
