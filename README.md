@@ -6,10 +6,10 @@ Code generator for [relax_orm](https://pub.dev/packages/relax_orm). Generates `T
 
 ```yaml
 dependencies:
-  relax_orm: ^0.1.0
+  relax_orm: ^0.1.4
 
 dev_dependencies:
-  relax_orm_generator: ^0.1.0
+  relax_orm_generator: ^0.1.6
   build_runner: ^2.4.0
 ```
 
