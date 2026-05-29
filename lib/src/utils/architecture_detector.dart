@@ -28,7 +28,9 @@ class ArchitectureDetector {
     if (content.contains('flutter_bloc:')) return Architecture.bloc;
     if (content.contains('flutter_riverpod:')) return Architecture.riverpod;
     if (content.contains('provider:')) return Architecture.provider;
-    if (content.contains(RegExp(r'^\s+get:', multiLine: true))) {
+    // Match `get:` only as a standalone package entry (e.g. `  get: ^4.6.0`),
+    // not `get_storage:` or other packages that start with "get".
+    if (content.contains(RegExp(r'^\s+get:\s', multiLine: true))) {
       return Architecture.getx;
     }
 

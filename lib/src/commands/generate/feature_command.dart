@@ -6,6 +6,7 @@ import 'package:mason_logger/mason_logger.dart';
 import '../../generators/feature_generator.dart';
 import '../../models/architecture.dart';
 import '../../utils/architecture_detector.dart';
+import '../../utils/validation.dart';
 
 /// Generates a new feature module in the current Flutter project.
 class FeatureCommand extends Command<int> {
@@ -37,13 +38,8 @@ class FeatureCommand extends Command<int> {
     final featureName = _getFeatureName();
     if (featureName == null) return ExitCode.usage.code;
 
-    if (!_isValidFeatureName(featureName)) {
-      _logger.err('Invalid feature name: "$featureName"');
-      _logger.info(
-        'Feature name must be a valid Dart identifier '
-        '(lowercase letters, digits, underscores; must start with a letter).',
-      );
-      return ExitCode.usage.code;
+    if (!isValidDartName(featureName)) {
+      return invalidNameError(_logger, 'Feature', featureName);
     }
 
     // Check we're inside a Flutter project
@@ -133,7 +129,4 @@ class FeatureCommand extends Command<int> {
     }
   }
 
-  bool _isValidFeatureName(String name) {
-    return RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(name);
-  }
 }

@@ -25,7 +25,8 @@ T chooseOneOf<T>(
 
   logger.info('');
 
-  while (true) {
+  const maxAttempts = 5;
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
     final defaultHint = defaultValue != null
         ? ' [${choices.indexOf(defaultValue) + 1}]'
         : '';
@@ -50,4 +51,9 @@ T chooseOneOf<T>(
 
     logger.err('Please enter a number between 1 and ${choices.length}.');
   }
+
+  // Exhausted attempts — fall back to default or first choice
+  final fallback = defaultValue ?? choices.first;
+  logger.warn('No valid input after $maxAttempts attempts. Using "${display(fallback)}".');
+  return fallback;
 }

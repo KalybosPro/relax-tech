@@ -1,10 +1,11 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 
 import '../../generators/module_generator.dart';
+import '../../utils/build_runner_helper.dart';
+import '../../utils/validation.dart';
 
 /// Generates a new domain/data module in the current Flutter project.
 class ModuleCommand extends Command<int> {
@@ -34,13 +35,8 @@ class ModuleCommand extends Command<int> {
     final moduleName = _getModuleName();
     if (moduleName == null) return ExitCode.usage.code;
 
-    if (!_isValidName(moduleName)) {
-      _logger.err('Invalid module name: "$moduleName"');
-      _logger.info(
-        'Module name must be lowercase letters, digits, underscores; '
-        'must start with a letter.',
-      );
-      return ExitCode.usage.code;
+    if (!isValidDartName(moduleName)) {
+      return invalidNameError(_logger, 'Module', moduleName);
     }
 
     final libDir = Directory('${Directory.current.path}/lib');
@@ -81,36 +77,7 @@ class ModuleCommand extends Command<int> {
       );
       _logger.info('');
 
-      _logger.info('Running build_runner to generate schema...');
-      try {
-        final buildResult = await Process.run(
-          'dart',
-          ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
-          workingDirectory: Directory.current.path,
-          runInShell: true,
-        ).timeout(const Duration(minutes: 2));
-
-        if (buildResult.exitCode == 0) {
-          _logger.success('Code generation completed.');
-        } else {
-          _logger.warn(
-            'build_runner finished with errors. '
-            'Run ${lightCyan.wrap('dart run build_runner build')} manually.',
-          );
-          final stderr = buildResult.stderr.toString().trim();
-          if (stderr.isNotEmpty) _logger.err(stderr);
-        }
-      } on TimeoutException {
-        _logger.warn(
-          'build_runner timed out. '
-          'Run ${lightCyan.wrap('dart run build_runner build')} manually.',
-        );
-      } on Exception catch (_) {
-        _logger.warn(
-          'Could not run build_runner. '
-          'Run ${lightCyan.wrap('dart run build_runner build')} manually.',
-        );
-      }
+      await runBuildRunner(_logger);
       _logger.info('');
 
       return ExitCode.success.code;
@@ -131,9 +98,5 @@ class ModuleCommand extends Command<int> {
       return null;
     }
     return args.first;
-  }
-
-  bool _isValidName(String name) {
-    return RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(name);
   }
 }

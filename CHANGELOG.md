@@ -1,3 +1,13 @@
+## 0.1.6
+
+- **Added** `relax pub get` — runs `flutter pub get` in the current project.
+- **Added** `relax pub add <package>` — runs `flutter pub add`; accepts `-V <constraint>` to pin a version.
+- **Added** `relax build apk` — formats code then builds an optimized release APK with obfuscation, split-debug-info, tree-shaking, and split-per-ABI.
+- **Added** `relax build aab` — formats code then builds an optimized release AAB (Android App Bundle) for Google Play.
+- **Added** `relax clean` — runs `flutter clean` in the current project.
+- **Added** FVM auto-detection — all Flutter commands use `fvm flutter` automatically when `.fvm/fvm_config.json` is present.
+- **Added** `--flavor` (`-f`) and `--target` (`-t`) options for `build apk` and `build aab`; defaults to `production` flavor and `lib/main_<flavor>.dart` entry point.
+
 ## 0.1.5
 
 - **Added** shared encrypted local storage scaffolding via `relax_storage`, including a generated `CachedStorage` service in the app core.

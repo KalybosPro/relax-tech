@@ -25,6 +25,7 @@ relax create my_app --architecture riverpod
 
 # Customization options
 relax create my_app -a bloc \
+  --org com.mycompany \
   --description "My awesome app" \
   --primary-color 1565C0 \
   --font Poppins
@@ -33,6 +34,7 @@ relax create my_app -a bloc \
 | Option | Default | Description |
 |--------|---------|-------------|
 | `-a, --architecture` | *(prompt)* | `bloc`, `provider`, `riverpod`, `getx` |
+| `-o, --org` | `com.example` | App package prefix (e.g. `com.mycompany`) |
 | `-d, --description` | *"A Flutter project..."* | pubspec.yaml description |
 | `--primary-color` | `6750A4` | Hex seed color for Material 3 palette |
 | `--font` | `Roboto` | `Roboto`, `Inter`, `Poppins`, `Lato`, `Montserrat` |
@@ -77,6 +79,89 @@ v0.1.0
   [+] Flutter project — detected
 ```
 
+### `relax pub` — Package management
+
+```bash
+relax pub get                        # flutter pub get
+relax pub add http                   # flutter pub add http
+relax pub add http -V ^1.2.0         # flutter pub add http:^1.2.0
+```
+
+### `relax build` — Build release artifacts
+
+```bash
+relax build apk                      # production APK (split per ABI)
+relax build apk -f staging           # staging APK
+relax build apk -f production -t lib/main_production.dart
+
+relax build aab                      # production AAB for Google Play
+relax build aab -f staging
+
+relax b apk                          # shorthand alias
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `-f, --flavor` | `production` | `development`, `staging`, `production` |
+| `-t, --target` | `lib/main_<flavor>.dart` | Entry-point Dart file |
+
+Both commands format code first, then apply optimization flags automatically:
+
+| Flag | APK | AAB |
+|------|-----|-----|
+| `--obfuscate` + `--split-debug-info` | yes | yes |
+| `--tree-shake-icons` | yes | yes |
+| `--split-per-abi` | yes | no (Play handles it) |
+
+### `relax clean` — Clean build artifacts
+
+```bash
+relax clean
+```
+
+### `relax sdk` — Flutter SDK version management
+
+Manage multiple Flutter SDK versions without external tools.
+
+```bash
+relax sdk install 3.29.0             # install a specific version
+relax sdk install stable             # install by channel
+relax sdk use 3.29.0                 # pin version for this project
+relax sdk use 3.29.0 --global        # set as global default
+relax sdk list                       # list installed versions
+relax sdk releases                   # browse available releases
+relax sdk releases --channel beta    # filter by channel
+relax sdk global                     # show current global version
+relax sdk global 3.29.0              # set global version
+relax sdk remove 3.24.0              # uninstall a version
+relax sdk flutter doctor             # run flutter doctor with pinned SDK
+relax sdk flutter build apk          # run any flutter command with pinned SDK
+relax sdk dart pub global activate X # run dart command with pinned SDK
+relax sdk exec make build            # run any command with pinned SDK on PATH
+relax sdk spawn 3.29.0 bash          # open shell with specific SDK
+relax sdk config                     # show SDK manager config
+relax sdk doctor                     # check SDK manager environment
+relax sdk destroy                    # remove all cached SDKs and config
+```
+
+| Sub-command | Description |
+|-------------|-------------|
+| `install <version>` | Download and install a Flutter SDK version |
+| `use <version>` | Pin a version for the current project |
+| `list` | List all installed versions |
+| `releases` | Browse available Flutter releases |
+| `global [version]` | Get or set the global default version |
+| `remove <version>` | Uninstall a version |
+| `flutter <args>` | Run a Flutter command with the pinned SDK |
+| `dart <args>` | Run a Dart command with the pinned SDK |
+| `exec <cmd>` | Run any command with the pinned SDK on PATH |
+| `spawn <version> <cmd>` | Run a command with a specific SDK version |
+| `config` | Show or update SDK manager configuration |
+| `doctor` | Check the SDK manager environment |
+| `destroy` | Remove all cached SDKs and configuration |
+
+Partial versions are automatically resolved (`3.29` → `3.29.0`).
+
 ### Other commands
 
 ```bash
@@ -84,6 +169,10 @@ relax --help          # show help
 relax --version       # show version
 relax generate -h     # show generate subcommands
 ```
+
+## FVM support
+
+All Flutter commands (`pub get`, `pub add`, `build apk`, `build aab`, `clean`) automatically detect [FVM](https://fvm.app/). If `.fvm/fvm_config.json` is present in the project root, `fvm flutter` is used instead of `flutter` — no configuration needed.
 
 ## Supported architectures
 
@@ -99,21 +188,42 @@ relax generate -h     # show generate subcommands
 ```
 my_app/
 ├── lib/
-│   ├── main.dart
+│   ├── main_development.dart        # development flavor entry point
+│   ├── main_staging.dart            # staging flavor entry point
+│   ├── main_production.dart         # production flavor entry point
+│   ├── bootstrap.dart               # app initialization
 │   ├── app/
-│   │   └── view/app.dart               # MaterialApp + theme
+│   │   └── view/app.dart            # MaterialApp + theme
 │   ├── core/
+│   │   ├── di/                      # dependency injection (GetIt)
 │   │   └── theme/
-│   │       ├── app_colors.dart          # Material 3 color palette
-│   │       ├── app_theme.dart           # Light & dark ThemeData
-│   │       └── app_typography.dart      # M3 type scale
-│   └── features/
-│       └── home/
-│           ├── bloc/                    # Bloc, Events, States
-│           └── view/                    # Page & View
+│   │       ├── app_colors.dart      # Material 3 color palette
+│   │       ├── app_theme.dart       # Light & dark ThemeData
+│   │       └── app_typography.dart  # M3 type scale
+│   ├── features/
+│   │   └── home/
+│   │       ├── bloc/                # Bloc, Events, States
+│   │       └── view/                # Page & View
+│   └── i18n/
+│       └── slang/                   # translations (generated by slang)
 ├── test/
 ├── pubspec.yaml
 └── analysis_options.yaml
+```
+
+After creation:
+
+```bash
+cd my_app
+relax pub get
+
+# Run a flavor
+flutter run --flavor development -t lib/main_development.dart
+flutter run --flavor staging     -t lib/main_staging.dart
+flutter run --flavor production  -t lib/main_production.dart
+
+# Regenerate translations after editing .i18n.json files
+dart run build_runner build --delete-conflicting-outputs
 ```
 
 ## Generated feature structure
@@ -156,10 +266,13 @@ lib/modules/product/
 ## What you get out of the box
 
 - **Material 3** theme with light/dark mode and customizable color palette
+- **Multi-flavor** support: development, staging, production entry points
 - **Feature-based** architecture with barrel files
 - **Sealed classes** for events and states (Dart 3+)
 - **Clean Architecture** modules with repository pattern
 - **RelaxORM** integration with typed CRUD, reactive streams, and auto-generated schemas
+- **Dependency injection** via GetIt
+- **Internationalization** via slang (`.i18n.json` → generated Dart)
 - **Auto-detection** of your project's architecture for `generate feature`
 - **Automatic code generation** — `build_runner` runs after module/model creation
 - Ready-to-run project with a Home feature example

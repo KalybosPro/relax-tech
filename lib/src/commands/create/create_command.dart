@@ -6,6 +6,7 @@ import 'package:mason_logger/mason_logger.dart';
 import '../../generators/generators.dart';
 import '../../models/architecture.dart';
 import '../../utils/prompt.dart';
+import '../../utils/validation.dart';
 
 /// Command to create a new Flutter project with a chosen architecture.
 class CreateCommand extends Command<int> {
@@ -62,13 +63,8 @@ class CreateCommand extends Command<int> {
     final projectName = _getProjectName();
     if (projectName == null) return ExitCode.usage.code;
 
-    if (!_isValidProjectName(projectName)) {
-      _logger.err('Invalid project name: "$projectName"');
-      _logger.info(
-        'Project name must be a valid Dart package name '
-        '(lowercase letters, digits, underscores; must start with a letter).',
-      );
-      return ExitCode.usage.code;
+    if (!isValidDartName(projectName)) {
+      return invalidNameError(_logger, 'Project', projectName);
     }
 
     final outputDir = Directory(projectName);
@@ -114,7 +110,7 @@ class CreateCommand extends Command<int> {
       _logger.info('');
       _logger.info('Next steps:');
       _logger.info('  ${lightCyan.wrap('cd $projectName')}');
-      _logger.info('  ${lightCyan.wrap('flutter pub get')}');
+      _logger.info('  ${lightCyan.wrap('relax pub get')}');
       _logger.info('');
       _logger.info('Run a flavor:');
       _logger.info(
@@ -179,11 +175,6 @@ class CreateCommand extends Command<int> {
       display: (a) => a.label,
       defaultValue: Architecture.bloc,
     );
-  }
-
-  /// Validates that [name] is a valid Dart package name.
-  bool _isValidProjectName(String name) {
-    return RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(name);
   }
 
   static const _banner =

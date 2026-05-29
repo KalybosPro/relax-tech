@@ -25,6 +25,10 @@ class RelaxCommandRunner extends CommandRunner<int> {
     addCommand(CreateCommand(logger: _logger));
     addCommand(DoctorCommand(logger: _logger));
     addCommand(GenerateCommand(logger: _logger));
+    addCommand(CleanCommand(logger: _logger));
+    addCommand(PubCommand(logger: _logger));
+    addCommand(BuildCommand(logger: _logger));
+    addCommand(SdkCommand(logger: _logger));
   }
 
   final Logger _logger;
