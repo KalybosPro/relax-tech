@@ -1,0 +1,25 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/
+pubspec_overrides.yaml
+
+# Workspace-wide lockfile is committed; per-package lockfiles are not needed
+# for libraries (only the workspace root resolves dependencies).
+packages/*/pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter ephemeral
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.fvm/

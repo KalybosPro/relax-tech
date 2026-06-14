@@ -1,0 +1,22 @@
+# Root of the Relax monorepo — Dart pub workspace (SDK >= 3.11).
+# This package is NOT published; it only declares the workspace members.
+# Run `dart pub get` from this directory to resolve every member at once.
+name: relax_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+# Each member keeps its own pubspec, version and changelog and is published
+# independently to pub.dev. Listing them here shares a single dependency
+# resolution during local development.
+workspace:
+  - packages/relax_cli
+  - packages/relax_orm
+  - packages/relax_orm_generator
+  - packages/relax_image_picker
+  - packages/relax_pay
+  - packages/relax_storage
+# env_builder_cli is intentionally NOT a workspace member: it requires
+# analyzer ^12 while relax_orm_generator pins analyzer ^10, which cannot share a
+# single resolution. It still lives in this monorepo but resolves independently.
