@@ -10,7 +10,7 @@ Preferred report channels:
 
 - Open a private issue on GitHub and mark it as a security report.
 - Use the repository issue tracker and clearly label the report as security-related:
-  - https://https://github.com/KalybosPro/relax-tech/issues
+  - https://github.com/KalybosPro/relax-tech/issues
 
 ## What to Include
 

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 900px;
+    overflow: hidden;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #060616;
+  }
+
+  /* ── BACKGROUND ─────────────────────────────── */
+  .bg {
+    width: 1200px;
+    height: 900px;
+    position: relative;
+    background: radial-gradient(ellipse at 80% 10%, rgba(30,60,255,0.35) 0%, transparent 55%),
+                radial-gradient(ellipse at 10% 90%, rgba(120,40,220,0.25) 0%, transparent 50%),
+                linear-gradient(160deg, #07071A 0%, #0A0A24 60%, #080818 100%);
+    overflow: hidden;
+  }
+
+  /* dot grid */
+  .bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(80,110,255,0.18) 1px, transparent 1px);
+    background-size: 38px 38px;
+  }
+
+  /* glow orb top-right */
+  .orb {
+    position: absolute;
+    top: -180px;
+    right: -180px;
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle, rgba(50,90,255,0.55) 0%, rgba(90,30,200,0.2) 50%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  /* glow orb bottom-left */
+  .orb2 {
+    position: absolute;
+    bottom: -200px;
+    left: -100px;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(120,40,220,0.3) 0%, transparent 65%);
+    border-radius: 50%;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────── */
+  .content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 42px 56px 36px;
+    gap: 0;
+  }
+
+  /* ── HEADER ─────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .flutter-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .headline-block h1 {
+    font-size: 38px;
+    font-weight: 900;
+    color: #FFFFFF;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  .headline-block h1 span {
+    color: #4FC3F7;
+  }
+
+  .headline-block p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 6px;
+    font-weight: 400;
+  }
+
+  .headline-block p em {
+    color: #34D399;
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* code snippet top-right */
+  .code-snippet {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    text-align: right;
+    line-height: 1.7;
+    border-left: 2px solid rgba(79,195,247,0.25);
+    padding-left: 12px;
+  }
+
+  .code-snippet .c-blue   { color: #4FC3F7; opacity: 0.7; }
+  .code-snippet .c-purple { color: #A78BFA; opacity: 0.7; }
+  .code-snippet .c-white  { color: rgba(255,255,255,0.6); }
+
+  /* ── MIDDLE ROW ─────────────────────────────── */
+  .middle {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* LEFT — traditional */
+  .col-left {
+    flex: 0 0 230px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .badge-bad {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(239,68,68,0.12);
+    border: 1.5px solid rgba(239,68,68,0.4);
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: #F87171;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: fit-content;
+    margin-bottom: 4px;
+  }
+
+  .pain-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14.5px;
+    color: rgba(255,255,255,0.65);
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px;
+  }
+
+  .x-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(239,68,68,0.15);
+    border: 1.5px solid rgba(239,68,68,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #F87171;
+    font-size: 11px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  /* CENTER — terminal + arrow */
+  .col-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+  }
+
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 2px;
+  }
+
+  .arrow-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(79,195,247,0.15), rgba(79,195,247,0.7), rgba(79,195,247,0.15));
+  }
+
+  .arrow-chevron {
+    color: #4FC3F7;
+    font-size: 30px;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(79,195,247,0.8));
+  }
+
+  /* terminal card */
+  .terminal {
+    width: 100%;
+    background: #0C0C1E;
+    border: 1px solid rgba(80,100,255,0.25);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+  .t-bar {
+    background: #141428;
+    padding: 10px 14px;
+    display: flex;
+    gap: 7px;
+    align-items: center;
+  }
+
+  .d  { width: 11px; height: 11px; border-radius: 50%; }
+  .dr { background: #FF5F57; }
+  .dy { background: #FEBC2E; }
+  .dg { background: #28C840; }
+
+  .t-body { padding: 16px 20px; }
+
+  .cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .cmd:last-child { margin-bottom: 0; }
+
+  .sep { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 10px 0; }
+
+  .cm  { color: rgba(100,255,160,0.35); font-size: 12px; margin-bottom: 6px; font-family: 'JetBrains Mono', monospace; }
+
+  .p   { color: #6B7FFF; margin-right: 6px; }
+  .kw  { color: #4FC3F7; }
+  .sub { color: #22D3EE; margin: 0 5px; }
+  .val { color: #FFFFFF; }
+  .fl  { color: #A78BFA; margin-left: 5px; }
+  .fg  { color: rgba(255,255,255,0.35); margin-left: 5px; }
+
+  /* cli name badge center */
+  .cli-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: #4FC3F7;
+    text-align: center;
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 30px rgba(79,195,247,0.5);
+  }
+
+  /* RIGHT — modern */
+  .col-right {
+    flex: 0 0 230px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .badge-good {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(52,211,153,0.1);
+    border: 1.5px solid rgba(52,211,153,0.4);
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: #34D399;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: fit-content;
+    margin-bottom: 4px;
+  }
+
+  .good-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14.5px;
+    color: rgba(255,255,255,0.85);
+    padding: 8px 12px;
+    background: rgba(52,211,153,0.04);
+    border: 1px solid rgba(52,211,153,0.15);
+    border-radius: 8px;
+  }
+
+  .check-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(52,211,153,0.12);
+    border: 1.5px solid rgba(52,211,153,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+    font-size: 11px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  /* ── BOTTOM ─────────────────────────────────── */
+  .bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .chips {
+    display: flex;
+    gap: 12px;
+  }
+
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(100,140,255,0.25);
+    border-radius: 10px;
+    padding: 10px 18px;
+  }
+
+  .chip-icon {
+    font-size: 20px;
+  }
+
+  .chip-text strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  .chip-text span {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.3;
+  }
+
+  /* author */
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(100,140,255,0.2);
+    border-radius: 50px;
+    padding: 8px 20px 8px 8px;
+  }
+
+  .author-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4A6AFF, #A855F7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .author-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  .author-title {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+  }
+
+  .author-sep {
+    width: 1px;
+    height: 28px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  .author-role {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="orb"></div>
+  <div class="orb2"></div>
+
+  <div class="content">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <!-- Flutter logo SVG -->
+        <svg class="flutter-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 29L27 15H48L34 29L13 29Z" fill="#40C4FF"/>
+          <path d="M13 29L27 43H48L34 29H13Z" fill="#0091EA"/>
+          <path d="M27 43L34 29L27 22L20 29L27 43Z" fill="#00B0FF" opacity="0.8"/>
+          <path d="M7 23L21 9H34L20 23H7Z" fill="#40C4FF" opacity="0.6"/>
+        </svg>
+        <div class="headline-block">
+          <h1>Stop Rebuilding<br><span>Flutter Projects</span> From Scratch</h1>
+          <p>Generate a production-ready Flutter project in <em>seconds</em> — not hours.</p>
+        </div>
+      </div>
+      <div class="code-snippet">
+        <div><span class="c-blue">void</span> <span class="c-white">main</span>() {</div>
+        <div>&nbsp;&nbsp;<span class="c-purple">relax</span> <span class="c-white">create</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-white">my_app</span> <span class="c-blue">-a</span> <span class="c-white">bloc</span></div>
+        <div>}</div>
+      </div>
+    </div>
+
+    <!-- MIDDLE -->
+    <div class="middle">
+
+      <!-- LEFT: pain points -->
+      <div class="col-left">
+        <div class="badge-bad">✕ &nbsp;Traditional Setup</div>
+        <div class="pain-item"><div class="x-icon">✕</div>Folder Structures</div>
+        <div class="pain-item"><div class="x-icon">✕</div>Config Files</div>
+        <div class="pain-item"><div class="x-icon">✕</div>State Management</div>
+        <div class="pain-item"><div class="x-icon">✕</div>Theme Setup</div>
+        <div class="pain-item"><div class="x-icon">✕</div>Flavor Setup</div>
+        <div class="pain-item"><div class="x-icon">✕</div>DI Wiring</div>
+        <div class="pain-item"><div class="x-icon">✕</div>ORM & Repositories</div>
+        <div class="pain-item"><div class="x-icon">✕</div>Fix Barrel Files</div>
+      </div>
+
+      <!-- CENTER: arrow + terminal -->
+      <div class="col-center">
+        <div class="arrow-row">
+          <div class="arrow-line"></div>
+          <div class="arrow-chevron">▶</div>
+          <div class="arrow-line"></div>
+        </div>
+        <div class="cli-badge">relax_cli</div>
+        <div class="terminal">
+          <div class="t-bar">
+            <div class="d dr"></div><div class="d dy"></div><div class="d dg"></div>
+          </div>
+          <div class="t-body">
+            <div class="cm"># scaffold full project</div>
+            <div class="cmd"><span class="p">$</span><span class="kw">relax</span><span class="sub">create</span><span class="val">my_app</span><span class="fl">-a bloc</span></div>
+            <hr class="sep">
+            <div class="cm"># add features & pages</div>
+            <div class="cmd"><span class="p">$</span><span class="kw">relax</span><span class="sub">g feature</span><span class="fl">auth</span></div>
+            <div class="cmd"><span class="p">$</span><span class="kw">relax</span><span class="sub">g page</span><span class="fl">auth login</span></div>
+            <hr class="sep">
+            <div class="cm"># ORM module + build_runner auto</div>
+            <div class="cmd"><span class="p">$</span><span class="kw">relax</span><span class="sub">g module</span><span class="fl">product</span></div>
+            <div class="cmd"><span class="p">$</span><span class="kw">relax</span><span class="sub">g model</span><span class="fl">user_profile</span></div>
+            <hr class="sep">
+            <div class="cm"># build & ship</div>
+            <div class="cmd"><span class="p">$</span><span class="kw">relax</span><span class="sub">build</span><span class="val">apk</span><span class="fg">-f production</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: modern workflow -->
+      <div class="col-right">
+        <div class="badge-good">✓ &nbsp;Modern Workflow</div>
+        <div class="good-item"><div class="check-icon">✓</div>Clean Architecture</div>
+        <div class="good-item"><div class="check-icon">✓</div>Bloc / Riverpod / GetX</div>
+        <div class="good-item"><div class="check-icon">✓</div>Material 3 Theme</div>
+        <div class="good-item"><div class="check-icon">✓</div>Multi-Flavor Builds</div>
+        <div class="good-item"><div class="check-icon">✓</div>GetIt DI — Wired</div>
+        <div class="good-item"><div class="check-icon">✓</div>RelaxORM — Local First</div>
+        <div class="good-item"><div class="check-icon">✓</div>Auto build_runner</div>
+        <div class="good-item"><div class="check-icon">✓</div>SDK Management</div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM -->
+    <div class="bottom">
+      <div class="chips">
+        <div class="chip">
+          <div class="chip-icon">⚡</div>
+          <div class="chip-text">
+            <strong>Faster Delivery</strong>
+            <span>From idea to code<br>in seconds</span>
+          </div>
+        </div>
+        <div class="chip">
+          <div class="chip-icon">🏗</div>
+          <div class="chip-text">
+            <strong>Consistent Architecture</strong>
+            <span>Same structure,<br>every project</span>
+          </div>
+        </div>
+        <div class="chip">
+          <div class="chip-icon">🚀</div>
+          <div class="chip-text">
+            <strong>Production Ready</strong>
+            <span>Clean, testable<br>&amp; industry standard</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="author">
+        <div class="author-avatar">K</div>
+        <div>
+          <div class="author-name">Kokou AHIANYO</div>
+          <div class="author-title">pub.dev/packages/relax_cli</div>
+        </div>
+        <div class="author-sep"></div>
+        <div class="author-role">
+          <svg width="14" height="14" viewBox="0 0 48 48" fill="none"><path d="M13 29L27 15H48L34 29L13 29Z" fill="#40C4FF"/><path d="M13 29L27 43H48L34 29H13Z" fill="#0091EA"/></svg>
+          Flutter Developer
+        </div>
+        <div class="author-sep"></div>
+        <div class="author-role">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          KalybosPro
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

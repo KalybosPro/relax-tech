@@ -1,3 +1,17 @@
+> [!IMPORTANT]
+> ## 📦 This repository has moved
+> `relax_storage` is now developed in the **[KalybosPro/relax-tech](https://github.com/KalybosPro/relax-tech)** monorepo, together with the rest of the Relax packages.
+>
+> - 👉 **Active source:** https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_storage
+> - 🐛 **Issues & Pull Requests:** please open them in the [monorepo](https://github.com/KalybosPro/relax-tech/issues) — this repo no longer tracks them.
+> - 📥 **On pub.dev:** nothing changes. `dart pub add relax_storage` keeps working exactly as before.
+>
+> This repository is **archived** for historical reference and will not receive further updates.
+
+---
+
+<!-- ↓↓↓ Original README kept below for reference ↓↓↓ -->
+
 # RelaxStorage
 
 [![pub package](https://img.shields.io/pub/v/relax_storage.svg)](https://pub.dev/packages/relax_storage)

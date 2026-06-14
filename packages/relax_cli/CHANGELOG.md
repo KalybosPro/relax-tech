@@ -1,3 +1,12 @@
+## 0.1.7
+
+- **Added** `relax generate page <folder_name> <page_name>` — generates a Page + View pair inside an existing feature folder.
+  - Auto-detects the project architecture (Bloc, Provider, Riverpod, GetX) or accepts `-a` to override.
+  - Generates `<page_name>_page.dart` and `<page_name>_view.dart` in `lib/features/<folder_name>/view/`.
+  - Each architecture produces the correct imports and widget types (BlocProvider/BlocBuilder, ChangeNotifierProvider, ConsumerStatefulWidget/ConsumerWidget, GetView).
+  - Validates that the target feature folder exists and that the page does not already exist.
+  - Prints a hint to add the new page export to the feature's barrel file.
+
 ## 0.1.6
 
 - **Added** `relax pub get` — runs `flutter pub get` in the current project.

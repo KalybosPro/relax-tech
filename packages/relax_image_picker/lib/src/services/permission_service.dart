@@ -11,6 +11,7 @@ class PermissionService {
   Future<bool> requestMediaPermissions({
     bool allowImages = true,
     bool allowVideos = true,
+    bool allowDocuments = true,
     bool enableCamera = true,
   }) async {
     final requiredPermissions = <Permission>[];
@@ -31,6 +32,11 @@ class PermissionService {
     // Request microphone permission for video recording
     if (enableCamera) {
       requiredPermissions.add(Permission.microphone);
+    }
+
+    // Request storage permission for documents if enabled
+    if (allowDocuments) {
+      requiredPermissions.add(Permission.storage);
     }
 
     if (requiredPermissions.isEmpty) {
@@ -54,6 +60,7 @@ class PermissionService {
   Future<bool> checkPermissionsStatus({
     bool allowImages = true,
     bool allowVideos = true,
+    bool allowDocuments = false,
     bool enableCamera = true,
   }) async {
     // Check photo/video library access
@@ -75,6 +82,12 @@ class PermissionService {
       if (!micStatus.isGranted) {
         return false;
       }
+    }
+
+    // Check storage permission for documents
+    if (allowDocuments) {
+      final storageStatus = await Permission.storage.status;
+      if (!storageStatus.isGranted) return false;
     }
 
     return true;

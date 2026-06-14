@@ -1,3 +1,17 @@
+> [!IMPORTANT]
+> ## 📦 This repository has moved
+> `relax_cli` is now developed in the **[KalybosPro/relax-tech](https://github.com/KalybosPro/relax-tech)** monorepo, together with the rest of the Relax packages.
+>
+> - 👉 **Active source:** https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_cli
+> - 🐛 **Issues & Pull Requests:** please open them in the [monorepo](https://github.com/KalybosPro/relax-tech/issues) — this repo no longer tracks them.
+> - 📥 **On pub.dev:** nothing changes. `dart pub add relax_cli` keeps working exactly as before.
+>
+> This repository is **archived** for historical reference and will not receive further updates.
+
+---
+
+<!-- ↓↓↓ Original README kept below for reference ↓↓↓ -->
+
 # relax_cli
 
 A CLI tool to generate Flutter projects with clean architecture, ready to run.
@@ -45,6 +59,29 @@ relax create my_app -a bloc \
 relax generate feature settings        # auto-detects architecture
 relax generate feature cart -a provider # override architecture
 relax g feature profile                # shorthand alias
+```
+
+### `relax generate page` — Add a page to an existing feature
+
+```bash
+relax generate page home detail         # add detail page to home feature
+relax generate page auth login -a bloc  # override architecture
+relax g page settings notifications     # shorthand alias
+```
+
+Generates a `Page` + `View` widget pair inside `lib/features/<folder_name>/view/`. The target feature folder must already exist (create it with `relax generate feature` first).
+
+```
+lib/features/home/view/
+├── detail_page.dart    # new — wired to the feature's state manager
+└── detail_view.dart    # new — Scaffold with title and body
+```
+
+After generation, add the export to the feature's barrel file:
+
+```dart
+// lib/features/home/home.dart
+export 'view/detail_page.dart';
 ```
 
 ### `relax generate module` — Add a domain/data module
@@ -176,12 +213,12 @@ All Flutter commands (`pub get`, `pub add`, `build apk`, `build aab`, `clean`) a
 
 ## Supported architectures
 
-| Architecture | `create` | `generate feature` | State management |
-|-------------|----------|-------------------|------------------|
-| **Bloc**    | yes | yes | `flutter_bloc`, `equatable` |
-| **Provider**| yes | yes | `provider`, `ChangeNotifier` |
-| **Riverpod**| yes | yes | `flutter_riverpod`, `Notifier` |
-| **GetX**    | yes | yes | `get`, `GetxController`, `Obx` |
+| Architecture | `create` | `generate feature` | `generate page` | State management |
+|-------------|----------|--------------------|-----------------|------------------|
+| **Bloc**    | yes | yes | yes | `flutter_bloc`, `equatable` |
+| **Provider**| yes | yes | yes | `provider`, `ChangeNotifier` |
+| **Riverpod**| yes | yes | yes | `flutter_riverpod`, `Notifier` |
+| **GetX**    | yes | yes | yes | `get`, `GetxController`, `Obx` |
 
 ## Generated project structure (Bloc example)
 
@@ -242,6 +279,18 @@ lib/features/settings/
 └── view/
     ├── settings_page.dart               # Provider wrapper
     └── settings_view.dart               # UI
+```
+
+## Generated page structure
+
+```bash
+relax g page home detail
+```
+
+```
+lib/features/home/view/
+├── detail_page.dart    # Page widget (wires into the feature's state manager)
+└── detail_view.dart    # Scaffold UI
 ```
 
 ## Generated module structure

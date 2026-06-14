@@ -32,10 +32,10 @@ class _HomePageState extends State<HomePage> {
     final result = await RelaxImagePicker.pick(
       context,
       allowImages: true,
-      allowVideos: true,
-      allowDocuments: true,
-      enableCamera: true,
-      enablePreview: true,
+      allowVideos: false,
+      allowDocuments: false,
+      enableCamera: false,
+      enablePreview: false,
       maxSelection: 10,
       enableCompression: false,
     );

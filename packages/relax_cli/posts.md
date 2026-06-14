@@ -1,3 +1,120 @@
+---
+## Carrousel LinkedIn — 5 slides
+
+---
+
+### Slide 1/5 — ACCROCHE
+
+**Tag :** `>_ DART CLI · FLUTTER`
+
+**Titre :**
+Starting a new Flutter project
+shouldn't mean repeating
+the **same boring setup** again.
+
+**Sous-titre :**
+I built `relax_cli` to generate a production-ready Flutter project in seconds.
+
+**Boutons :**
+`>_ Dart CLI`   `⚡ Clean Architecture`   `🗄 RelaxORM`
+
+**Terminal :**
+```
+$ dart pub global activate relax_cli
+$ relax --help
+```
+
+---
+
+### Slide 2/5 — LE PROBLÈME
+
+**Tag :** `⚠ THE PROBLEM`
+
+**Titre :** The usual problem
+
+**Sous-titre :** Starting from scratch or copy-pasting old projects wastes time.
+
+**Checklist :**
+- ✅ Setup project folders
+- ✅ Configure Material 3 theme
+- ✅ Add state management (Bloc / Riverpod / Provider / GetX)
+- ✅ Setup multi-flavor (dev, staging, prod)
+- ✅ Wire dependency injection (GetIt)
+- ✅ Add local persistence / ORM
+- ✅ Fix imports and barrel files
+
+**Note :** `⚠ It works, but it's repetitive and messy.`
+
+---
+
+### Slide 3/5 — LA SOLUTION
+
+**Tag :** `</> THE SOLUTION`
+
+**Titre :**
+So I built
+`relax_cli`
+
+**Sous-titre :** A Dart CLI to generate Flutter Clean Architecture projects faster.
+
+**Boutons :**
+`📁 Project`   `🧩 Feature`   `📄 Page`   `📦 Module`
+
+**Terminal :**
+```
+$ relax create my_app
+$ relax generate feature auth
+$ relax generate page auth login
+$ relax generate module product
+```
+
+**Note :** Generate a consistent, production-ready structure in seconds.
+
+---
+
+### Slide 4/5 — CE QUE ÇA GÉNÈRE
+
+**Tag :** `</> WHAT IT GENERATES`
+
+**Titre :**
+Generate the
+**boring setup**
+in seconds.
+
+**Checklist :**
+- ✅ Complete project structure (Clean Architecture)
+- ✅ State management — Bloc, Provider, Riverpod, GetX
+- ✅ Material 3 theme (light/dark + custom color)
+- ✅ Multi-flavor — dev, staging, production
+- ✅ Dependency injection (GetIt)
+- ✅ RelaxORM module — Repository + Collection\<T\> + reactive streams
+- ✅ Internationalization via slang
+- ✅ Auto `build_runner` on module/model creation
+
+**Note :** `More consistent, less repetitive.`
+
+---
+
+### Slide 5/5 — ESSAIE-LE
+
+**Tag :** `</> TRY IT`
+
+**Titre :** Ready **to try it?**
+
+**Sous-titre :** Install it, explore it, and let me know your feedback.
+
+**Terminal :**
+```
+$ dart pub global activate relax_cli
+$ relax --help
+```
+
+**Lien :** `pub.dev/packages/relax_cli`
+
+**Note :** `💬 Feedback and ideas are welcome.`
+
+---
+
 Post 1 — Lancement / Annonce
 🚀 J'ai créé Relax CLI — un outil en ligne de commande pour scaffolder des projets Flutter en quelques secondes.
 

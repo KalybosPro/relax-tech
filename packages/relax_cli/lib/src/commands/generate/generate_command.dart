@@ -4,6 +4,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'feature_command.dart';
 import 'model_command.dart';
 import 'module_command.dart';
+import 'page_command.dart';
 
 /// Parent command for code generation: `relax generate <subcommand>`.
 class GenerateCommand extends Command<int> {
@@ -11,6 +12,7 @@ class GenerateCommand extends Command<int> {
     addSubcommand(FeatureCommand(logger: logger));
     addSubcommand(ModuleCommand(logger: logger));
     addSubcommand(ModelCommand(logger: logger));
+    addSubcommand(PageCommand(logger: logger));
   }
 
   @override

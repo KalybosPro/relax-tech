@@ -75,13 +75,28 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet>
   int _currentPage = 0;
   late TabController _tabController;
   PickerTab _currentTab = PickerTab.gallery;
+  final List<PickerTab> _availableTabs = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+
+    if (widget.allowImages || widget.allowVideos) _availableTabs.add(PickerTab.gallery);
+    if (widget.enableCamera) _availableTabs.add(PickerTab.camera);
+    if (widget.allowDocuments) _availableTabs.add(PickerTab.documents);
+
+    _tabController = TabController(length: _availableTabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
-    _initializeGallery();
+
+    if (_availableTabs.isNotEmpty) {
+      _currentTab = _availableTabs[0];
+      if (_currentTab == PickerTab.gallery) {
+        _initializeGallery();
+      } else {
+        _isLoading = false;
+      }
+    }
+
     _scrollController.addListener(_onScroll);
   }
 
@@ -99,7 +114,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet>
 
   void _onTabChanged() {
     setState(() {
-      _currentTab = PickerTab.values[_tabController.index];
+      _currentTab = _availableTabs[_tabController.index];
       if (_currentTab == PickerTab.gallery && _albums.isEmpty) {
         _initializeGallery();
       }
@@ -236,8 +251,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet>
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients || _isLoadingNext || _currentPage == -1)
+    if (!_scrollController.hasClients || _isLoadingNext || _currentPage == -1) {
       return;
+    }
     final threshold = _scrollController.position.maxScrollExtent - 300;
     if (_scrollController.position.pixels >= threshold) {
       _loadPage();
