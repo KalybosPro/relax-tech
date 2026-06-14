@@ -1,0 +1,39 @@
+name: relax_storage
+description: >-
+  A secure Flutter storage package with AES-CBC encryption.
+  Provides encrypted key-value storage built on top of GetStorage
+  with SHA-256 key derivation and random IV generation.
+version: 1.0.1
+repository: https://github.com/KalybosPro/relax_storage
+homepage: https://github.com/KalybosPro/relax_storage
+issue_tracker: https://github.com/KalybosPro/relax_storage/issues
+topics:
+  - storage
+  - encryption
+  - security
+  - local-storage
+  - aes
+
+platforms:
+  android:
+  ios:
+  web:
+  macos:
+  windows:
+  linux:
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  crypto: ^3.0.7
+  encrypt: ^5.0.3
+  flutter:
+    sdk: flutter
+  get_storage: ^2.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
