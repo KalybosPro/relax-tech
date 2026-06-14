@@ -1,0 +1,102 @@
+import 'dart:io';
+
+import 'package:args/command_runner.dart';
+import 'package:mason_logger/mason_logger.dart';
+
+import '../../generators/module_generator.dart';
+import '../../utils/build_runner_helper.dart';
+import '../../utils/validation.dart';
+
+/// Generates a new domain/data module in the current Flutter project.
+class ModuleCommand extends Command<int> {
+  ModuleCommand({required Logger logger}) : _logger = logger {
+    argParser.addOption(
+      'output',
+      abbr: 'o',
+      help: 'Output directory relative to lib/ (default: modules).',
+      defaultsTo: 'modules',
+    );
+  }
+
+  final Logger _logger;
+
+  @override
+  String get name => 'module';
+
+  @override
+  String get description =>
+      'Generate a domain/data module (model, repository, data source).';
+
+  @override
+  String get invocation => 'relax generate module <module_name>';
+
+  @override
+  Future<int> run() async {
+    final moduleName = _getModuleName();
+    if (moduleName == null) return ExitCode.usage.code;
+
+    if (!isValidDartName(moduleName)) {
+      return invalidNameError(_logger, 'Module', moduleName);
+    }
+
+    final libDir = Directory('${Directory.current.path}/lib');
+    if (!libDir.existsSync()) {
+      _logger.err('No lib/ directory found.');
+      _logger.info('Run this command from the root of a Flutter project.');
+      return ExitCode.usage.code;
+    }
+
+    final outputDirName = argResults?['output'] as String;
+    final outputDir = Directory('${libDir.path}/$outputDirName');
+    final moduleDir = Directory('${outputDir.path}/$moduleName');
+
+    if (moduleDir.existsSync()) {
+      _logger.err('Module "$moduleName" already exists in $outputDirName/.');
+      return ExitCode.usage.code;
+    }
+
+    _logger.info('');
+    _logger.info(
+      'Generating module ${lightCyan.wrap(moduleName)} '
+      'in ${lightCyan.wrap('lib/$outputDirName/')}...',
+    );
+    _logger.info('');
+
+    final generator = ModuleGenerator(logger: _logger);
+
+    try {
+      final generatedFiles = await generator.generate(
+        moduleName: moduleName,
+        outputDir: outputDir,
+      );
+
+      _logger.info('');
+      _logger.success(
+        'Generated module "$moduleName" '
+        '(${generatedFiles.length} files).',
+      );
+      _logger.info('');
+
+      await runBuildRunner(_logger);
+      _logger.info('');
+
+      return ExitCode.success.code;
+    } on FileSystemException catch (e) {
+      _logger.err('File system error: ${e.message}');
+      return ExitCode.ioError.code;
+    } on Exception catch (e) {
+      _logger.err('Unexpected error: $e');
+      return ExitCode.software.code;
+    }
+  }
+
+  String? _getModuleName() {
+    final args = argResults!.rest;
+    if (args.isEmpty) {
+      _logger.err('No module name specified.');
+      _logger.info('Usage: $invocation');
+      return null;
+    }
+    return args.first;
+  }
+}

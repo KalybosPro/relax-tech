@@ -1,0 +1,20 @@
+# Large assets not needed in the published package
+assets/logo_playstore.png
+cahier_des_charges.md
+
+# Example platform directories (heavy, not needed for pub.dev)
+example/android/
+example/ios/
+example/macos/
+example/linux/
+example/windows/
+example/web/
+example/packages/
+
+# Environment files should remain in repo for local example use, but not in published package
+example/.env.development
+example/.env.production
+example/.env.staging
+
+# Build artifacts
+pubspec.lock
