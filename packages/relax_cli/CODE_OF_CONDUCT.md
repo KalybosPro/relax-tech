@@ -30,7 +30,7 @@ This Code of Conduct applies to all project spaces including GitHub issues, pull
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers through the issue tracker:
 
-- https://github.com/KalybosPro/relax_cli/issues
+- https://https://github.com/KalybosPro/relax-tech/issues
 
 Reports should include as much detail as possible. All reports will be handled with discretion and care.
 

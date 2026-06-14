@@ -1,0 +1,26 @@
+name: relax_pay
+description: >-
+  Agnostic Dart/Flutter SDK for multi-provider payment integration
+  with automatic failover, unified models, and webhook standardization.
+version: 1.0.0
+resolution: workspace
+repository: https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_pay
+issue_tracker: https://github.com/KalybosPro/relax-tech/issues
+
+topics:
+  - payment
+  - stripe
+  - cinetpay
+  - fintech
+
+environment:
+  sdk: ^3.11.0
+
+# Add regular dependencies here.
+dependencies:
+  # path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  mocktail: ^1.0.5
+  test: ^1.25.6

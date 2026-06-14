@@ -4,9 +4,10 @@ description: >-
   Provides encrypted key-value storage built on top of GetStorage
   with SHA-256 key derivation and random IV generation.
 version: 1.0.1
-repository: https://github.com/KalybosPro/relax_storage
-homepage: https://github.com/KalybosPro/relax_storage
-issue_tracker: https://github.com/KalybosPro/relax_storage/issues
+resolution: workspace
+repository: https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_storage
+homepage: https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_storage
+issue_tracker: https://github.com/KalybosPro/relax-tech/issues
 topics:
   - storage
   - encryption

@@ -3,8 +3,9 @@ description: >-
   CLI to scaffold Flutter projects with clean architecture,
   state management (Bloc, Provider, Riverpod, GetX), and RelaxORM integration.
 version: 0.1.6
-repository: https://github.com/KalybosPro/relax_cli
-issue_tracker: https://github.com/KalybosPro/relax_cli/issues
+resolution: workspace
+repository: https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_cli
+issue_tracker: https://github.com/KalybosPro/relax-tech/issues
 
 topics:
   - cli
