@@ -2,191 +2,165 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart'; // Import for openAppSettings
 
 import '../models/relax_document_file.dart';
+import '../models/relax_picker_theme.dart';
+import '../services/recent_documents_store.dart';
+import 'document_thumbnail.dart';
 
+/// Document picker view.
+///
+/// Relies on the platform document provider (Storage Access Framework on
+/// Android) through `file_picker`, so it needs no legacy storage permission and
+/// works on Android 13+.
+///
+/// Unlike a one-shot file dialog, this view keeps a *pre-populated* grid:
+/// recently picked documents are cached between sessions
+/// (see [RecentDocumentsStore]) and shown on open.
+///
+/// Selection is *controlled*: the owning sheet holds the source of truth and
+/// passes it down via [selectedPaths], reacting to [onToggle]. This keeps the
+/// selection consistent across tab switches and with the shared preview.
 class DocumentPickerSheet extends StatefulWidget {
-  final int maxSelection;
-  final Function(List<RelaxDocumentFile>) onDocumentsSelected;
-
   const DocumentPickerSheet({
     super.key,
     this.maxSelection = 30,
-    required this.onDocumentsSelected,
+    required this.theme,
+    this.acceptedExtensions,
+    required this.selectedPaths,
+    required this.onToggle,
   });
+
+  final int maxSelection;
+  final RelaxPickerTheme theme;
+  final List<String>? acceptedExtensions;
+
+  /// Paths of documents currently selected (owned by the parent).
+  final Set<String> selectedPaths;
+
+  /// Called when the user taps a document tile (or a freshly browsed file is
+  /// auto-selected). The parent decides whether to add or remove it.
+  final ValueChanged<RelaxDocumentFile> onToggle;
 
   @override
   State<DocumentPickerSheet> createState() => _DocumentPickerSheetState();
 }
 
 class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
-  List<RelaxDocumentFile> _allDocuments = [];
-  final List<RelaxDocumentFile> _selectedDocuments = [];
+  static const List<String> _defaultExtensions = [
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar',
+  ];
+
+  final RecentDocumentsStore _store = RecentDocumentsStore();
+
+  final List<RelaxDocumentFile> _documents = [];
+
+  bool _initializing = true;
   bool _isLoading = false;
-  bool _hasStoragePermission = false;
+
+  List<String> get _acceptedExtensions =>
+      widget.acceptedExtensions ?? _defaultExtensions;
 
   @override
   void initState() {
     super.initState();
-    _checkPermissionAndLoad();
+    _restore();
   }
 
-  Future<void> _checkPermissionAndLoad() async {
-    PermissionStatus status = await Permission.storage.status;
-    if (status.isDenied) {
-      status = await Permission.storage.request();
-    }
+  // ---------------------------------------------------------------------------
+  // Persistence
+  // ---------------------------------------------------------------------------
 
-    if (mounted) {
-      setState(() {
-        _hasStoragePermission = status.isGranted;
-      });
-      if (_hasStoragePermission) {
-        _loadDocuments();
-      }
-    }
-  }
-
-  Future<void> _loadDocuments() async {
+  Future<void> _restore() async {
+    final data = await _store.load();
     if (!mounted) return;
-    setState(() => _isLoading = true);
 
-    try {
-      final List<RelaxDocumentFile> docs = [];
-      final List<Directory> dirsToScan = [];
+    // Drop cached entries whose underlying file no longer exists.
+    final stillThere = data.documents
+        .where((d) => d.path.isNotEmpty && File(d.path).existsSync())
+        .toList();
 
-      dirsToScan.add(await getApplicationDocumentsDirectory());
+    setState(() {
+      _documents
+        ..clear()
+        ..addAll(stillThere);
+      _initializing = false;
+    });
 
-      if (Platform.isAndroid) {
-        dirsToScan.add(Directory('/storage/emulated/0/Download'));
-        dirsToScan.add(Directory('/storage/emulated/0/Documents'));
-        final extDirs = await getExternalStorageDirectories(type: StorageDirectory.documents);
-        if (extDirs != null) dirsToScan.addAll(extDirs);
-        final extDirs2 = await getExternalStorageDirectories(type: StorageDirectory.downloads);
-        if (extDirs2 != null) dirsToScan.addAll(extDirs2);
-      }
-
-      for (final dir in dirsToScan) {
-        if (await dir.exists()) {
-          try {
-            final entities = await dir.list().toList();
-            for (final entity in entities) {
-              if (entity is File) {
-                final ext = entity.path.split('.').last.toLowerCase();
-                if (_isSupportedExtension(ext)) {
-                  final stat = await entity.stat();
-                  docs.add(_mapToFile(entity, stat, ext));
-                }
-              }
-            }
-          } catch (e) {
-            debugPrint('Error listing directory ${dir.path}: $e');
-          }
-        }
-      }
-
-      final uniqueDocs = {for (var d in docs) d.path: d}.values.toList();
-      uniqueDocs.sort((a, b) => (b.creationDate ?? DateTime(0)).compareTo(a.creationDate ?? DateTime(0)));
-
-      if (mounted) {
-        setState(() => _allDocuments = uniqueDocs);
-      }
-    } catch (e) {
-      debugPrint('Error loading documents: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    _persist();
   }
+
+  void _persist() {
+    _store.save(documents: _documents);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Picking
+  // ---------------------------------------------------------------------------
 
   Future<void> _pickDocuments() async {
+    setState(() => _isLoading = true);
     try {
       final result = await FilePicker.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar'],
+        allowedExtensions: _acceptedExtensions,
       );
 
       if (result != null) {
-        final documents = result.files.map(_mapFilePickerFile).toList();
-
+        final picked = result.files.map(_mapPlatformFile).toList();
         setState(() {
-          for (final doc in documents) {
-            // Ajouter aux documents récents s'il n'y est pas déjà
-            if (!_allDocuments.any((d) => d.path == doc.path)) {
-              _allDocuments.insert(0, doc);
-            }
-            // Ajouter à la sélection si possible
-            if (!_selectedDocuments.any((d) => d.path == doc.path)) {
-              if (_selectedDocuments.length < widget.maxSelection) {
-                _selectedDocuments.add(doc);
-              }
-            }
+          for (final doc in picked) {
+            _addDocument(doc);
           }
         });
+        _persist();
 
-        widget.onDocumentsSelected(_selectedDocuments);
+        // Auto-select files the user explicitly picked (deduped by path).
+        final seen = <String>{};
+        for (final doc in picked) {
+          if (!widget.selectedPaths.contains(doc.path) && seen.add(doc.path)) {
+            widget.onToggle(doc);
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error picking documents: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  bool _isSupportedExtension(String ext) {
-    return {
-      'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar'
-    }.contains(ext.toLowerCase());
+  /// Adds [doc] to the grid if not already present. Returns whether it was new.
+  bool _addDocument(RelaxDocumentFile doc) {
+    if (_documents.any((d) => d.path == doc.path)) return false;
+    _documents.insert(0, doc);
+    return true;
   }
 
-  RelaxDocumentFile _mapToFile(File file, FileStat stat, String ext) {
-    return RelaxDocumentFile(
-      id: file.path,
-      path: file.path,
-      mimeType: _getMimeType(ext),
-      size: stat.size,
-      fileName: file.path.split(Platform.pathSeparator).last,
-      extension: ext,
-      canPreview: _canPreview(ext),
-      creationDate: stat.modified,
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Mapping
+  // ---------------------------------------------------------------------------
 
-  RelaxDocumentFile _mapFilePickerFile(PlatformFile file) {
+  RelaxDocumentFile _mapPlatformFile(PlatformFile file) {
+    final ext = file.extension ?? '';
     return RelaxDocumentFile(
       id: file.path ?? file.identifier ?? file.name,
       path: file.path ?? '',
-      mimeType: _getMimeType(file.extension),
+      mimeType: _mimeType(ext),
       size: file.size,
       fileName: file.name,
-      extension: file.extension ?? '',
-      canPreview: _canPreview(file.extension),
+      extension: ext,
+      canPreview: _canPreview(ext),
       creationDate: DateTime.now(),
     );
   }
 
-  bool _canPreview(String? extension) {
-    final previewable = <String>{'pdf', 'txt', 'md', 'jpg', 'jpeg', 'png'};
-    return extension != null && previewable.contains(extension.toLowerCase());
-  }
+  bool _canPreview(String ext) =>
+      const {'pdf', 'txt', 'md', 'jpg', 'jpeg', 'png'}.contains(ext.toLowerCase());
 
-  void _toggleDocument(RelaxDocumentFile doc) {
-    setState(() {
-      final index = _selectedDocuments.indexWhere((d) => d.path == doc.path);
-      if (index >= 0) {
-        _selectedDocuments.removeAt(index);
-      } else if (_selectedDocuments.length < widget.maxSelection) {
-        _selectedDocuments.add(doc);
-      }
-    });
-    widget.onDocumentsSelected(_selectedDocuments);
-  }
-
-  String _getMimeType(String? extension) {
-    if (extension == null) return 'application/octet-stream';
-    switch (extension.toLowerCase()) {
+  String _mimeType(String ext) {
+    switch (ext.toLowerCase()) {
       case 'pdf':
         return 'application/pdf';
       case 'doc':
@@ -219,177 +193,172 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
     }
   }
 
-  IconData _getFileIcon(String extension) {
-    switch (extension.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'xls':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'ppt':
-      case 'pptx':
-        return Icons.slideshow;
-      case 'zip':
-      case 'rar':
-        return Icons.archive;
-      case 'txt':
-        return Icons.text_snippet;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return Icons.image;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  String _formatFileSize(int bytes) {
+  String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
-  Widget _buildPermissionDeniedMessage() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text(
-            'Permission d\'accès aux documents refusée.',
-            style: TextStyle(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Veuillez accorder la permission de stockage dans les paramètres de l\'application.',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-            textAlign: TextAlign.center,
-          ),
-          TextButton(
-            onPressed: () => openAppSettings(),
-            child: const Text('Ouvrir les paramètres'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoDocumentsFoundMessage() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.file_copy, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('Aucun document trouvé', style: TextStyle(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Documents récents',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              TextButton.icon(
-                onPressed: _pickDocuments,
-                icon: const Icon(Icons.add_circle_outline, size: 20),
-                label: const Text('Parcourir'),
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : !_hasStoragePermission
-                  ? _buildPermissionDeniedMessage()
-                  : _allDocuments.isEmpty
-                      ? _buildNoDocumentsFoundMessage()
-                      : _buildDocumentsGridView(),
+          child: _initializing || _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(color: widget.theme.accentColor))
+              : _documents.isEmpty
+                  ? _buildEmptyState(cs)
+                  : _buildGrid(cs),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: widget.theme.browseButtonBuilder?.call(
+                context,
+                label: widget.theme.browseLabel,
+                icon: widget.theme.browseIcon,
+                onPressed: _isLoading ? null : _pickDocuments,
+              ) ??
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _pickDocuments,
+                  style: widget.theme.browseButtonStyle ??
+                      OutlinedButton.styleFrom(
+                        foregroundColor: widget.theme.accentColor,
+                        side: BorderSide(color: widget.theme.accentColor),
+                      ),
+                  icon: Icon(widget.theme.browseIcon),
+                  label: Text(widget.theme.browseLabel),
+                ),
+              ),
         ),
       ],
     );
   }
 
-  Widget _buildDocumentsGridView() {
+  Widget _buildEmptyState(ColorScheme cs) {
+    final builder = widget.theme.emptyDocumentsBuilder;
+    if (builder != null) return builder(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(widget.theme.emptyDocumentsIcon,
+              size: 64, color: cs.onSurface.withValues(alpha: 0.3)),
+          const SizedBox(height: 16),
+          Text(
+            widget.theme.noDocumentsLabel,
+            style: widget.theme.emptyStateTitleStyle ??
+                TextStyle(color: cs.onSurface.withValues(alpha: 0.6)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.theme.noDocumentsHintLabel,
+            textAlign: TextAlign.center,
+            style: widget.theme.emptyStateSubtitleStyle ??
+                TextStyle(
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                  fontSize: 12,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrid(ColorScheme cs) {
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.78,
       ),
-      itemCount: _allDocuments.length,
+      itemCount: _documents.length,
       itemBuilder: (context, index) {
-        final doc = _allDocuments[index];
-        final isSelected = _selectedDocuments.any((d) => d.path == doc.path);
+        final doc = _documents[index];
+        final selected = widget.selectedPaths.contains(doc.path);
+        final thumbnail = DocumentThumbnail(
+          key: ValueKey(doc.path),
+          path: doc.path,
+          extension: doc.extension,
+          iconColor: selected ? widget.theme.accentColor : cs.onSurface,
+        );
+
+        if (widget.theme.documentTileBuilder != null) {
+          return widget.theme.documentTileBuilder!(
+            context,
+            document: doc,
+            selected: selected,
+            thumbnail: thumbnail,
+            onTap: () => widget.onToggle(doc),
+          );
+        }
+
         return InkWell(
-          onTap: () => _toggleDocument(doc),
-          borderRadius: BorderRadius.circular(12),
+          onTap: () => widget.onToggle(doc),
+          borderRadius: BorderRadius.circular(widget.theme.tileBorderRadius),
           child: Container(
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(widget.theme.tileBorderRadius),
               border: Border.all(
-                color: isSelected ? Colors.blueAccent : Colors.grey.shade200,
-                width: isSelected ? 2 : 1,
+                color: selected
+                    ? widget.theme.accentColor
+                    : cs.onSurface.withValues(alpha: 0.12),
+                width: selected ? 2 : 1,
               ),
-              color: isSelected ? Colors.blue.withValues(alpha: 0.05) : Colors.white,
+              color: selected
+                  ? widget.theme.accentColor.withValues(alpha: 0.06)
+                  : Colors.transparent,
             ),
             child: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _getFileIcon(doc.extension),
-                        size: 40,
-                        color: isSelected ? Colors.blueAccent : Colors.blueGrey,
+                Column(
+                  children: [
+                    Expanded(
+                      child: Center(child: thumbnail),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      doc.fileName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: (widget.theme.fileNameTextStyle ??
+                              const TextStyle(fontSize: 11))
+                          .copyWith(
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        doc.fileName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatFileSize(doc.size),
-                        style: const TextStyle(fontSize: 10, color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatSize(doc.size),
+                      style: widget.theme.fileSizeTextStyle ??
+                          TextStyle(
+                            fontSize: 10,
+                            color: cs.onSurface.withValues(alpha: 0.5),
+                          ),
+                    ),
+                  ],
                 ),
-                if (isSelected)
-                  const Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Icon(Icons.check_circle, color: Colors.blueAccent, size: 20),
+                if (selected)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Icon(widget.theme.selectedIcon,
+                        color: widget.theme.accentColor, size: 20),
                   ),
               ],
             ),

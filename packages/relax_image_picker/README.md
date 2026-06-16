@@ -1,63 +1,133 @@
-> [!IMPORTANT]
-> ## 📦 This repository has moved
-> `relax_image_picker` is now developed in the **[KalybosPro/relax-tech](https://github.com/KalybosPro/relax-tech)** monorepo, together with the rest of the Relax packages.
->
-> - 👉 **Active source:** https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_image_picker
-> - 🐛 **Issues & Pull Requests:** please open them in the [monorepo](https://github.com/KalybosPro/relax-tech/issues) — this repo no longer tracks them.
-> - 📥 **On pub.dev:** nothing changes. `dart pub add relax_image_picker` keeps working exactly as before.
->
-> This repository is **archived** for historical reference and will not receive further updates.
-
----
-
-<!-- ↓↓↓ Original README kept below for reference ↓↓↓ -->
-
 # Relax Image Picker
-
-A powerful, WhatsApp-like media picker for Flutter that combines gallery browsing, camera capture, and document selection in a unified, performant interface.
 
 ## Features
 
-- 📱 **WhatsApp-style UX**: Bottom sheet interface with smooth animations
-- 🖼️ **Gallery browsing**: Paginated media loading with album selection
-- 📷 **Camera integration**: Capture photos and videos directly in the picker
-- 📄 **Document selection**: Pick files from device storage
-- ⚡ **High performance**: Lazy loading, thumbnail caching, and optimized scrolling
-- 🔒 **Smart permissions**: Handles Android 13+ scoped storage and iOS limited access
-- 🎯 **Flexible API**: Simple, declarative interface with extensive customization
-- 📦 **Modular architecture**: Easy to extend and customize
+- 📱 **WhatsApp-style UX** — bottom-sheet interface with smooth animations
+- 🖼️ **Gallery browsing** — paginated media loading with album selection
+- 📷 **Camera integration** — capture photos and videos without leaving the picker
+- 📄 **Document selection** — pick files from device storage, with recent-documents recall between sessions
+- 👁️ **Full-screen preview** — review images, videos, and documents before confirming
+- 🗜️ **Optional compression** — shrink images on the fly
+- 🔒 **Smart permissions** — handles Android 13+ scoped storage and iOS limited photo access
+- 🎨 **Deep customization** — `RelaxPickerTheme` exposes colors, text/button styles, icons, labels, and full widget-slot builders
+- ⚡ **High performance** — lazy loading, thumbnail caching, and optimized scrolling
 
 ## Installation
 
-Add this to your package's `pubspec.yaml` file:
+Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   relax_image_picker: ^1.0.0
 ```
 
+Then run:
+
+```sh
+flutter pub get
+```
+
+### Platform setup
+
+> **Declare only what you actually use.** The lists below are the *full set* for
+> the "everything enabled" case. Requesting permissions you don't need is the
+> most common cause of store rejections — pick the minimal set that matches the
+> features you turn on (see [Minimal permission sets](#minimal-permission-sets)).
+
+#### Android
+
+Declare the permissions your enabled features need in
+`android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<!-- Camera capture (enableCamera) -->
+<uses-permission android:name="android.permission.CAMERA" />
+<!-- Recording video *with sound* via the in-picker camera -->
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+<!-- Gallery browsing — Android 13+ (API 33+) granular media permissions -->
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+<!-- Android 14+ (API 34+) partial / "selected photos" access -->
+<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+<!-- Gallery browsing on older versions (API ≤ 32) -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
+```
+
+> **Documents (`allowDocuments`) need no storage permission.** Document picking
+> goes through the Storage Access Framework (SAF), so an app that only picks
+> documents can omit *all* the `READ_MEDIA_*` / `READ_EXTERNAL_STORAGE` lines.
+>
+> The package never requests `MANAGE_EXTERNAL_STORAGE` (the broad "All files
+> access" permission that triggers a heavy Play review).
+
+#### iOS
+
+Add usage descriptions to `ios/Runner/Info.plist`. **Make the strings specific
+to your app** — Apple frequently rejects vague purpose strings. Replace the
+examples below with text that states the concrete user benefit.
+
+```xml
+<!-- Gallery browsing -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Allows you to attach photos and videos to your messages.</string>
+<!-- Camera capture (enableCamera) -->
+<key>NSCameraUsageDescription</key>
+<string>Lets you take a photo or record a video to send.</string>
+<!-- Recording video with sound -->
+<key>NSMicrophoneUsageDescription</key>
+<string>Records sound when you capture a video.</string>
+```
+
+### Minimal permission sets
+
+Add only the lines for the features you enable:
+
+| Feature you use | Android | iOS |
+|---|---|---|
+| Gallery (`allowImages` / `allowVideos`) | `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, `READ_EXTERNAL_STORAGE` (≤32) | `NSPhotoLibraryUsageDescription` |
+| Camera photo (`enableCamera`) | `CAMERA` | `NSCameraUsageDescription` |
+| Camera video with sound | `CAMERA`, `RECORD_AUDIO` | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` |
+| Documents only (`allowDocuments`) | *(none — uses SAF)* | *(none — uses the system file picker)* |
+
+### Store review notes
+
+- **Google Play — Photo & Video Permissions policy.** Requesting
+  `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` is allowed for a media picker (a
+  legitimate core use case), but Google may ask you to complete the *Photo and
+  Video Permissions declaration* in the Play Console. If your app only needs
+  occasional one-off selection, consider relying on the system **Android Photo
+  Picker** instead, which requires no permission.
+- **Apple App Store.** The `*UsageDescription` strings are mandatory — without
+  them the app crashes on access and is rejected. Vague strings are a common
+  rejection reason; describe the concrete user-facing benefit.
+- **Data safety / privacy.** Declare media and camera access in the Play
+  *Data safety* form and your App Store *privacy* details.
+
 ## Usage
 
-### Basic Usage
+### Basic usage
 
 ```dart
 import 'package:relax_image_picker/relax_image_picker.dart';
 
 final result = await RelaxImagePicker.pick(context);
 
-// Access selected media
 print('Total files: ${result.files.length}');
 print('Images: ${result.images.length}');
 print('Videos: ${result.videos.length}');
 print('Documents: ${result.documents.length}');
 
-// Process each file
 for (final file in result.files) {
-  print('File: ${file.path}, Size: ${file.size} bytes');
+  print('File: ${file.path} · ${file.size} bytes');
 }
 ```
 
-### Advanced Configuration
+`pick` always returns a `RelaxPickerResult`. When the user cancels or permissions
+are denied, the result is empty (`result.isEmpty == true`).
+
+### Advanced configuration
 
 ```dart
 final result = await RelaxImagePicker.pick(
@@ -70,102 +140,123 @@ final result = await RelaxImagePicker.pick(
   maxSelection: 30,
   enableCompression: false,
   acceptedDocumentTypes: ['pdf', 'doc', 'docx'],
+  accentColor: const Color(0xFF25D366),
+  title: 'Select media',
 );
 ```
 
-## API Reference
+### Theming
 
-### RelaxImagePicker.pick()
+Pass a `RelaxPickerTheme` to override colors, text and button styles, icons, and
+labels. Every style field is nullable and falls back to a sensible default, so an
+empty `RelaxPickerTheme()` reproduces the default look.
 
-Opens the media picker with the specified configuration.
+```dart
+final result = await RelaxImagePicker.pick(
+  context,
+  theme: RelaxPickerTheme(
+    accentColor: const Color(0xFF6C4DF6),
+    sheetBorderRadius: 32,
+    tileBorderRadius: 18,
+    titleTextStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+    maxSelectionLabelBuilder: (max) => 'You can pick at most $max',
+  ),
+);
+```
 
-**Parameters:**
-- `context`: BuildContext (required)
-- `allowImages`: bool - Enable image selection (default: true)
-- `allowVideos`: bool - Enable video selection (default: true)
-- `allowDocuments`: bool - Enable document selection (default: true)
-- `enableCamera`: bool - Show camera tab (default: true)
-- `enablePreview`: bool - Enable media preview (default: true)
-- `maxSelection`: int - Maximum number of items to select (default: 30)
-- `enableCompression`: bool - Compress images/videos (default: false)
-- `acceptedDocumentTypes`: List<String>? - Allowed file extensions
+### Widget-slot builders
 
-**Returns:** `Future<RelaxPickerResult?>`
+For full control, `RelaxPickerTheme` exposes builders that let you replace
+individual widgets entirely (send button, tabs, media/document tiles, empty
+states, the bottom bar, the capture button, and more). Any builder left null
+falls back to the default themed widget.
 
-### RelaxPickerResult
+```dart
+RelaxPickerTheme(
+  accentColor: accent,
+  sendButtonBuilder: (context, {required selectedCount, required processing, required onSend}) {
+    return FilledButton(
+      onPressed: onSend,
+      child: processing
+          ? const CircularProgressIndicator(strokeWidth: 2)
+          : Text('Send ($selectedCount)'),
+    );
+  },
+);
+```
 
-Contains all selected media organized by type.
+See the [`example/`](example/) app for a complete demonstration mixing style
+overrides and widget builders.
 
-**Properties:**
-- `files`: List<RelaxMediaFile> - All selected files
-- `images`: List<RelaxImageFile> - Selected images only
-- `videos`: List<RelaxVideoFile> - Selected videos only
-- `documents`: List<RelaxDocumentFile> - Selected documents only
+## API reference
 
-### Media File Models
+### `RelaxImagePicker.pick()`
 
-#### RelaxMediaFile (base class)
-- `id`: String - Unique identifier
-- `path`: String - File system path
-- `mimeType`: String - MIME type
-- `size`: int - File size in bytes
-- `thumbnailPath`: String? - Path to thumbnail (if available)
-- `creationDate`: DateTime? - File creation date
+Opens the media picker with the given configuration and returns the selection.
 
-#### RelaxImageFile extends RelaxMediaFile
-- `width`: int - Image width
-- `height`: int - Image height
-- `albumId`: String? - Album identifier
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `context` | `BuildContext` | required | Build context used to show the sheet |
+| `allowImages` | `bool` | `true` | Enable image selection |
+| `allowVideos` | `bool` | `true` | Enable video selection |
+| `allowDocuments` | `bool` | `true` | Enable document selection |
+| `enableCamera` | `bool` | `true` | Show the in-picker camera |
+| `enablePreview` | `bool` | `true` | Enable the full-screen preview step |
+| `maxSelection` | `int` | `30` | Maximum number of items selectable |
+| `enableCompression` | `bool` | `false` | Compress images on selection |
+| `acceptedDocumentTypes` | `List<String>?` | `null` | Allowed document extensions |
+| `accentColor` | `Color` | `0xFF25D366` | Accent color when no `theme` is given |
+| `theme` | `RelaxPickerTheme?` | `null` | Full UI customization |
+| `title` | `String` | `'Select media'` | Sheet title |
+| `confirmButtonText` / `cancelButtonText` / `validateButtonText` | `String` | — | Action labels |
+| `galleryTabText` / `cameraTabText` / `documentsTabText` | `String` | — | Tab labels |
 
-#### RelaxVideoFile extends RelaxMediaFile
-- `duration`: Duration - Video duration
-- `width`: int - Video width
-- `height`: int - Video height
-- `isMuted`: bool - Whether video is muted
-- `albumId`: String? - Album identifier
+**Returns:** `Future<RelaxPickerResult>`
 
-#### RelaxDocumentFile extends RelaxMediaFile
-- `fileName`: String - Display name
-- `extension`: String - File extension
-- `canPreview`: bool - Whether file can be previewed
+### `RelaxPickerResult`
 
-## Platform Support
+All selected media organized by type.
 
-### Android
-- **Permissions**: Photos, Videos, Storage, Camera
-- **Android 13+**: Scoped storage with granular permissions
-- **Legacy**: Full storage access for older versions
+| Property | Type | Description |
+|---|---|---|
+| `files` | `List<RelaxMediaFile>` | All selected files |
+| `images` | `List<RelaxImageFile>` | Selected images only |
+| `videos` | `List<RelaxVideoFile>` | Selected videos only |
+| `documents` | `List<RelaxDocumentFile>` | Selected documents only |
+| `isEmpty` | `bool` | `true` when nothing was selected |
+| `hasMedia` | `bool` | `true` when at least one file was selected |
 
-### iOS
-- **Permissions**: Photo Library, Camera
-- **iOS 14+**: Limited photo library access
-- **Fallback**: Graceful handling of permission denials
+### Media file models
 
-## Performance Optimizations
+**`RelaxMediaFile`** (base) — `id`, `path`, `mimeType`, `size`, `thumbnailPath?`, `creationDate?`
 
-- **Lazy Loading**: Media loaded in pages of 84 items
-- **Thumbnail Caching**: Efficient memory management for previews
-- **Pagination**: Smooth scrolling through thousands of items
-- **Background Processing**: Non-blocking file operations
-- **Memory Management**: Automatic cleanup of unused resources
+- **`RelaxImageFile`** adds `width`, `height`, `albumId?`
+- **`RelaxVideoFile`** adds `duration`, `width`, `height`, `isMuted`, `albumId?`
+- **`RelaxDocumentFile`** adds `fileName`, `extension`, `canPreview` (plus `toJson` / `fromJson` for caching)
+
+## Platform support
+
+| Platform | Supported | Notes |
+|---|---|---|
+| Android | ✅ | Scoped storage (Android 13+) and legacy storage |
+| iOS | ✅ | Limited photo library access (iOS 14+) supported |
 
 ## Architecture
 
-The package follows a modular architecture:
-
 ```
 lib/src/
-├── controllers/     # Business logic and state management
-├── models/         # Data models and result objects
-├── services/       # Platform integrations (photo_manager, camera, file_picker)
-├── widgets/        # UI components (gallery, camera, document pickers)
+├── controllers/   # Business logic and state management
+├── models/        # Data models, result objects, theme & builders
+├── services/      # Platform integrations (photo_manager, camera, file_picker)
+├── widgets/       # UI components (gallery, camera, document pickers, preview)
 └── relax_image_picker.dart  # Public API
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Issues and pull requests are welcome in the
+[relax-tech monorepo](https://github.com/KalybosPro/relax-tech).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

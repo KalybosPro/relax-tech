@@ -1,0 +1,82 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter test d:\src\projects\packages\relax-tech\packages\relax_image_picker\example
+
+## exception
+
+PathNotFoundException: PathNotFoundException: Directory listing failed, path = 'd:\src\projects\packages\relax-tech\packages\relax_image_picker\example\build\flutter_image_compress_common\.transforms\4bf274ef693ce551ca53b03407d3159d\transformed\bundleLibRuntimeToDirDebug\bundleLibRuntimeToDirDebug_dex\com\fluttercandies\flutter_image_compress\*' (OS Error: Le chemin d’accès spécifié est introuvable, errno = 3)
+
+```
+#0      _Directory._fillWithDirectoryListing (dart:io-patch/directory_patch.dart:49:4)
+#1      _Directory.listSync (dart:io/directory_impl.dart:259:5)
+#2      ForwardingDirectory.listSync (package:file/src/forwarding/forwarding_directory.dart:43:12)
+#3      ForwardingDirectory.listSync (package:file/src/forwarding/forwarding_directory.dart:43:12)
+#4      _findTests (package:flutter_tools/src/commands/test.dart:863:8)
+#5      TestCommand.verifyThenRunCommand (package:flutter_tools/src/commands/test.dart:369:32)
+#6      FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1590:33)
+<asynchronous suspension>
+#7      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#8      CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#9      FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:496:9)
+<asynchronous suspension>
+#10     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#11     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+<asynchronous suspension>
+#12     FlutterCommandRunner.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:307:33)
+<asynchronous suspension>
+#13     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+<asynchronous suspension>
+#14     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#15     main (package:flutter_tools/executable.dart:103:3)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[✓] Flutter (Channel stable, 3.41.9, on Microsoft Windows [version 10.0.26200.8655], locale fr-TG) [401ms]
+    • Flutter version 3.41.9 on channel stable at C:\src\flutter
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision 00b0c91f06 (7 weeks ago), 2026-04-29 10:03:19 -0700
+    • Engine revision 42d3d75a56
+    • Dart version 3.11.5
+    • DevTools version 2.54.2
+    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+
+[✓] Windows Version (Windows 11 or higher, 25H2, 2009) [1 219ms]
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 36.1.0) [4,7s]
+    • Android SDK at C:\Users\DELL\AppData\Local\Android\sdk
+    • Emulator version 36.4.9.0 (build_id 14788078) (CL:N/A)
+    • Platform android-36.1, build-tools 36.1.0
+    • Java binary at: C:\Program Files\Android\Android Studio\jbr\bin\java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    • Java version OpenJDK Runtime Environment (build 21.0.9+-14649483-b1163.86)
+    • All Android licenses accepted.
+
+[✗] Chrome - develop for the web (Cannot find Chrome executable at .\Google\Chrome\Application\chrome.exe) [166ms]
+    ! Cannot find Chrome. Try setting CHROME_EXECUTABLE to a Chrome executable.
+
+[✓] Visual Studio - develop Windows apps (Visual Studio Build Tools 2022 17.14.26) [164ms]
+    • Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools
+    • Visual Studio Build Tools 2022 version 17.14.36930.0
+    • Windows 10 SDK version 10.0.26100.0
+
+[✓] Connected device (3 available) [347ms]
+    • STK L21 (mobile)  • XMJNW19B23011768 • android-arm64  • Android 10 (API 29)
+    • Windows (desktop) • windows          • windows-x64    • Microsoft Windows [version 10.0.26200.8655]
+    • Edge (web)        • edge             • web-javascript • Microsoft Edge 149.0.4022.69
+
+[✓] Network resources [1 792ms]
+    • All expected network resources are available.
+
+! Doctor found issues in 1 category.
+```

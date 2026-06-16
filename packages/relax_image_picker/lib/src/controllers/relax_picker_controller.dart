@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/relax_picker_result.dart';
+import '../models/relax_picker_theme.dart';
 import '../services/camera_service.dart';
 import '../services/gallery_service.dart';
 import '../services/permission_service.dart';
@@ -22,6 +23,8 @@ class RelaxPickerController {
     int maxSelection = 30,
     bool enableCompression = false,
     List<String>? acceptedDocumentTypes,
+    Color accentColor = const Color(0xFF25D366),
+    RelaxPickerTheme? theme,
     required String title,
     required String confirmButtonText,
     required String cancelButtonText,
@@ -45,6 +48,8 @@ class RelaxPickerController {
       );
     }
 
+    final resolvedTheme = theme ?? RelaxPickerTheme(accentColor: accentColor);
+
     final galleryResult = await galleryService.pickFromGallery(
       context,
       allowImages: allowImages,
@@ -53,6 +58,8 @@ class RelaxPickerController {
       enablePreview: enablePreview,
       maxSelection: maxSelection,
       enableCompression: enableCompression,
+      accentColor: accentColor,
+      theme: resolvedTheme,
       allowDocuments: allowDocuments,
       title: title,
       confirmButtonText: confirmButtonText,

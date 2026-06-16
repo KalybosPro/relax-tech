@@ -34,10 +34,9 @@ class PermissionService {
       requiredPermissions.add(Permission.microphone);
     }
 
-    // Request storage permission for documents if enabled
-    if (allowDocuments) {
-      requiredPermissions.add(Permission.storage);
-    }
+    // Documents are accessed through the platform document provider
+    // (Storage Access Framework on Android), which requires no runtime
+    // permission on Android 13+. `allowDocuments` is intentionally not gated.
 
     if (requiredPermissions.isEmpty) {
       return true;
@@ -84,11 +83,7 @@ class PermissionService {
       }
     }
 
-    // Check storage permission for documents
-    if (allowDocuments) {
-      final storageStatus = await Permission.storage.status;
-      if (!storageStatus.isGranted) return false;
-    }
+    // Documents use the Storage Access Framework; no runtime check needed.
 
     return true;
   }

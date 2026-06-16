@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'controllers/relax_picker_controller.dart';
 import 'models/relax_picker_result.dart';
+import 'models/relax_picker_theme.dart';
 
 /// Public entry point for the Relax Image Picker package.
 class RelaxImagePicker {
@@ -15,6 +16,11 @@ class RelaxImagePicker {
     int maxSelection = 30,
     bool enableCompression = false,
     List<String>? acceptedDocumentTypes,
+    Color accentColor = const Color(0xFF25D366),
+
+    /// Full UI customization (colors, text/button styles, icons, labels).
+    /// When null, a default theme derived from [accentColor] is used.
+    RelaxPickerTheme? theme,
     String title = 'Select media',
     String confirmButtonText = 'Confirm',
     String cancelButtonText = 'Cancel',
@@ -35,6 +41,8 @@ class RelaxImagePicker {
       maxSelection: maxSelection,
       enableCompression: enableCompression,
       acceptedDocumentTypes: acceptedDocumentTypes,
+      accentColor: accentColor,
+      theme: theme,
       title: title,
       confirmButtonText: confirmButtonText,
       cancelButtonText: cancelButtonText,

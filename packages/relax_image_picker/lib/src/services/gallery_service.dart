@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/relax_picker_result.dart';
+import '../models/relax_picker_theme.dart';
 import '../widgets/gallery_picker_sheet.dart';
 
 class GalleryService {
@@ -13,13 +14,15 @@ class GalleryService {
     bool enablePreview = true,
     int maxSelection = 30,
     bool enableCompression = false,
-     required String title,
-   required String confirmButtonText,
-   required String cancelButtonText,
-   required String validateButtonText,
-   required String galleryTabText,
-   required String cameraTabText,
-  required String documentsTabText,
+    Color accentColor = const Color(0xFF25D366),
+    required RelaxPickerTheme theme,
+    required String title,
+    required String confirmButtonText,
+    required String cancelButtonText,
+    required String validateButtonText,
+    required String galleryTabText,
+    required String cameraTabText,
+    required String documentsTabText,
   }) async {
     final result = await showModalBottomSheet<RelaxPickerResult>(
       context: context,
@@ -34,6 +37,7 @@ class GalleryService {
           enablePreview: enablePreview,
           maxSelection: maxSelection,
           enableCompression: enableCompression,
+          theme: theme,
           title: title,
           confirmButtonText: confirmButtonText,
           cancelButtonText: cancelButtonText,
