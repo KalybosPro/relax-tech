@@ -1,10 +1,16 @@
 name: relax_image_picker
 description: "A powerful, WhatsApp-like media picker for Flutter"
-version: 1.0.0
+version: 1.0.1
 resolution: workspace
 
 repository: https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_image_picker
 issue_tracker: https://github.com/KalybosPro/relax-tech/issues
+
+screenshots:
+  - description: Default theme
+    path: screenshots/default_theme.png
+  - description: Custom theme with widget-slot builders
+    path: screenshots/custom_theme.png
 
 environment:
   sdk: ^3.11.0

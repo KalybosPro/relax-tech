@@ -12,6 +12,12 @@
 - 🎨 **Deep customization** — `RelaxPickerTheme` exposes colors, text/button styles, icons, labels, and full widget-slot builders
 - ⚡ **High performance** — lazy loading, thumbnail caching, and optimized scrolling
 
+## Screenshots
+
+| Default theme | Custom theme + builders |
+|:---:|:---:|
+| ![Default theme](screenshots/default_theme.png) | ![Custom theme](screenshots/custom_theme.png) |
+
 ## Installation
 
 Add the dependency to your `pubspec.yaml`:
