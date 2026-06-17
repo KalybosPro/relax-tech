@@ -75,9 +75,11 @@ class RelaxDatabase extends GeneratedDatabase {
     String table, {
     String? where,
     List<Object?>? whereArgs,
+    String? orderBy,
   }) async {
     final buffer = StringBuffer('SELECT * FROM $table');
     if (where != null) buffer.write(' WHERE $where');
+    if (orderBy != null) buffer.write(' ORDER BY $orderBy');
 
     final results = await customSelect(
       buffer.toString(),

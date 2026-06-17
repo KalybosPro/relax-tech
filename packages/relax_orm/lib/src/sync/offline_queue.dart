@@ -31,9 +31,101 @@ class OfflineQueue {
     ''');
   }
 
-  /// Enqueues a new operation.
+  /// Enqueues a new operation, coalescing it into the existing *pending*
+  /// operation for the same entity when there is one.
+  ///
+  /// This keeps the on-disk queue at one row per entity instead of growing with
+  /// every offline edit. The merge keeps the original row id and `created_at`
+  /// (so cross-entity ordering stays stable) and applies the same folding rules
+  /// as [SyncOperation.coalesce]:
+  ///
+  /// - `add` then `update*`  ⇒ a single `add` carrying the latest data
+  /// - `update*`             ⇒ a single `update` carrying the latest data
+  /// - `add` then `delete`   ⇒ the row is removed entirely (never sent)
+  /// - `update` then `delete`⇒ `delete`
+  /// - `delete` then `add`   ⇒ `update` (re-creation)
+  ///
+  /// Operations that are already `failed`/`syncing` are never merged into — a
+  /// new row is inserted instead, and [SyncOperation.coalesce] folds them at
+  /// push time once they are reset to `pending`.
   Future<void> enqueue(SyncOperation op) async {
-    await _db.rawInsert(_table, _toRow(op));
+    await _db.transaction(() async {
+      final existing = await _pendingForEntity(op.tableName, op.entityId);
+      if (existing == null) {
+        await _db.rawInsert(_table, _toRow(op));
+        return;
+      }
+
+      final merged = _merge(existing, op);
+      // Always drop the old pending row; it's either replaced or cancelled out.
+      await _db.rawDelete(_table, where: 'id = ?', whereArgs: [existing.id]);
+      if (merged != null) {
+        await _db.rawInsert(_table, _toRow(merged));
+      }
+    });
+  }
+
+  /// Returns the earliest pending operation for an entity, or null if none.
+  Future<SyncOperation?> _pendingForEntity(
+    String tableName,
+    String entityId,
+  ) async {
+    final rows = await _db.rawSelect(
+      _table,
+      where: "table_name = ? AND entity_id = ? AND status = 'pending'",
+      whereArgs: [tableName, entityId],
+      orderBy: 'created_at ASC',
+    );
+    if (rows.isEmpty) return null;
+    return _fromRow(rows.first);
+  }
+
+  /// Folds [next] into the existing pending [prev], or returns null when the two
+  /// cancel out (`add` then `delete`). The result reuses [prev]'s id and
+  /// `created_at`.
+  SyncOperation? _merge(SyncOperation prev, SyncOperation next) {
+    switch (next.type) {
+      case SyncOperationType.add:
+        return _replace(
+          prev,
+          // delete → add re-creates an entity the server still has.
+          type: prev.type == SyncOperationType.delete
+              ? SyncOperationType.update
+              : SyncOperationType.add,
+          data: next.data,
+        );
+      case SyncOperationType.update:
+        return _replace(
+          prev,
+          // Preserve `add` semantics if the entity was created while offline.
+          type: prev.type == SyncOperationType.add
+              ? SyncOperationType.add
+              : SyncOperationType.update,
+          data: next.data,
+        );
+      case SyncOperationType.delete:
+        // add → delete: the server never knew about it; drop the row.
+        if (prev.type == SyncOperationType.add) return null;
+        return _replace(prev, type: SyncOperationType.delete, data: null);
+    }
+  }
+
+  SyncOperation _replace(
+    SyncOperation prev, {
+    required SyncOperationType type,
+    required Map<String, dynamic>? data,
+  }) {
+    return SyncOperation(
+      id: prev.id,
+      tableName: prev.tableName,
+      type: type,
+      entityId: prev.entityId,
+      data: data,
+      createdAt: prev.createdAt,
+      // A freshly merged op should be retried cleanly.
+      status: OperationStatus.pending,
+      retryCount: 0,
+    );
   }
 
   /// Returns all pending operations for a given table, ordered by creation time.
@@ -42,6 +134,7 @@ class OfflineQueue {
       _table,
       where: "table_name = ? AND status = 'pending'",
       whereArgs: [tableName],
+      orderBy: 'created_at ASC',
     );
     return rows.map(_fromRow).toList();
   }
@@ -52,6 +145,7 @@ class OfflineQueue {
       _table,
       where: "status = 'pending'",
       whereArgs: [],
+      orderBy: 'created_at ASC',
     );
     return rows.map(_fromRow).toList();
   }
@@ -81,10 +175,20 @@ class OfflineQueue {
   }
 
   /// Resets failed operations back to pending so they'll be retried.
-  Future<void> resetFailed({int maxRetries = 5}) async {
+  ///
+  /// Operations whose [retryCount] has reached [maxRetries] are left in the
+  /// `failed` state (dead-letter) and not retried. If [tableName] is provided,
+  /// only that table's operations are reset.
+  Future<void> resetFailed({String? tableName, int maxRetries = 5}) async {
+    final where = StringBuffer("status = 'failed' AND retry_count < ?");
+    final args = <Object?>[maxRetries];
+    if (tableName != null) {
+      where.write(' AND table_name = ?');
+      args.add(tableName);
+    }
     await _db.customStatement(
-      "UPDATE $_table SET status = 'pending' WHERE status = 'failed' AND retry_count < ?",
-      [maxRetries],
+      "UPDATE $_table SET status = 'pending' WHERE $where",
+      args,
     );
   }
 

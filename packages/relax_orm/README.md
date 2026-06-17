@@ -189,14 +189,24 @@ class UserSyncAdapter implements SyncAdapter<User> {
 
   @override
   Future<SyncPullResult<User>> pull({DateTime? since}) async {
+    // `since` is the watermark from the previous pull (null on first sync).
     final response = await api.get('/users/changes', since: since);
     return SyncPullResult(
       upserts: response.updated,
       deletedIds: response.deleted,
+      // Return the server's own timestamp so the next pull resumes exactly
+      // where this one stopped — immune to client/server clock drift.
+      serverTime: response.serverTime,
     );
   }
 }
 ```
+
+> **Tip — `serverTime`:** the engine uses it as the `since` value for the next
+> pull of that table. When your API can return its authoritative cursor
+> (a server timestamp, a change id, etc.), always set it. If you leave it
+> `null`, the engine falls back to the client clock captured *before* the sync,
+> which is less precise under clock skew but still works.
 
 ### 2. Configure and start
 
@@ -235,6 +245,33 @@ await engine.syncAll();               // sync all registered tables
 await engine.syncTable('users');      // sync a specific table
 final pending = await engine.pendingCount(); // number of queued operations
 ```
+
+### Offline queue & coalescing
+
+Every CRUD call on a synced collection is persisted to an internal SQLite queue,
+so changes survive app restarts and are replayed when connectivity returns. To
+avoid flooding your API with intermediate states, the queue **coalesces** repeated
+edits to the same entity at two levels:
+
+- **On write (storage):** a new operation is folded into the entity's existing
+  *pending* row, so the queue holds **one row per entity** instead of one per edit.
+- **On push (network):** whatever remains pending is folded once more, so the
+  server receives **a single write per entity** per sync.
+
+Folding rules (in chronological order, per entity):
+
+| Sequence | Result sent to the server |
+|---|---|
+| `add` → `update` → … | a single **create** with the final state |
+| `update` → `update` → … | a single **update** with the final state |
+| `add` → `delete` | **nothing** (the entity never reached the server) |
+| `update` → `delete` | a **delete** |
+| `delete` → `add` | an **update** (re-creation of an existing remote entity) |
+
+So editing a row ten times offline pushes it **once**, and creating then deleting
+a row offline pushes **nothing**. Operations that have already failed mid-flight
+are never silently merged — they keep their own row and are retried on the next
+sync (up to `maxRetries`).
 
 ### Conflict Resolution
 

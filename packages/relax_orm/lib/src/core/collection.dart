@@ -155,7 +155,10 @@ class Collection<T> {
   Future<void> _queueSync(SyncOperationType type, T entity) async {
     if (_syncEngine == null) return;
     final id = _schema.getPrimaryKeyValue(entity).toString();
-    final data = _schema.toMap(entity);
+    // Store the SQL-encoded row (DateTime → int, bool → int, …) so the queue's
+    // JSON serialization never fails on non-primitive Dart values. The engine
+    // decodes it back with [TableSchema.rowToEntity] before pushing.
+    final data = _schema.entityToRow(entity);
     await _syncEngine.queueOperation(
       tableName: _schema.tableName,
       type: type,

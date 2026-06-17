@@ -169,7 +169,14 @@ class UserSyncAdapter implements SyncAdapter<User> {
   Future<SyncPullResult<User>> pull({DateTime? since}) async {
     // GET /api/users/changes?since=...
     print('Pulling user changes since $since...');
-    return SyncPullResult(upserts: [], deletedIds: []);
+    return SyncPullResult(
+      upserts: [],
+      deletedIds: [],
+      // Return the server's own cursor so the next pull resumes from here,
+      // unaffected by client/server clock drift. Omit it to fall back to the
+      // client clock.
+      serverTime: DateTime.now(),
+    );
   }
 }
 

@@ -47,12 +47,19 @@ class MockSyncAdapter implements SyncAdapter<Task> {
 
   Object? pushError;
 
+  /// Overrides what [push] returns (server-confirmed versions). Defaults to
+  /// echoing the pushed entities.
+  List<Task>? pushReturns;
+
+  /// The `since` watermark received on the most recent [pull].
+  DateTime? lastSince;
+
   @override
   Future<List<Task>> push(List<Task> entities) async {
     pushCallCount++;
     if (pushError != null) throw pushError!;
     pushedEntities.addAll(entities);
-    return entities;
+    return pushReturns ?? entities;
   }
 
   @override
@@ -65,8 +72,51 @@ class MockSyncAdapter implements SyncAdapter<Task> {
   @override
   Future<SyncPullResult<Task>> pull({DateTime? since}) async {
     pullCallCount++;
+    lastSince = since;
     return nextPullResult;
   }
+}
+
+// -- Regression model with a DateTime field (offline-queue JSON safety) --
+
+class Event {
+  final String id;
+  final String name;
+  final DateTime at;
+
+  Event({required this.id, required this.name, required this.at});
+}
+
+final eventSchema = TableSchema<Event>(
+  tableName: 'events',
+  columns: [
+    ColumnDef.text('id', isPrimaryKey: true),
+    ColumnDef.text('name'),
+    ColumnDef.dateTime('at'),
+  ],
+  fromMap: (m) => Event(
+    id: m['id'] as String,
+    name: m['name'] as String,
+    at: m['at'] as DateTime,
+  ),
+  toMap: (e) => {'id': e.id, 'name': e.name, 'at': e.at},
+);
+
+class MockEventAdapter implements SyncAdapter<Event> {
+  final List<Event> pushed = [];
+
+  @override
+  Future<List<Event>> push(List<Event> entities) async {
+    pushed.addAll(entities);
+    return entities;
+  }
+
+  @override
+  Future<void> pushDeletes(List<Object> ids) async {}
+
+  @override
+  Future<SyncPullResult<Event>> pull({DateTime? since}) async =>
+      SyncPullResult<Event>();
 }
 
 // -- Tests --
@@ -164,6 +214,79 @@ void main() {
       final pending = await queue.getPending('tasks');
       expect(pending.first.data, data);
       expect(pending.first.createdAt, DateTime(2024, 6, 15));
+    });
+
+    // -- Storage coalescing (one row per entity) --
+
+    SyncOperation op(
+      SyncOperationType type,
+      String entityId,
+      int order, {
+      Map<String, dynamic>? data,
+    }) =>
+        SyncOperation(
+          id: 'op${entityId}_$order',
+          tableName: 'tasks',
+          type: type,
+          entityId: entityId,
+          data: data,
+          createdAt: DateTime(2024).add(Duration(seconds: order)),
+        );
+
+    test('add then update collapses to one pending add row', () async {
+      await queue.enqueue(op(SyncOperationType.add, '1', 0, data: {'v': 'a'}));
+      await queue.enqueue(op(SyncOperationType.update, '1', 1, data: {'v': 'b'}));
+
+      final pending = await queue.getPending('tasks');
+      expect(pending.length, 1);
+      expect(pending.single.type, SyncOperationType.add);
+      expect(pending.single.data, {'v': 'b'});
+    });
+
+    test('add then delete removes the row entirely', () async {
+      await queue.enqueue(op(SyncOperationType.add, '1', 0));
+      await queue.enqueue(op(SyncOperationType.delete, '1', 1));
+
+      expect(await queue.getPending('tasks'), isEmpty);
+    });
+
+    test('update then delete collapses to a delete', () async {
+      await queue.enqueue(op(SyncOperationType.update, '1', 0));
+      await queue.enqueue(op(SyncOperationType.delete, '1', 1));
+
+      final pending = await queue.getPending('tasks');
+      expect(pending.single.type, SyncOperationType.delete);
+    });
+
+    test('merge keeps the original row id and created_at', () async {
+      await queue.enqueue(op(SyncOperationType.add, '1', 0, data: {'v': 'a'}));
+      await queue.enqueue(op(SyncOperationType.update, '1', 5, data: {'v': 'b'}));
+
+      final pending = await queue.getPending('tasks');
+      expect(pending.single.id, 'op1_0');
+      expect(pending.single.createdAt, DateTime(2024));
+    });
+
+    test('different entities are not merged', () async {
+      await queue.enqueue(op(SyncOperationType.add, '1', 0));
+      await queue.enqueue(op(SyncOperationType.add, '2', 1));
+      await queue.enqueue(op(SyncOperationType.update, '1', 2));
+
+      final pending = await queue.getPending('tasks');
+      expect(pending.length, 2);
+    });
+
+    test('a failed op is not merged into; a new row is added instead', () async {
+      await queue.enqueue(op(SyncOperationType.add, '1', 0));
+      await queue.markFailed('op1_0');
+
+      await queue.enqueue(op(SyncOperationType.update, '1', 1));
+
+      // The failed row is untouched; the new pending op is separate.
+      final pending = await queue.getPending('tasks');
+      expect(pending.length, 1);
+      expect(pending.single.type, SyncOperationType.update);
+      expect(await queue.getAllPending(), hasLength(1));
     });
   });
 
@@ -391,6 +514,190 @@ void main() {
         Task(id: '1', title: 'B'),
       );
       expect(result.title, 'A+B');
+    });
+  });
+
+  // -- Regression tests for the sync fixes --
+
+  group('sync regressions', () {
+    test('entities with DateTime fields survive the offline queue', () async {
+      final db = await RelaxDB.openInMemory(schemas: [eventSchema]);
+      final engine = await db.sync;
+      final adapter = MockEventAdapter();
+      engine.register(SyncConfig<Event>(schema: eventSchema, adapter: adapter));
+
+      final at = DateTime(2026, 6, 17, 10, 30);
+      // Previously threw JsonUnsupportedObjectError on enqueue (DateTime).
+      await db.collection<Event>().add(Event(id: 'e1', name: 'Launch', at: at));
+      expect(await engine.pendingCount(), 1);
+
+      await engine.syncTable('events');
+      expect(adapter.pushed.single.at, at);
+
+      await db.close();
+    });
+
+    test('a failed push is retried on a later sync', () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      adapter.pushError = Exception('transient network error');
+      await db.collection<Task>().add(Task(id: '1', title: 'Retry me'));
+      await engine.syncTable('tasks');
+
+      // The op is parked as failed, not pending, and nothing was pushed.
+      expect(await engine.pendingCount(), 0);
+      expect(adapter.pushedEntities, isEmpty);
+
+      // Recover: the next sync resets the failed op and pushes it.
+      adapter.pushError = null;
+      await engine.syncTable('tasks');
+      expect(adapter.pushedEntities.any((t) => t.title == 'Retry me'), isTrue);
+
+      await db.close();
+    });
+
+    test('server-confirmed push is written back to the local database',
+        () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      final tasks = db.collection<Task>();
+      await tasks.add(Task(id: '1', title: 'Original'));
+
+      // Server normalizes the entity and returns the canonical version.
+      adapter.pushReturns = [Task(id: '1', title: 'Server normalized')];
+      await engine.syncTable('tasks');
+
+      final stored = await tasks.get('1');
+      expect(stored!.title, 'Server normalized');
+
+      await db.close();
+    });
+
+    test('serverTime from a pull is reused as the next since watermark',
+        () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      final firstWatermark = DateTime(2026, 1, 1);
+      adapter.nextPullResult = SyncPullResult<Task>(serverTime: firstWatermark);
+      await engine.syncTable('tasks');
+      expect(adapter.lastSince, isNull); // initial pull has no watermark
+
+      adapter.nextPullResult =
+          SyncPullResult<Task>(serverTime: DateTime(2026, 2, 1));
+      await engine.syncTable('tasks');
+      expect(adapter.lastSince, firstWatermark);
+
+      await db.close();
+    });
+
+    test('repeated edits to one entity are coalesced into a single push',
+        () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      final tasks = db.collection<Task>();
+      await tasks.add(Task(id: '1', title: 'v1'));
+      for (var i = 2; i <= 10; i++) {
+        await tasks.update(Task(id: '1', title: 'v$i'));
+      }
+
+      // Storage coalescing keeps a single row for the entity, not 10.
+      expect(await engine.pendingCount(), 1);
+
+      await engine.syncTable('tasks');
+
+      // Only the latest state is pushed, once; the queue is fully drained.
+      expect(adapter.pushedEntities.length, 1);
+      expect(adapter.pushedEntities.single.title, 'v10');
+      expect(await engine.pendingCount(), 0);
+
+      await db.close();
+    });
+  });
+
+  // -- SyncOperation.coalesce unit tests --
+
+  group('SyncOperation.coalesce', () {
+    SyncOperation op(SyncOperationType type, String entityId, int order,
+            {Map<String, dynamic>? data}) =>
+        SyncOperation(
+          id: 'op$order',
+          tableName: 'tasks',
+          type: type,
+          entityId: entityId,
+          data: data,
+          createdAt: DateTime(2026).add(Duration(seconds: order)),
+        );
+
+    test('add + update keeps a single add with the latest data', () {
+      final result = SyncOperation.coalesce([
+        op(SyncOperationType.add, '1', 0, data: {'title': 'a'}),
+        op(SyncOperationType.update, '1', 1, data: {'title': 'b'}),
+      ]);
+      expect(result.upserts.length, 1);
+      expect(result.deletes, isEmpty);
+      expect(result.upserts.single.type, SyncOperationType.add);
+      expect(result.upserts.single.data, {'title': 'b'});
+    });
+
+    test('multiple updates collapse to the last update', () {
+      final result = SyncOperation.coalesce([
+        op(SyncOperationType.update, '1', 0, data: {'title': 'a'}),
+        op(SyncOperationType.update, '1', 1, data: {'title': 'b'}),
+        op(SyncOperationType.update, '1', 2, data: {'title': 'c'}),
+      ]);
+      expect(result.upserts.single.type, SyncOperationType.update);
+      expect(result.upserts.single.data, {'title': 'c'});
+    });
+
+    test('add + delete cancels out entirely', () {
+      final result = SyncOperation.coalesce([
+        op(SyncOperationType.add, '1', 0),
+        op(SyncOperationType.delete, '1', 1),
+      ]);
+      expect(result.upserts, isEmpty);
+      expect(result.deletes, isEmpty);
+    });
+
+    test('update + delete becomes a delete', () {
+      final result = SyncOperation.coalesce([
+        op(SyncOperationType.update, '1', 0),
+        op(SyncOperationType.delete, '1', 1),
+      ]);
+      expect(result.upserts, isEmpty);
+      expect(result.deletes.single.type, SyncOperationType.delete);
+    });
+
+    test('delete + add becomes an update (re-creation)', () {
+      final result = SyncOperation.coalesce([
+        op(SyncOperationType.delete, '1', 0),
+        op(SyncOperationType.add, '1', 1, data: {'title': 'reborn'}),
+      ]);
+      expect(result.deletes, isEmpty);
+      expect(result.upserts.single.type, SyncOperationType.update);
+      expect(result.upserts.single.data, {'title': 'reborn'});
+    });
+
+    test('independent entities are kept separate, in first-seen order', () {
+      final result = SyncOperation.coalesce([
+        op(SyncOperationType.add, 'a', 0),
+        op(SyncOperationType.add, 'b', 1),
+        op(SyncOperationType.update, 'a', 2),
+        op(SyncOperationType.delete, 'c', 3),
+      ]);
+      expect(result.upserts.map((o) => o.entityId), ['a', 'b']);
+      expect(result.deletes.map((o) => o.entityId), ['c']);
     });
   });
 }

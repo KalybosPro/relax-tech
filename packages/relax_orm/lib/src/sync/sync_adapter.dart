@@ -6,9 +6,17 @@ class SyncPullResult<T> {
   /// Primary key values of entities deleted on the server.
   final List<Object> deletedIds;
 
+  /// Server-authoritative timestamp (or cursor) marking the point this pull
+  /// was computed. The [SyncEngine] reuses it as the `since` watermark for the
+  /// next pull, avoiding client/server clock skew.
+  ///
+  /// If null, the engine falls back to the client time captured before the sync.
+  final DateTime? serverTime;
+
   const SyncPullResult({
     this.upserts = const [],
     this.deletedIds = const [],
+    this.serverTime,
   });
 }
 
@@ -37,10 +45,19 @@ class SyncPullResult<T> {
 ///     return SyncPullResult(
 ///       upserts: response.upserts,
 ///       deletedIds: response.deletedIds,
+///       // Authoritative cursor for the next pull (recommended). See below.
+///       serverTime: response.serverTime,
 ///     );
 ///   }
 /// }
 /// ```
+///
+/// ### Coalescing
+///
+/// You don't need to deduplicate inside [push]: the [SyncEngine] already folds
+/// repeated offline edits so each entity appears at most once per batch (e.g.
+/// ten local updates arrive as one entity, an offline create-then-delete is
+/// dropped entirely).
 abstract class SyncAdapter<T> {
   /// Pushes created/updated entities to the remote server.
   ///

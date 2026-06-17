@@ -1,3 +1,21 @@
+## 0.1.5
+
+### Added
+
+- `SyncPullResult.serverTime` — an optional server-authoritative watermark reused as the `since` value for the next pull, avoiding client/server clock drift
+- Offline-queue coalescing: repeated edits to the same entity are folded both on write (one row per entity) and on push (one server write per entity); offline create-then-delete is dropped entirely
+
+### Changed
+
+- Queued sync payloads are now SQL-encoded, so entities with `DateTime`/`bool` fields no longer break the offline queue's JSON serialization
+- `SyncAdapter.push` return values (server-confirmed entities) are written back to the local database
+- Pull changes are applied inside a single transaction
+
+### Fixed
+
+- Failed sync operations are now retried by the periodic auto-sync (previously only on reconnect/restart), honoring each table's `maxRetries`
+- Unique operation ids no longer collide when many operations are queued within the same clock tick
+
 ## 0.1.4
 
 ### Added

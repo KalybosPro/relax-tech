@@ -56,7 +56,12 @@ class SyncEngine {
 
   StreamSubscription<bool>? _connectivitySub;
   bool _isOnline = true;
-  bool _isSyncing = false;
+  final _syncingTables = <String>{};
+
+  /// Monotonic counter guaranteeing unique operation ids even when several
+  /// operations are queued within the same clock tick (the system clock can
+  /// have a coarse resolution, e.g. on Windows).
+  int _opSeq = 0;
 
   SyncEngine(this._db, this._queue);
 
@@ -66,8 +71,8 @@ class SyncEngine {
   /// Whether the device is currently online.
   bool get isOnline => _isOnline;
 
-  /// Whether a sync is currently in progress.
-  bool get isSyncing => _isSyncing;
+  /// Whether a sync is currently in progress for any table.
+  bool get isSyncing => _syncingTables.isNotEmpty;
 
   /// Sets the connectivity stream. Emits `true` when online, `false` when offline.
   ///
@@ -101,7 +106,7 @@ class SyncEngine {
     Map<String, dynamic>? data,
   }) async {
     final op = SyncOperation(
-      id: '${tableName}_${entityId}_${DateTime.now().microsecondsSinceEpoch}',
+      id: '${tableName}_${entityId}_${DateTime.now().microsecondsSinceEpoch}_${_opSeq++}',
       tableName: tableName,
       type: type,
       entityId: entityId,
@@ -114,21 +119,33 @@ class SyncEngine {
   /// Syncs a single table: pushes local changes, then pulls remote changes.
   Future<void> syncTable(String tableName) async {
     final reg = _registrations[tableName];
-    if (reg == null || !_isOnline || _isSyncing) return;
+    if (reg == null || !_isOnline || _syncingTables.contains(tableName)) return;
 
-    _isSyncing = true;
+    _syncingTables.add(tableName);
     _emitStatus(SyncStatus.syncing);
 
-    try {
-      await _pushChanges(tableName, reg);
-      await _pullChanges(tableName, reg);
+    // Captured before the network round-trip so changes happening on the
+    // server *during* the sync aren't missed on the next pull. Used only when
+    // the adapter doesn't return an authoritative [SyncPullResult.serverTime].
+    final startedAt = DateTime.now();
 
-      _lastSyncTimes[tableName] = DateTime.now();
+    try {
+      // Re-queue operations that previously failed but haven't exhausted their
+      // retry budget, so a transient error doesn't strand them until a restart.
+      await _queue.resetFailed(
+        tableName: tableName,
+        maxRetries: reg.config.maxRetries,
+      );
+
+      await _pushChanges(tableName, reg);
+      final serverTime = await _pullChanges(tableName, reg);
+
+      _lastSyncTimes[tableName] = serverTime ?? startedAt;
       _emitStatus(SyncStatus.synced);
     } catch (e) {
       _emitStatus(SyncStatus.error);
     } finally {
-      _isSyncing = false;
+      _syncingTables.remove(tableName);
     }
   }
 
@@ -144,7 +161,8 @@ class SyncEngine {
   /// If online, immediately syncs all registered tables.
   Future<void> start() async {
     if (_isOnline) {
-      await _queue.resetFailed();
+      // Each table's failed operations are reset inside syncTable using that
+      // table's own maxRetries, so no global reset is needed here.
       await syncAll();
     }
   }
@@ -180,7 +198,7 @@ class SyncEngine {
     if (pending.isEmpty) return;
 
     try {
-      await reg.pushOperations(pending);
+      await reg.pushOperations(_db, tableName, pending);
       await _queue.completeAll(pending.map((op) => op.id).toList());
     } catch (e) {
       for (final op in pending) {
@@ -190,9 +208,11 @@ class SyncEngine {
     }
   }
 
-  Future<void> _pullChanges(String tableName, _SyncRegistration reg) async {
+  /// Pulls remote changes and returns the server watermark for the next sync
+  /// (null if the adapter doesn't provide one).
+  Future<DateTime?> _pullChanges(String tableName, _SyncRegistration reg) async {
     final since = _lastSyncTimes[tableName];
-    await reg.applyPull(_db, tableName, since);
+    return reg.applyPull(_db, tableName, since);
   }
 
   void _onConnectivityChanged(bool online) {
@@ -201,9 +221,10 @@ class SyncEngine {
 
     if (online) {
       if (wasOffline) {
-        // Back online — sync all pending operations.
+        // Back online — sync all pending operations. syncTable resets each
+        // table's failed operations before pushing.
         _emitStatus(SyncStatus.syncing);
-        _queue.resetFailed().then((_) => syncAll());
+        syncAll();
       }
     } else {
       _emitStatus(SyncStatus.offline);
@@ -217,70 +238,111 @@ class _SyncRegistration<T> {
   _SyncRegistration(this.config);
 
   /// Pushes pending operations to the remote server (typed).
-  Future<void> pushOperations(List<SyncOperation> pending) async {
-    final adds = pending.where((op) => op.type == SyncOperationType.add).toList();
-    final updates = pending.where((op) => op.type == SyncOperationType.update).toList();
-    final deletes = pending.where((op) => op.type == SyncOperationType.delete).toList();
+  ///
+  /// Server-confirmed versions returned by [SyncAdapter.push] (which may carry
+  /// server-assigned ids/timestamps) are written back into the local database.
+  Future<void> pushOperations(
+    RelaxDatabase db,
+    String tableName,
+    List<SyncOperation> pending,
+  ) async {
+    // Collapse repeated edits to the same entity into one effective op, so the
+    // server gets a single write per entity instead of every offline change.
+    final coalesced = SyncOperation.coalesce(pending);
 
-    final upsertOps = [...adds, ...updates];
-    if (upsertOps.isNotEmpty) {
-      final entities = upsertOps
+    if (coalesced.upserts.isNotEmpty) {
+      final entities = coalesced.upserts
           .where((op) => op.data != null)
-          .map((op) => config.schema.fromMap(op.data!))
+          .map((op) => config.schema.rowToEntity(op.data!))
           .toList();
       if (entities.isNotEmpty) {
-        await config.adapter.push(entities);
+        final confirmed = await config.adapter.push(entities);
+        if (confirmed.isNotEmpty) {
+          await db.transaction(() async {
+            for (final entity in confirmed) {
+              await _writeLocal(db, tableName, entity);
+            }
+          });
+        }
       }
     }
 
-    if (deletes.isNotEmpty) {
-      final ids = deletes.map((op) => op.entityId).toList();
+    if (coalesced.deletes.isNotEmpty) {
+      final ids = coalesced.deletes.map((op) => op.entityId).toList();
       await config.adapter.pushDeletes(ids);
     }
   }
 
   /// Pulls remote changes and applies them locally with conflict resolution.
-  Future<void> applyPull(
+  ///
+  /// All local writes run in a single transaction so a mid-pull failure can't
+  /// leave the database in a partially-synced state. Returns the server
+  /// watermark to use for the next pull, if the adapter provides one.
+  Future<DateTime?> applyPull(
     RelaxDatabase db,
     String tableName,
     DateTime? since,
   ) async {
     final result = await config.adapter.pull(since: since);
+    final pk = config.schema.primaryKey;
+
+    await db.transaction(() async {
+      for (final T remoteEntity in result.upserts) {
+        await _writeLocal(
+          db,
+          tableName,
+          remoteEntity,
+          resolver: config.conflictResolver,
+        );
+      }
+
+      for (final deletedId in result.deletedIds) {
+        await db.rawDelete(
+          tableName,
+          where: '${pk.name} = ?',
+          whereArgs: [pk.toSql(deletedId)],
+        );
+      }
+    });
+
+    return result.serverTime;
+  }
+
+  /// Upserts [remote] into the local table.
+  ///
+  /// When a [resolver] is given and a local row already exists, the conflict is
+  /// resolved before writing. Without a resolver the remote value is treated as
+  /// authoritative (used for server-confirmed pushes).
+  Future<void> _writeLocal(
+    RelaxDatabase db,
+    String tableName,
+    T remote, {
+    ConflictResolver<T>? resolver,
+  }) async {
     final schema = config.schema;
     final pk = schema.primaryKey;
+    final id = schema.getPrimaryKeyValue(remote);
 
-    for (final T remoteEntity in result.upserts) {
-      final id = schema.getPrimaryKeyValue(remoteEntity);
+    final localRow = await db.rawSelectOne(
+      tableName,
+      where: '${pk.name} = ?',
+      whereArgs: [pk.toSql(id)],
+    );
 
-      final localRow = await db.rawSelectOne(
+    if (localRow != null) {
+      final T toWrite = resolver != null
+          ? resolver.resolve(schema.rowToEntity(localRow), remote)
+          : remote;
+      final row = schema.entityToRow(toWrite);
+      row.remove(pk.name);
+      await db.rawUpdate(
         tableName,
+        row,
         where: '${pk.name} = ?',
         whereArgs: [pk.toSql(id)],
       );
-
-      if (localRow != null) {
-        final T localEntity = schema.rowToEntity(localRow);
-        final T resolved =
-            config.conflictResolver.resolve(localEntity, remoteEntity);
-        final resolvedRow = schema.entityToRow(resolved);
-        resolvedRow.remove(pk.name);
-        await db.rawUpdate(
-          tableName,
-          resolvedRow,
-          where: '${pk.name} = ?',
-          whereArgs: [pk.toSql(id)],
-        );
-      } else {
-        await db.rawInsert(tableName, schema.entityToRow(remoteEntity));
-      }
-    }
-
-    for (final deletedId in result.deletedIds) {
-      await db.rawDelete(
-        tableName,
-        where: '${pk.name} = ?',
-        whereArgs: [pk.toSql(deletedId)],
-      );
+    } else {
+      await db.rawInsert(tableName, schema.entityToRow(remote));
     }
   }
 }
