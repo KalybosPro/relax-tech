@@ -28,6 +28,9 @@ export 'src/core/collection.dart';
 export 'src/core/query_builder.dart';
 export 'src/core/relax_orm_json.dart';
 
+// Logging
+export 'src/logging/relax_logger.dart';
+
 // Sync engine
 export 'src/sync/sync_adapter.dart';
 export 'src/sync/sync_engine.dart';

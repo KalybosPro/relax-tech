@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../database/relax_database.dart';
+import '../logging/relax_logger.dart';
 import '../schema/table_schema.dart';
 import 'conflict_resolver.dart';
 import 'offline_queue.dart';
@@ -143,6 +144,8 @@ class SyncEngine {
       _lastSyncTimes[tableName] = serverTime ?? startedAt;
       _emitStatus(SyncStatus.synced);
     } catch (e) {
+      _db.logger.log(RelaxLogCategory.sync, 'syncTable $tableName failed',
+          level: RelaxLogLevel.error, details: e);
       _emitStatus(SyncStatus.error);
     } finally {
       _syncingTables.remove(tableName);
@@ -189,6 +192,7 @@ class SyncEngine {
 
   void _emitStatus(SyncStatus s) {
     if (!_statusController.isClosed) _statusController.add(s);
+    _db.logger.log(RelaxLogCategory.sync, 'status: ${s.name}');
   }
 
   // -- Internal --
@@ -197,10 +201,15 @@ class SyncEngine {
     final pending = await _queue.getPending(tableName);
     if (pending.isEmpty) return;
 
+    _db.logger.log(RelaxLogCategory.sync,
+        'push $tableName (${pending.length} pending op(s))');
     try {
       await reg.pushOperations(_db, tableName, pending);
       await _queue.completeAll(pending.map((op) => op.id).toList());
     } catch (e) {
+      _db.logger.log(RelaxLogCategory.sync,
+          'push $tableName failed — marking ${pending.length} op(s) failed',
+          level: RelaxLogLevel.warning, details: e);
       for (final op in pending) {
         await _queue.markFailed(op.id);
       }
@@ -212,12 +221,15 @@ class SyncEngine {
   /// (null if the adapter doesn't provide one).
   Future<DateTime?> _pullChanges(String tableName, _SyncRegistration reg) async {
     final since = _lastSyncTimes[tableName];
+    _db.logger.log(RelaxLogCategory.sync, 'pull $tableName (since: $since)');
     return reg.applyPull(_db, tableName, since);
   }
 
   void _onConnectivityChanged(bool online) {
     final wasOffline = !_isOnline;
     _isOnline = online;
+    _db.logger.log(RelaxLogCategory.sync,
+        'connectivity: ${online ? 'online' : 'offline'}');
 
     if (online) {
       if (wasOffline) {
@@ -305,6 +317,11 @@ class _SyncRegistration<T> {
       }
     });
 
+    db.logger.log(
+      RelaxLogCategory.sync,
+      'pull $tableName applied: ${result.upserts.length} upsert(s), '
+      '${result.deletedIds.length} delete(s)',
+    );
     return result.serverTime;
   }
 
@@ -333,6 +350,10 @@ class _SyncRegistration<T> {
       final T toWrite = resolver != null
           ? resolver.resolve(schema.rowToEntity(localRow), remote)
           : remote;
+      if (resolver != null) {
+        db.logger.log(RelaxLogCategory.sync,
+            'conflict resolved on $tableName (id: $id)');
+      }
       final row = schema.entityToRow(toWrite);
       row.remove(pk.name);
       await db.rawUpdate(

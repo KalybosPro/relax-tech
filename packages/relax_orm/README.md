@@ -315,6 +315,57 @@ final db = await RelaxDB.open(
 
 The entire database file is encrypted. Without the correct key, the file is unreadable.
 
+## Debug Logging
+
+RelaxORM is silent by default. During development you can opt in to a structured
+logger to observe what the ORM does — database lifecycle, **encryption status**,
+CRUD, queries, sync and the offline queue. It is **off by default** (no runtime
+cost, no console noise for your users) and only the developer turns it on.
+
+```dart
+final db = await RelaxDB.open(
+  name: 'my_app',
+  schemas: [userSchema],
+  encryptionKey: 'your-secret-key',
+  logger: const RelaxLogger(), // enabled; logs to Flutter DevTools "Logging"
+);
+```
+
+By default records go to `dart:developer`'s `log()` (grouped under
+`relax_orm.<category>` in DevTools). You can filter by category, set a minimum
+level, or forward records to your own sink:
+
+```dart
+final db = await RelaxDB.open(
+  name: 'my_app',
+  schemas: [userSchema],
+  logger: RelaxLogger(
+    categories: {RelaxLogCategory.crud, RelaxLogCategory.encryption},
+    minLevel: RelaxLogLevel.debug,
+    sink: (record) => print(record), // your console, a file, a crash reporter…
+  ),
+);
+```
+
+Categories: `database`, `encryption`, `crud`, `query`, `sync`, `queue`.
+
+### Verifying your data is really encrypted
+
+`isEncryptionAvailable()` only tells you the cipher is *linked*. To confirm the
+bytes **on disk** are actually ciphertext, use `debugCheckEncryption()`:
+
+```dart
+final check = await db.debugCheckEncryption();
+print(check.isEncrypted);     // true → file is ciphertext, false → plaintext
+print(check.isMisconfigured); // true → a key was set but the file is still plaintext
+print(check.message);         // human-readable explanation (also logged)
+```
+
+It inspects the file header: an unencrypted SQLite file always begins with
+`SQLite format 3`. For databases opened with `open()` (where drift_flutter
+resolves the path), pass the `File` explicitly: `debugCheckEncryption(file: ...)`.
+In-memory databases cannot be inspected and return `isEncrypted == null`.
+
 ## Annotations Reference
 
 | Annotation | Usage |

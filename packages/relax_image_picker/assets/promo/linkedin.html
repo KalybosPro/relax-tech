@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1350px;
+    overflow: hidden;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #060616;
+  }
+
+  .bg {
+    width: 1080px;
+    height: 1350px;
+    position: relative;
+    background: radial-gradient(ellipse at 85% 8%, rgba(37,211,102,0.28) 0%, transparent 52%),
+                radial-gradient(ellipse at 8% 88%, rgba(108,77,246,0.30) 0%, transparent 52%),
+                linear-gradient(160deg, #07071A 0%, #0A0A24 60%, #080818 100%);
+    overflow: hidden;
+  }
+
+  .bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(120,140,255,0.13) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .orb {
+    position: absolute;
+    top: -200px; right: -160px;
+    width: 560px; height: 560px;
+    background: radial-gradient(circle, rgba(37,211,102,0.40) 0%, rgba(20,120,80,0.15) 50%, transparent 70%);
+    border-radius: 50%;
+  }
+  .orb2 {
+    position: absolute;
+    bottom: -220px; left: -140px;
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(108,77,246,0.35) 0%, transparent 65%);
+    border-radius: 50%;
+  }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 64px 72px 56px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .flutter-logo { width: 46px; height: 46px; }
+  .wordmark {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 30px;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: -1px;
+  }
+  .wordmark span { color: #25D366; }
+  .ver-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37,211,102,0.10);
+    border: 1.5px solid rgba(37,211,102,0.40);
+    border-radius: 40px;
+    padding: 9px 18px;
+    color: #34D399;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .ver-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #34D399; box-shadow: 0 0 10px #34D399; }
+
+  /* HEADLINE */
+  .headline {
+    margin-top: 44px;
+  }
+  .headline h1 {
+    font-size: 62px;
+    font-weight: 900;
+    color: #FFFFFF;
+    line-height: 1.04;
+    letter-spacing: -1.5px;
+  }
+  .headline h1 .grad {
+    background: linear-gradient(100deg, #25D366 0%, #6C4DF6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .headline p {
+    margin-top: 18px;
+    font-size: 22px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 400;
+    line-height: 1.4;
+    max-width: 760px;
+  }
+  .headline p b { color: rgba(255,255,255,0.9); font-weight: 600; }
+
+  /* PHONES */
+  .stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 56px;
+    min-height: 0;
+    margin: 30px 0 8px;
+  }
+  .phone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  .phone-frame {
+    border-radius: 38px;
+    padding: 8px;
+    background: linear-gradient(160deg, #2a2a44, #14142a);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .phone-frame img {
+    display: block;
+    width: 300px;
+    height: 622px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 30px;
+  }
+  .phone.tilt-l { transform: rotate(-4deg) translateY(10px); }
+  .phone.tilt-r { transform: rotate(4deg) translateY(10px); }
+  .phone.tilt-l .phone-frame { box-shadow: 0 30px 80px rgba(37,211,102,0.18), 0 30px 80px rgba(0,0,0,0.6); }
+  .phone.tilt-r .phone-frame { box-shadow: 0 30px 80px rgba(108,77,246,0.22), 0 30px 80px rgba(0,0,0,0.6); }
+  .phone-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 30px;
+  }
+  .tag-green { background: rgba(37,211,102,0.12); border: 1.5px solid rgba(37,211,102,0.45); color: #34D399; }
+  .tag-purple { background: rgba(108,77,246,0.14); border: 1.5px solid rgba(108,77,246,0.5); color: #A78BFA; }
+
+  /* FEATURE PILLS */
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(140,160,255,0.22);
+    border-radius: 30px;
+    padding: 11px 20px;
+    font-size: 17px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+  }
+  .pill .ic { font-size: 18px; }
+
+  /* FOOTER */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .install {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(140,160,255,0.22);
+    border-radius: 12px;
+    padding: 14px 22px;
+  }
+  .install .p { color: #6B7FFF; }
+  .install .k { color: #25D366; }
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .author-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #25D366, #6C4DF6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: white;
+  }
+  .author-name { font-size: 18px; font-weight: 700; color: #FFFFFF; }
+  .author-title { font-size: 15px; color: rgba(255,255,255,0.45); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="orb"></div>
+  <div class="orb2"></div>
+
+  <div class="content">
+
+    <div class="header">
+      <div class="brand">
+        <svg class="flutter-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 29L27 15H48L34 29L13 29Z" fill="#40C4FF"/>
+          <path d="M13 29L27 43H48L34 29H13Z" fill="#0091EA"/>
+          <path d="M27 43L34 29L27 22L20 29L27 43Z" fill="#00B0FF" opacity="0.8"/>
+          <path d="M7 23L21 9H34L20 23H7Z" fill="#40C4FF" opacity="0.6"/>
+        </svg>
+        <div class="wordmark">relax_<span>image_picker</span></div>
+      </div>
+      <div class="ver-badge"><span class="dot"></span>v1.0.1 · pub.dev</div>
+    </div>
+
+    <div class="headline">
+      <h1>The <span class="grad">media picker</span><br>Flutter was missing.</h1>
+      <p>A <b>WhatsApp-style</b> picker in a single bottom sheet — gallery, camera,
+         and documents, fully themeable down to the widget.</p>
+    </div>
+
+    <div class="stage">
+      <div class="phone tilt-l">
+        <div class="phone-frame"><img src="../../screenshots/default_theme.png" alt="Default theme"></div>
+        <div class="phone-tag tag-green">● &nbsp;Default theme</div>
+      </div>
+      <div class="phone tilt-r">
+        <div class="phone-frame"><img src="../../screenshots/custom_theme.png" alt="Custom theme"></div>
+        <div class="phone-tag tag-purple">● &nbsp;Custom theme + builders</div>
+      </div>
+    </div>
+
+    <div class="pills">
+      <div class="pill"><span class="ic">🖼️</span>Gallery + albums</div>
+      <div class="pill"><span class="ic">📷</span>In-picker camera</div>
+      <div class="pill"><span class="ic">📄</span>Documents</div>
+      <div class="pill"><span class="ic">👁️</span>Full-screen preview</div>
+      <div class="pill"><span class="ic">🎨</span>Deep theming</div>
+      <div class="pill"><span class="ic">🔒</span>Smart permissions</div>
+    </div>
+
+    <div class="footer">
+      <div class="install"><span class="p">$</span> flutter pub add <span class="k">relax_image_picker</span></div>
+      <div class="author">
+        <div class="author-avatar">K</div>
+        <div>
+          <div class="author-name">Kokou AHIANYO</div>
+          <div class="author-title">Flutter Developer · KalybosPro</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

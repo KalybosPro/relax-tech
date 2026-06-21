@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../database/relax_database.dart';
+import '../logging/relax_logger.dart';
 import 'sync_operation.dart';
 import 'sync_status.dart';
 
@@ -53,6 +54,8 @@ class OfflineQueue {
       final existing = await _pendingForEntity(op.tableName, op.entityId);
       if (existing == null) {
         await _db.rawInsert(_table, _toRow(op));
+        _db.logger.log(RelaxLogCategory.queue,
+            'enqueue ${op.type.name} ${op.tableName}#${op.entityId}');
         return;
       }
 
@@ -61,6 +64,13 @@ class OfflineQueue {
       await _db.rawDelete(_table, where: 'id = ?', whereArgs: [existing.id]);
       if (merged != null) {
         await _db.rawInsert(_table, _toRow(merged));
+        _db.logger.log(
+            RelaxLogCategory.queue,
+            'coalesce ${op.tableName}#${op.entityId}: '
+            '${existing.type.name}+${op.type.name} ⇒ ${merged.type.name}');
+      } else {
+        _db.logger.log(RelaxLogCategory.queue,
+            'coalesce ${op.tableName}#${op.entityId}: add+delete ⇒ dropped');
       }
     });
   }
@@ -164,6 +174,10 @@ class OfflineQueue {
     for (final id in operationIds) {
       await complete(id);
     }
+    if (operationIds.isNotEmpty) {
+      _db.logger.log(RelaxLogCategory.queue,
+          'completed ${operationIds.length} op(s)');
+    }
   }
 
   /// Marks an operation as failed and increments its retry count.
@@ -172,6 +186,8 @@ class OfflineQueue {
       'UPDATE $_table SET status = ?, retry_count = retry_count + 1 WHERE id = ?',
       ['failed', operationId],
     );
+    _db.logger.log(RelaxLogCategory.queue, 'marked failed: $operationId',
+        level: RelaxLogLevel.warning);
   }
 
   /// Resets failed operations back to pending so they'll be retried.
@@ -190,6 +206,8 @@ class OfflineQueue {
       "UPDATE $_table SET status = 'pending' WHERE $where",
       args,
     );
+    _db.logger.log(RelaxLogCategory.queue,
+        'reset failed → pending${tableName != null ? ' for $tableName' : ''}');
   }
 
   /// Returns the number of pending operations.

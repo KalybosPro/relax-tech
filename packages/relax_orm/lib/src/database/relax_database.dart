@@ -1,12 +1,18 @@
 import 'package:drift/drift.dart';
 
+import '../logging/relax_logger.dart';
+
 /// Internal Drift database used by RelaxORM.
 ///
 /// This class is an implementation detail — it is never exposed to the developer.
 /// It provides raw SQL access while benefiting from Drift's connection management,
 /// isolate support, and SQLite3MultipleCiphers encryption.
 class RelaxDatabase extends GeneratedDatabase {
-  RelaxDatabase(super.executor);
+  /// Opt-in developer logger shared by every RelaxORM collaborator. Defaults to
+  /// a disabled (no-op) logger.
+  final RelaxLogger logger;
+
+  RelaxDatabase(super.executor, {this.logger = const RelaxLogger.disabled()});
 
   @override
   int get schemaVersion => 1;
@@ -23,20 +29,25 @@ class RelaxDatabase extends GeneratedDatabase {
       );
 
   /// Executes a raw CREATE TABLE statement.
-  Future<void> createTable(String sql) {
-    return customStatement(sql);
+  Future<void> createTable(String sql) async {
+    await customStatement(sql);
+    logger.log(RelaxLogCategory.database, 'createTable',
+        level: RelaxLogLevel.info, details: sql);
   }
 
   /// Inserts a row and returns the number of affected rows.
-  Future<int> rawInsert(String table, Map<String, Object?> values) {
+  Future<int> rawInsert(String table, Map<String, Object?> values) async {
     final columns = values.keys.join(', ');
     final placeholders = values.keys.map((_) => '?').join(', ');
     final sql = 'INSERT INTO $table ($columns) VALUES ($placeholders)';
-    return customInsert(
+    final affected = await customInsert(
       sql,
       variables: _toVariables(values.values),
       updates: {tableRef(table)},
     );
+    logger.log(RelaxLogCategory.crud, 'INSERT $table ($affected row(s))',
+        details: sql);
+    return affected;
   }
 
   /// Updates rows matching a WHERE clause.
@@ -45,15 +56,18 @@ class RelaxDatabase extends GeneratedDatabase {
     Map<String, Object?> values, {
     required String where,
     required List<Object?> whereArgs,
-  }) {
+  }) async {
     final sets = values.keys.map((k) => '$k = ?').join(', ');
     final sql = 'UPDATE $table SET $sets WHERE $where';
     final allArgs = [...values.values, ...whereArgs];
-    return customUpdate(
+    final affected = await customUpdate(
       sql,
       variables: _toVariables(allArgs),
       updates: {tableRef(table)},
     );
+    logger.log(RelaxLogCategory.crud, 'UPDATE $table ($affected row(s))',
+        details: sql);
+    return affected;
   }
 
   /// Deletes rows matching a WHERE clause.
@@ -61,13 +75,16 @@ class RelaxDatabase extends GeneratedDatabase {
     String table, {
     required String where,
     required List<Object?> whereArgs,
-  }) {
+  }) async {
     final sql = 'DELETE FROM $table WHERE $where';
-    return customUpdate(
+    final affected = await customUpdate(
       sql,
       variables: _toVariables(whereArgs),
       updates: {tableRef(table)},
     );
+    logger.log(RelaxLogCategory.crud, 'DELETE $table ($affected row(s))',
+        details: sql);
+    return affected;
   }
 
   /// Selects all rows, optionally with a WHERE clause.
@@ -86,6 +103,8 @@ class RelaxDatabase extends GeneratedDatabase {
       variables: _toVariables(whereArgs ?? []),
     ).get();
 
+    logger.log(RelaxLogCategory.crud, 'SELECT $table (${results.length} row(s))',
+        details: buffer.toString());
     return results.map((row) => row.data).toList();
   }
 
@@ -101,6 +120,9 @@ class RelaxDatabase extends GeneratedDatabase {
       variables: _toVariables(whereArgs),
     ).get();
 
+    logger.log(RelaxLogCategory.crud,
+        'SELECT $table LIMIT 1 (${results.isEmpty ? 0 : 1} row(s))',
+        details: sql);
     if (results.isEmpty) return null;
     return results.first.data;
   }
@@ -149,6 +171,8 @@ class RelaxDatabase extends GeneratedDatabase {
         b.customStatement(sql, [...row.values]);
       }
     });
+    logger.log(RelaxLogCategory.crud,
+        'BATCH INSERT $table (${rows.length} row(s))');
   }
 
   /// Returns the number of rows in a table.
@@ -156,7 +180,9 @@ class RelaxDatabase extends GeneratedDatabase {
     final results = await customSelect(
       'SELECT COUNT(*) as c FROM $table',
     ).get();
-    return results.first.data['c'] as int;
+    final count = results.first.data['c'] as int;
+    logger.log(RelaxLogCategory.crud, 'COUNT $table = $count');
+    return count;
   }
 
   /// Creates a [ResultSetImplementation] reference for Drift's change tracking.

@@ -1,3 +1,10 @@
+## 0.1.6
+
+### Added
+
+- Opt-in debug logging via `RelaxLogger`, passed to `RelaxDB.open`/`openFile`/`openInMemory`. Disabled by default; supports category filtering (`database`, `encryption`, `crud`, `query`, `sync`, `queue`), a minimum level, and a custom sink. Defaults to `dart:developer`'s `log()` (Flutter DevTools "Logging" view).
+- `RelaxDB.debugCheckEncryption()` — inspects the database file header and reports whether data on disk is actually encrypted (`EncryptionCheck.isEncrypted` / `.isMisconfigured`), the direct answer to "are my data really encrypted?".
+
 ## 0.1.5
 
 ### Added

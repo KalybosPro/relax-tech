@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../database/relax_database.dart';
+import '../logging/relax_logger.dart';
 import '../schema/table_schema.dart';
 
 /// Comparison operators for WHERE clauses.
@@ -173,6 +174,11 @@ class QueryBuilder<T> {
       variables: args.map((v) => Variable(v)).toList(),
     ).get();
 
+    _db.logger.log(
+      RelaxLogCategory.query,
+      'find ${_schema.tableName} (${results.length} row(s))',
+      details: '$sql · args: $args',
+    );
     return results.map((row) => _schema.rowToEntity(row.data)).toList();
   }
 
@@ -190,6 +196,11 @@ class QueryBuilder<T> {
     final args = <Object?>[];
     final sql = _buildSql(args);
 
+    _db.logger.log(
+      RelaxLogCategory.query,
+      'watch ${_schema.tableName}',
+      details: '$sql · args: $args',
+    );
     return _db
         .customSelect(
           sql,
@@ -213,7 +224,13 @@ class QueryBuilder<T> {
       variables: args.map((v) => Variable(v)).toList(),
     ).get();
 
-    return results.first.data['c'] as int;
+    final c = results.first.data['c'] as int;
+    _db.logger.log(
+      RelaxLogCategory.query,
+      'count ${_schema.tableName} = $c',
+      details: '${sql.toString()} · args: $args',
+    );
+    return c;
   }
 
   // -- SQL generation --
