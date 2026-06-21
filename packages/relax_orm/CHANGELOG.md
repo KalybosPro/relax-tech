@@ -1,3 +1,9 @@
+## 0.1.7
+
+### Fixed
+
+- Long debug-log messages are no longer truncated by the console/logcat: the default `dart:developer` sink splits long text (by line, then into 800-character chunks), tagging multi-chunk records with `[i/n]`.
+
 ## 0.1.6
 
 ### Added
