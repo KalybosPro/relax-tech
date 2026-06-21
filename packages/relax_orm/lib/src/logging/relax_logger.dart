@@ -135,15 +135,54 @@ class RelaxLogger {
   }
 }
 
+/// Max characters emitted per `developer.log` call.
+///
+/// Consoles and platform log pipes truncate long lines (Android logcat at
+/// ~1000 chars, the Flutter/IDE debug console likewise), so the default sink
+/// splits longer text across several calls instead of letting it be cut off.
+const int _maxLogChunk = 800;
+
 /// Default sink: forwards records to `dart:developer`'s `log`, which shows up in
 /// the Flutter DevTools "Logging" view, grouped by `relax_orm.<category>`.
+///
+/// Long messages are split into multiple chunks so the full content is printed
+/// — consoles otherwise truncate long lines.
 void developerLogSink(RelaxLogRecord record) {
-  developer.log(
-    record.details == null ? record.message : '${record.message} — ${record.details}',
-    name: 'relax_orm.${record.category.name}',
-    level: _developerLevel(record.level),
-    time: record.time,
-  );
+  final text = record.details == null
+      ? record.message
+      : '${record.message} — ${record.details}';
+  final name = 'relax_orm.${record.category.name}';
+  final level = _developerLevel(record.level);
+
+  final chunks = _chunk(text);
+  for (var i = 0; i < chunks.length; i++) {
+    developer.log(
+      // Tag continuation lines so multi-chunk records are easy to follow.
+      chunks.length == 1 ? chunks[i] : '[${i + 1}/${chunks.length}] ${chunks[i]}',
+      name: name,
+      level: level,
+      time: record.time,
+    );
+  }
+}
+
+/// Splits [text] into pieces no longer than [_maxLogChunk], preserving existing
+/// line breaks first and only hard-splitting lines that are still too long.
+List<String> _chunk(String text) {
+  if (text.length <= _maxLogChunk && !text.contains('\n')) return [text];
+
+  final out = <String>[];
+  for (final line in text.split('\n')) {
+    if (line.length <= _maxLogChunk) {
+      out.add(line);
+    } else {
+      for (var i = 0; i < line.length; i += _maxLogChunk) {
+        out.add(line.substring(
+            i, i + _maxLogChunk > line.length ? line.length : i + _maxLogChunk));
+      }
+    }
+  }
+  return out;
 }
 
 /// Maps a [RelaxLogLevel] to a `dart:developer` level (roughly the

@@ -54,8 +54,10 @@ class OfflineQueue {
       final existing = await _pendingForEntity(op.tableName, op.entityId);
       if (existing == null) {
         await _db.rawInsert(_table, _toRow(op));
-        _db.logger.log(RelaxLogCategory.queue,
-            'enqueue ${op.type.name} ${op.tableName}#${op.entityId}');
+        _db.logger.log(
+          RelaxLogCategory.queue,
+          'enqueue ${op.type.name} ${op.tableName}#${op.entityId}',
+        );
         return;
       }
 
@@ -65,12 +67,15 @@ class OfflineQueue {
       if (merged != null) {
         await _db.rawInsert(_table, _toRow(merged));
         _db.logger.log(
-            RelaxLogCategory.queue,
-            'coalesce ${op.tableName}#${op.entityId}: '
-            '${existing.type.name}+${op.type.name} ⇒ ${merged.type.name}');
+          RelaxLogCategory.queue,
+          'coalesce ${op.tableName}#${op.entityId}: '
+          '${existing.type.name}+${op.type.name} ⇒ ${merged.type.name}',
+        );
       } else {
-        _db.logger.log(RelaxLogCategory.queue,
-            'coalesce ${op.tableName}#${op.entityId}: add+delete ⇒ dropped');
+        _db.logger.log(
+          RelaxLogCategory.queue,
+          'coalesce ${op.tableName}#${op.entityId}: add+delete ⇒ dropped',
+        );
       }
     });
   }
@@ -162,11 +167,7 @@ class OfflineQueue {
 
   /// Marks an operation as completed and removes it from the queue.
   Future<void> complete(String operationId) async {
-    await _db.rawDelete(
-      _table,
-      where: 'id = ?',
-      whereArgs: [operationId],
-    );
+    await _db.rawDelete(_table, where: 'id = ?', whereArgs: [operationId]);
   }
 
   /// Marks multiple operations as completed.
@@ -175,8 +176,10 @@ class OfflineQueue {
       await complete(id);
     }
     if (operationIds.isNotEmpty) {
-      _db.logger.log(RelaxLogCategory.queue,
-          'completed ${operationIds.length} op(s)');
+      _db.logger.log(
+        RelaxLogCategory.queue,
+        'completed ${operationIds.length} op(s)',
+      );
     }
   }
 
@@ -186,8 +189,11 @@ class OfflineQueue {
       'UPDATE $_table SET status = ?, retry_count = retry_count + 1 WHERE id = ?',
       ['failed', operationId],
     );
-    _db.logger.log(RelaxLogCategory.queue, 'marked failed: $operationId',
-        level: RelaxLogLevel.warning);
+    _db.logger.log(
+      RelaxLogCategory.queue,
+      'marked failed: $operationId',
+      level: RelaxLogLevel.warning,
+    );
   }
 
   /// Resets failed operations back to pending so they'll be retried.
@@ -206,8 +212,10 @@ class OfflineQueue {
       "UPDATE $_table SET status = 'pending' WHERE $where",
       args,
     );
-    _db.logger.log(RelaxLogCategory.queue,
-        'reset failed → pending${tableName != null ? ' for $tableName' : ''}');
+    _db.logger.log(
+      RelaxLogCategory.queue,
+      'reset failed → pending${tableName != null ? ' for $tableName' : ''}',
+    );
   }
 
   /// Returns the number of pending operations.
@@ -244,8 +252,7 @@ class OfflineQueue {
       data: row['data'] != null
           ? jsonDecode(row['data'] as String) as Map<String, dynamic>
           : null,
-      createdAt:
-          DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
       status: OperationStatus.values.byName(row['status'] as String),
       retryCount: row['retry_count'] as int,
     );

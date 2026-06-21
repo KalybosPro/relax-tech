@@ -144,8 +144,12 @@ class SyncEngine {
       _lastSyncTimes[tableName] = serverTime ?? startedAt;
       _emitStatus(SyncStatus.synced);
     } catch (e) {
-      _db.logger.log(RelaxLogCategory.sync, 'syncTable $tableName failed',
-          level: RelaxLogLevel.error, details: e);
+      _db.logger.log(
+        RelaxLogCategory.sync,
+        'syncTable $tableName failed',
+        level: RelaxLogLevel.error,
+        details: e,
+      );
       _emitStatus(SyncStatus.error);
     } finally {
       _syncingTables.remove(tableName);
@@ -201,15 +205,20 @@ class SyncEngine {
     final pending = await _queue.getPending(tableName);
     if (pending.isEmpty) return;
 
-    _db.logger.log(RelaxLogCategory.sync,
-        'push $tableName (${pending.length} pending op(s))');
+    _db.logger.log(
+      RelaxLogCategory.sync,
+      'push $tableName (${pending.length} pending op(s))',
+    );
     try {
       await reg.pushOperations(_db, tableName, pending);
       await _queue.completeAll(pending.map((op) => op.id).toList());
     } catch (e) {
-      _db.logger.log(RelaxLogCategory.sync,
-          'push $tableName failed — marking ${pending.length} op(s) failed',
-          level: RelaxLogLevel.warning, details: e);
+      _db.logger.log(
+        RelaxLogCategory.sync,
+        'push $tableName failed — marking ${pending.length} op(s) failed',
+        level: RelaxLogLevel.warning,
+        details: e,
+      );
       for (final op in pending) {
         await _queue.markFailed(op.id);
       }
@@ -219,7 +228,10 @@ class SyncEngine {
 
   /// Pulls remote changes and returns the server watermark for the next sync
   /// (null if the adapter doesn't provide one).
-  Future<DateTime?> _pullChanges(String tableName, _SyncRegistration reg) async {
+  Future<DateTime?> _pullChanges(
+    String tableName,
+    _SyncRegistration reg,
+  ) async {
     final since = _lastSyncTimes[tableName];
     _db.logger.log(RelaxLogCategory.sync, 'pull $tableName (since: $since)');
     return reg.applyPull(_db, tableName, since);
@@ -228,8 +240,10 @@ class SyncEngine {
   void _onConnectivityChanged(bool online) {
     final wasOffline = !_isOnline;
     _isOnline = online;
-    _db.logger.log(RelaxLogCategory.sync,
-        'connectivity: ${online ? 'online' : 'offline'}');
+    _db.logger.log(
+      RelaxLogCategory.sync,
+      'connectivity: ${online ? 'online' : 'offline'}',
+    );
 
     if (online) {
       if (wasOffline) {
@@ -351,8 +365,10 @@ class _SyncRegistration<T> {
           ? resolver.resolve(schema.rowToEntity(localRow), remote)
           : remote;
       if (resolver != null) {
-        db.logger.log(RelaxLogCategory.sync,
-            'conflict resolved on $tableName (id: $id)');
+        db.logger.log(
+          RelaxLogCategory.sync,
+          'conflict resolved on $tableName (id: $id)',
+        );
       }
       final row = schema.entityToRow(toWrite);
       row.remove(pk.name);
@@ -367,4 +383,3 @@ class _SyncRegistration<T> {
     }
   }
 }
-

@@ -89,7 +89,9 @@ void main() {
       expect(collector.of(RelaxLogCategory.crud), isNotEmpty);
       expect(collector.of(RelaxLogCategory.query), isNotEmpty);
       expect(
-        collector.of(RelaxLogCategory.crud).any((r) => r.message.contains('INSERT')),
+        collector
+            .of(RelaxLogCategory.crud)
+            .any((r) => r.message.contains('INSERT')),
         isTrue,
       );
     });
@@ -118,7 +120,10 @@ void main() {
       final collector = _Collector();
       final db = await RelaxDB.openInMemory(
         schemas: [noteSchema],
-        logger: RelaxLogger(minLevel: RelaxLogLevel.warning, sink: collector.add),
+        logger: RelaxLogger(
+          minLevel: RelaxLogLevel.warning,
+          sink: collector.add,
+        ),
       );
       // CRUD records are emitted at debug level — should be dropped.
       await db.collection<Note>().add(Note(id: '1', content: 'x'));
@@ -156,7 +161,6 @@ void main() {
       expect(check.isMisconfigured, isFalse);
       expect(collector.of(RelaxLogCategory.encryption), isNotEmpty);
       await db.close();
-      print(check.message);
     });
 
     test('encrypted file reports isEncrypted == true', () async {
@@ -177,7 +181,6 @@ void main() {
       expect(check.keyRequested, isTrue);
       expect(check.isMisconfigured, isFalse);
       await db.close();
-      print(check.message);
     });
 
     test('in-memory database returns unknown (null)', () async {
