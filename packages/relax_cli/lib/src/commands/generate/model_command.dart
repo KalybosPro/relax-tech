@@ -35,12 +35,16 @@ class ModelCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final modelName = _getModelName();
-    if (modelName == null) return ExitCode.usage.code;
+    final modelSpec = _getModelName();
+    if (modelSpec == null) return ExitCode.usage.code;
 
-    if (!isValidDartName(modelName)) {
-      return invalidNameError(_logger, 'Model', modelName);
+    if (!isValidPathSpec(modelSpec)) {
+      return invalidNameError(_logger, 'Model', modelSpec);
     }
+
+    // Split a path spec like `user/profile` into a parent folder and the name.
+    final (:subPath, :name) = parsePathSpec(modelSpec);
+    final modelName = name;
 
     final libDir = Directory('${Directory.current.path}/lib');
     if (!libDir.existsSync()) {
@@ -50,17 +54,19 @@ class ModelCommand extends Command<int> {
     }
 
     final outputDirName = argResults?['output'] as String;
-    final outputDir = Directory('${libDir.path}/$outputDirName');
+    final outputDir = subPath.isEmpty
+        ? Directory('${libDir.path}/$outputDirName')
+        : Directory('${libDir.path}/$outputDirName/$subPath');
     final modelFile = File('${outputDir.path}/$modelName.dart');
 
     if (modelFile.existsSync()) {
-      _logger.err('Model "$modelName" already exists in $outputDirName/.');
+      _logger.err('Model "$modelSpec" already exists in $outputDirName/.');
       return ExitCode.usage.code;
     }
 
     _logger.info('');
     _logger.info(
-      'Generating model ${lightCyan.wrap(modelName)} '
+      'Generating model ${lightCyan.wrap(modelSpec)} '
       'in ${lightCyan.wrap('lib/$outputDirName/')}...',
     );
     _logger.info('');
@@ -75,7 +81,7 @@ class ModelCommand extends Command<int> {
 
       _logger.info('');
       _logger.success(
-        'Generated model "$modelName" '
+        'Generated model "$modelSpec" '
         '(${generatedFiles.length} file).',
       );
       _logger.info('');

@@ -11,13 +11,19 @@ class FeatureGenerator {
 
   final Logger _logger;
 
-  /// Generates the feature files inside `lib/features/` of [projectDir].
+  /// Generates the feature files inside `lib/features/[subPath]/` of
+  /// [projectDir].
+  ///
+  /// [subPath] is an optional parent path (e.g. `auth` or `a/b/c`) that is
+  /// created (recursively) before generation. When empty, files land directly
+  /// under `lib/features/`.
   ///
   /// Returns the list of generated files.
   Future<List<GeneratedFile>> generate({
     required String featureName,
     required Architecture architecture,
     required Directory projectDir,
+    String subPath = '',
   }) async {
     final files = switch (architecture) {
       Architecture.bloc => FeatureTemplate.bloc,
@@ -33,7 +39,10 @@ class FeatureGenerator {
       vars: ['feature_name'],
     );
 
-    final featuresDir = Directory('${projectDir.path}/lib/features');
+    final featuresPath = subPath.isEmpty
+        ? '${projectDir.path}/lib/features'
+        : '${projectDir.path}/lib/features/$subPath';
+    final featuresDir = Directory(featuresPath)..createSync(recursive: true);
     final target = DirectoryGeneratorTarget(featuresDir);
 
     return generator.generate(

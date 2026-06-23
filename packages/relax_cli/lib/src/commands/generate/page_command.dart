@@ -46,13 +46,16 @@ class PageCommand extends Command<int> {
     final folderName = args[0];
     final pageName = args[1];
 
-    if (!isValidDartName(folderName)) {
+    if (!isValidPathSpec(folderName)) {
       return invalidNameError(_logger, 'Folder', folderName);
     }
 
     if (!isValidDartName(pageName)) {
       return invalidNameError(_logger, 'Page', pageName);
     }
+
+    // The leaf segment of a (possibly nested) feature path drives class names.
+    final (subPath: _, name: featureName) = parsePathSpec(folderName);
 
     if (!Directory('${Directory.current.path}/lib').existsSync()) {
       _logger.err('No lib/ directory found.');
@@ -94,6 +97,7 @@ class PageCommand extends Command<int> {
     try {
       final generatedFiles = await generator.generate(
         folderName: folderName,
+        featureName: featureName,
         pageName: pageName,
         architecture: architecture,
         projectDir: Directory.current,
@@ -106,7 +110,7 @@ class PageCommand extends Command<int> {
       );
       _logger.info('');
       _logger.info(
-        "Add to ${lightCyan.wrap('lib/features/$folderName/$folderName.dart')}: "
+        "Add to ${lightCyan.wrap('lib/features/$folderName/$featureName.dart')}: "
         "export 'view/${pageName}_page.dart';",
       );
       _logger.info('');

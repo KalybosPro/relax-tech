@@ -1,17 +1,3 @@
-> [!IMPORTANT]
-> ## 📦 This repository has moved
-> `relax_cli` is now developed in the **[KalybosPro/relax-tech](https://github.com/KalybosPro/relax-tech)** monorepo, together with the rest of the Relax packages.
->
-> - 👉 **Active source:** https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_cli
-> - 🐛 **Issues & Pull Requests:** please open them in the [monorepo](https://github.com/KalybosPro/relax-tech/issues) — this repo no longer tracks them.
-> - 📥 **On pub.dev:** nothing changes. `dart pub add relax_cli` keeps working exactly as before.
->
-> This repository is **archived** for historical reference and will not receive further updates.
-
----
-
-<!-- ↓↓↓ Original README kept below for reference ↓↓↓ -->
-
 # relax_cli
 
 A CLI tool to generate Flutter projects with clean architecture, ready to run.
@@ -59,17 +45,21 @@ relax create my_app -a bloc \
 relax generate feature settings        # auto-detects architecture
 relax generate feature cart -a provider # override architecture
 relax g feature profile                # shorthand alias
+relax g feature auth/login             # nested: creates lib/features/auth/ then the login feature
 ```
+
+Any generated name may include a `/`-separated parent path. The missing folders are created first, and class/file names are derived from the **last segment only** (`auth/login` → `LoginBloc`, `login.dart`). Works at arbitrary depth (`account/admin/login`); a plain name with no `/` behaves as before.
 
 ### `relax generate page` — Add a page to an existing feature
 
 ```bash
 relax generate page home detail         # add detail page to home feature
 relax generate page auth login -a bloc  # override architecture
+relax generate page auth/login form     # nested feature folder
 relax g page settings notifications     # shorthand alias
 ```
 
-Generates a `Page` + `View` widget pair inside `lib/features/<folder_name>/view/`. The target feature folder must already exist (create it with `relax generate feature` first).
+Generates a `Page` + `View` widget pair inside `lib/features/<folder_name>/view/`. The target feature folder must already exist (create it with `relax generate feature` first) and may be nested (e.g. `auth/login`).
 
 ```
 lib/features/home/view/
@@ -89,6 +79,7 @@ export 'view/detail_page.dart';
 ```bash
 relax generate module product          # generates in lib/modules/
 relax generate module user -o core/domain  # custom output directory
+relax generate module account/user     # nested: lib/modules/account/user/
 relax g module order                   # shorthand alias
 ```
 
@@ -99,6 +90,7 @@ Modules are fully integrated with **RelaxORM**: the model is annotated with `@Re
 ```bash
 relax generate model user_profile      # generates in lib/models/
 relax g model payment -o core/models   # custom output directory
+relax g model billing/invoice          # nested: lib/models/billing/invoice.dart
 ```
 
 ### `relax doctor` — Check your environment

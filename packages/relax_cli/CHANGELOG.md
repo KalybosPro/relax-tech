@@ -1,5 +1,11 @@
 ## 0.1.7
 
+- **Added** path-spec support to every `relax generate` subcommand — the name argument may now include a `/`-separated parent path, and the missing folders are created before the component is generated.
+  - `relax g feature auth/login` creates `lib/features/auth/` (if needed) then generates the `login` feature inside it.
+  - Works at arbitrary depth, e.g. `relax g feature account/admin/login`.
+  - Applies to `feature`, `model`, `module`, and `page` (whose target feature folder may now be nested).
+  - Class and file names are derived from the **last segment only** (`auth/login` → `LoginBloc`, `login.dart`); the prefix is used purely as a path.
+  - Each path segment is validated as a Dart name; a plain name with no `/` behaves exactly as before (fully backwards compatible).
 - **Added** `relax generate page <folder_name> <page_name>` — generates a Page + View pair inside an existing feature folder.
   - Auto-detects the project architecture (Bloc, Provider, Riverpod, GetX) or accepts `-a` to override.
   - Generates `<page_name>_page.dart` and `<page_name>_view.dart` in `lib/features/<folder_name>/view/`.

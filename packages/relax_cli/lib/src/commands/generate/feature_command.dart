@@ -35,12 +35,16 @@ class FeatureCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final featureName = _getFeatureName();
-    if (featureName == null) return ExitCode.usage.code;
+    final featureSpec = _getFeatureName();
+    if (featureSpec == null) return ExitCode.usage.code;
 
-    if (!isValidDartName(featureName)) {
-      return invalidNameError(_logger, 'Feature', featureName);
+    if (!isValidPathSpec(featureSpec)) {
+      return invalidNameError(_logger, 'Feature', featureSpec);
     }
+
+    // Split a path spec like `auth/login` into a parent folder and the name.
+    final (:subPath, :name) = parsePathSpec(featureSpec);
+    final featureName = name;
 
     // Check we're inside a Flutter project
     final featuresDir = Directory('${Directory.current.path}/lib/features');
@@ -50,10 +54,13 @@ class FeatureCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    // Check feature doesn't already exist
-    final featureDir = Directory('${featuresDir.path}/$featureName');
+    // Check feature doesn't already exist (within its parent sub-path)
+    final featureParent = subPath.isEmpty
+        ? featuresDir.path
+        : '${featuresDir.path}/$subPath';
+    final featureDir = Directory('$featureParent/$featureName');
     if (featureDir.existsSync()) {
-      _logger.err('Feature "$featureName" already exists.');
+      _logger.err('Feature "$featureSpec" already exists.');
       return ExitCode.usage.code;
     }
 
@@ -63,7 +70,7 @@ class FeatureCommand extends Command<int> {
 
     _logger.info('');
     _logger.info(
-      'Generating feature ${lightCyan.wrap(featureName)} '
+      'Generating feature ${lightCyan.wrap(featureSpec)} '
       'with ${lightCyan.wrap(architecture.label)}...',
     );
     _logger.info('');
@@ -75,11 +82,12 @@ class FeatureCommand extends Command<int> {
         featureName: featureName,
         architecture: architecture,
         projectDir: Directory.current,
+        subPath: subPath,
       );
 
       _logger.info('');
       _logger.success(
-        'Generated feature "$featureName" '
+        'Generated feature "$featureSpec" '
         '(${generatedFiles.length} files).',
       );
       _logger.info('');

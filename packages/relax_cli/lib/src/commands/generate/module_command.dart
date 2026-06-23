@@ -32,12 +32,16 @@ class ModuleCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final moduleName = _getModuleName();
-    if (moduleName == null) return ExitCode.usage.code;
+    final moduleSpec = _getModuleName();
+    if (moduleSpec == null) return ExitCode.usage.code;
 
-    if (!isValidDartName(moduleName)) {
-      return invalidNameError(_logger, 'Module', moduleName);
+    if (!isValidPathSpec(moduleSpec)) {
+      return invalidNameError(_logger, 'Module', moduleSpec);
     }
+
+    // Split a path spec like `account/user` into a parent folder and the name.
+    final (:subPath, :name) = parsePathSpec(moduleSpec);
+    final moduleName = name;
 
     final libDir = Directory('${Directory.current.path}/lib');
     if (!libDir.existsSync()) {
@@ -47,17 +51,19 @@ class ModuleCommand extends Command<int> {
     }
 
     final outputDirName = argResults?['output'] as String;
-    final outputDir = Directory('${libDir.path}/$outputDirName');
+    final outputDir = subPath.isEmpty
+        ? Directory('${libDir.path}/$outputDirName')
+        : Directory('${libDir.path}/$outputDirName/$subPath');
     final moduleDir = Directory('${outputDir.path}/$moduleName');
 
     if (moduleDir.existsSync()) {
-      _logger.err('Module "$moduleName" already exists in $outputDirName/.');
+      _logger.err('Module "$moduleSpec" already exists in $outputDirName/.');
       return ExitCode.usage.code;
     }
 
     _logger.info('');
     _logger.info(
-      'Generating module ${lightCyan.wrap(moduleName)} '
+      'Generating module ${lightCyan.wrap(moduleSpec)} '
       'in ${lightCyan.wrap('lib/$outputDirName/')}...',
     );
     _logger.info('');
@@ -72,7 +78,7 @@ class ModuleCommand extends Command<int> {
 
       _logger.info('');
       _logger.success(
-        'Generated module "$moduleName" '
+        'Generated module "$moduleSpec" '
         '(${generatedFiles.length} files).',
       );
       _logger.info('');

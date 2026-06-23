@@ -1,3 +1,6 @@
+@Timeout(Duration(minutes: 5))
+library;
+
 import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
@@ -15,7 +18,12 @@ void main() {
 
   tearDown(() {
     if (tempDir.existsSync()) {
-      tempDir.deleteSync(recursive: true);
+      try {
+        tempDir.deleteSync(recursive: true);
+      } on FileSystemException {
+        // On Windows a build_runner subprocess may still hold a handle on the
+        // temp dir; ignore the transient lock so cleanup doesn't fail the test.
+      }
     }
   });
 
@@ -180,6 +188,65 @@ void main() {
               .existsSync(),
           isTrue,
         );
+      } finally {
+        Directory.current = originalDir;
+      }
+    });
+
+    test('creates parent folder then feature for a path spec', () async {
+      await createProject('app', 'bloc');
+      final originalDir = Directory.current;
+      Directory.current = Directory('${tempDir.path}/app');
+
+      try {
+        final code = await runner.run(['g', 'feature', 'auth/login']);
+        expect(code, equals(ExitCode.success.code));
+
+        // Parent folder created, feature nested inside it.
+        final base = '${tempDir.path}/app/lib/features/auth/login';
+        expect(
+          Directory('${tempDir.path}/app/lib/features/auth').existsSync(),
+          isTrue,
+          reason: 'parent folder',
+        );
+        expect(File('$base/login.dart').existsSync(), isTrue);
+
+        // Class names derive from the leaf segment only (login -> LoginBloc).
+        final bloc = File('$base/bloc/login_bloc.dart');
+        expect(bloc.existsSync(), isTrue);
+        expect(bloc.readAsStringSync(), contains('class LoginBloc'));
+        expect(bloc.readAsStringSync(), isNot(contains('AuthLogin')));
+      } finally {
+        Directory.current = originalDir;
+      }
+    });
+
+    test('supports arbitrarily deep path specs', () async {
+      await createProject('app', 'bloc');
+      final originalDir = Directory.current;
+      Directory.current = Directory('${tempDir.path}/app');
+
+      try {
+        final code = await runner.run(['g', 'feature', 'a/b/c/login']);
+        expect(code, equals(ExitCode.success.code));
+        expect(
+          File('${tempDir.path}/app/lib/features/a/b/c/login/login.dart')
+              .existsSync(),
+          isTrue,
+        );
+      } finally {
+        Directory.current = originalDir;
+      }
+    });
+
+    test('exits with usage when a path segment is invalid', () async {
+      await createProject('app', 'bloc');
+      final originalDir = Directory.current;
+      Directory.current = Directory('${tempDir.path}/app');
+
+      try {
+        final code = await runner.run(['g', 'feature', 'auth/My-Feature']);
+        expect(code, equals(ExitCode.usage.code));
       } finally {
         Directory.current = originalDir;
       }

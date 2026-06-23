@@ -162,6 +162,26 @@ void main() {
       }
     });
 
+    test('creates parent folders for a nested path spec', () async {
+      await createProject('app');
+      final originalDir = Directory.current;
+      Directory.current = Directory('${tempDir.path}/app');
+
+      try {
+        final code = await runner.run(['generate', 'module', 'account/user']);
+        expect(code, equals(ExitCode.success.code));
+
+        final base = '${tempDir.path}/app/lib/modules/account/user';
+        expect(Directory(base).existsSync(), isTrue);
+        final model = File('$base/models/user.dart');
+        expect(model.existsSync(), isTrue);
+        // Class name derives from the leaf segment only.
+        expect(model.readAsStringSync(), contains('class User'));
+      } finally {
+        Directory.current = originalDir;
+      }
+    });
+
     test('exits with usage when module already exists', () async {
       await createProject('app');
       final originalDir = Directory.current;

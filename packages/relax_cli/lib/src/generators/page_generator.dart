@@ -11,9 +11,15 @@ class PageGenerator {
 
   final Logger _logger;
 
-  /// Generates page files inside `lib/features/[folderName]/view/` of [projectDir].
+  /// Generates page files inside `lib/features/[folderName]/view/` of
+  /// [projectDir].
+  ///
+  /// [folderName] is the feature path under `lib/features/` and may be nested
+  /// (e.g. `auth/login`). [featureName] is the leaf segment used to derive class
+  /// names (e.g. the bloc/notifier referenced by the page).
   Future<List<GeneratedFile>> generate({
     required String folderName,
+    required String featureName,
     required String pageName,
     required Architecture architecture,
     required Directory projectDir,
@@ -38,7 +44,7 @@ class PageGenerator {
     return generator.generate(
       target,
       vars: <String, dynamic>{
-        'feature_name': folderName,
+        'feature_name': featureName,
         'page_name': pageName,
       },
       logger: _logger,

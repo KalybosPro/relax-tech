@@ -12,6 +12,9 @@ class ModuleGenerator {
   final Logger _logger;
 
   /// Generates the module files inside [outputDir].
+  ///
+  /// [outputDir] is created recursively if needed (e.g. when a path spec like
+  /// `account/user` targets a nested folder).
   Future<List<GeneratedFile>> generate({
     required String moduleName,
     required Directory outputDir,
@@ -23,6 +26,7 @@ class ModuleGenerator {
       vars: ['module_name'],
     );
 
+    outputDir.createSync(recursive: true);
     final target = DirectoryGeneratorTarget(outputDir);
 
     return generator.generate(

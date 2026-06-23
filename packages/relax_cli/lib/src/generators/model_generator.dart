@@ -12,6 +12,9 @@ class ModelGenerator {
   final Logger _logger;
 
   /// Generates the model file inside [outputDir].
+  ///
+  /// [outputDir] is created recursively if needed (e.g. when a path spec like
+  /// `user/profile` targets a nested folder).
   Future<List<GeneratedFile>> generate({
     required String modelName,
     required Directory outputDir,
@@ -23,6 +26,7 @@ class ModelGenerator {
       vars: ['model_name'],
     );
 
+    outputDir.createSync(recursive: true);
     final target = DirectoryGeneratorTarget(outputDir);
 
     return generator.generate(
