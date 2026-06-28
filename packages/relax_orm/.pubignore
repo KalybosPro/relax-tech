@@ -4,6 +4,9 @@ cahier_des_charges.md
 .idea/
 *.iml
 
+# Internal audit / design docs — not shipped to pub.dev
+docs/
+
 # Build artifacts
 build/
 .dart_tool/

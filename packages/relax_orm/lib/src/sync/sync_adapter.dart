@@ -35,8 +35,8 @@ class SyncPullResult<T> {
 ///   }
 ///
 ///   @override
-///   Future<void> pushDeletes(List<Object> ids) async {
-///     await api.delete('/users/batch', ids);
+///   Future<List<Object>> pushDeletes(List<Object> ids) async {
+///     return await api.delete('/users/batch', ids); // confirmed ids
 ///   }
 ///
 ///   @override
@@ -61,12 +61,21 @@ class SyncPullResult<T> {
 abstract class SyncAdapter<T> {
   /// Pushes created/updated entities to the remote server.
   ///
-  /// Returns the server-confirmed versions of the entities
-  /// (which may include server-assigned timestamps, ids, etc.).
+  /// Return **only** the entities the server actually accepted — these are the
+  /// server-confirmed versions (which may include server-assigned timestamps,
+  /// ids, etc.) and are written back into the local database. The [SyncEngine]
+  /// matches confirmed entities to queued operations by primary key: any entity
+  /// you omit from the result is treated as *not yet synced* and stays in the
+  /// offline queue to be retried on the next sync, instead of being silently
+  /// dropped. Throw if the whole batch failed.
   Future<List<T>> push(List<T> entities);
 
   /// Notifies the server about locally deleted entities.
-  Future<void> pushDeletes(List<Object> ids);
+  ///
+  /// Return the subset of [ids] the server confirmed as deleted. Ids you omit
+  /// stay queued and are retried later (same contract as [push]). Throw if the
+  /// whole batch failed.
+  Future<List<Object>> pushDeletes(List<Object> ids);
 
   /// Pulls remote changes since [since].
   ///

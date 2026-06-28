@@ -51,6 +51,10 @@ class MockSyncAdapter implements SyncAdapter<Task> {
   /// echoing the pushed entities.
   List<Task>? pushReturns;
 
+  /// Overrides what [pushDeletes] returns (server-confirmed ids). Defaults to
+  /// echoing the requested ids.
+  List<Object>? pushDeletesReturns;
+
   /// The `since` watermark received on the most recent [pull].
   DateTime? lastSince;
 
@@ -63,10 +67,11 @@ class MockSyncAdapter implements SyncAdapter<Task> {
   }
 
   @override
-  Future<void> pushDeletes(List<Object> ids) async {
+  Future<List<Object>> pushDeletes(List<Object> ids) async {
     pushCallCount++;
     if (pushError != null) throw pushError!;
     pushedDeletes.addAll(ids);
+    return pushDeletesReturns ?? ids;
   }
 
   @override
@@ -112,7 +117,7 @@ class MockEventAdapter implements SyncAdapter<Event> {
   }
 
   @override
-  Future<void> pushDeletes(List<Object> ids) async {}
+  Future<List<Object>> pushDeletes(List<Object> ids) async => ids;
 
   @override
   Future<SyncPullResult<Event>> pull({DateTime? since}) async =>
@@ -198,6 +203,28 @@ void main() {
       ));
       await queue.clear();
       expect(await queue.getAllPending(), isEmpty);
+    });
+
+    test('clear(tableName) only purges the given table (SY-4)', () async {
+      await queue.enqueue(SyncOperation(
+        id: 'op1',
+        tableName: 'tasks',
+        type: SyncOperationType.add,
+        entityId: '1',
+        createdAt: DateTime.now(),
+      ));
+      await queue.enqueue(SyncOperation(
+        id: 'op2',
+        tableName: 'other',
+        type: SyncOperationType.add,
+        entityId: '2',
+        createdAt: DateTime.now(),
+      ));
+
+      await queue.clear(tableName: 'tasks');
+
+      expect(await queue.getPending('tasks'), isEmpty);
+      expect(await queue.getPending('other'), hasLength(1));
     });
 
     test('data round-trips through JSON serialization', () async {
@@ -620,6 +647,88 @@ void main() {
       // Only the latest state is pushed, once; the queue is fully drained.
       expect(adapter.pushedEntities.length, 1);
       expect(adapter.pushedEntities.single.title, 'v10');
+      expect(await engine.pendingCount(), 0);
+
+      await db.close();
+    });
+
+    test('an unconfirmed push entity stays queued for retry (SY-1)', () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      final tasks = db.collection<Task>();
+      await tasks.add(Task(id: '1', title: 'accepted'));
+      await tasks.add(Task(id: '2', title: 'rejected'));
+
+      // Server accepts only entity '1'; '2' is omitted (silently rejected).
+      adapter.pushReturns = [Task(id: '1', title: 'accepted')];
+      await engine.syncTable('tasks');
+
+      // The confirmed op is gone; the unconfirmed one is still pending.
+      expect(await engine.pendingCount(), 1);
+
+      // Once the server accepts it on a later sync, the queue drains.
+      adapter.pushReturns = null;
+      await engine.syncTable('tasks');
+      expect(await engine.pendingCount(), 0);
+
+      await db.close();
+    });
+
+    test('an unconfirmed delete stays queued for retry (SY-2)', () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      final tasks = db.collection<Task>();
+      await tasks.add(Task(id: '1', title: 'a'));
+      await tasks.add(Task(id: '2', title: 'b'));
+      await engine.syncTable('tasks'); // drain the adds
+      adapter.pushedEntities.clear();
+
+      await tasks.delete('1');
+      await tasks.delete('2');
+
+      // Server confirms only the deletion of '1'.
+      adapter.pushDeletesReturns = ['1'];
+      await engine.syncTable('tasks');
+
+      // '2' is unconfirmed and remains queued.
+      expect(await engine.pendingCount(), 1);
+
+      adapter.pushDeletesReturns = null;
+      await engine.syncTable('tasks');
+      expect(await engine.pendingCount(), 0);
+
+      await db.close();
+    });
+
+    test('a queued op from an older schema version is discarded (ORM-4)',
+        () async {
+      final db = await RelaxDB.openInMemory(schemas: [taskSchema]);
+      final engine = await db.sync;
+      final adapter = MockSyncAdapter();
+      // Current schema is taskSchema (version 1).
+      engine.register(SyncConfig<Task>(schema: taskSchema, adapter: adapter));
+
+      // Simulate an operation queued by an older app build (schema v99 here,
+      // i.e. a format the current schema can no longer decode).
+      await engine.queueOperation(
+        tableName: 'tasks',
+        type: SyncOperationType.add,
+        entityId: '1',
+        data: {'id': '1', 'title': 'stale', 'done': false},
+        schemaVersion: 99,
+      );
+      expect(await engine.pendingCount(), 1);
+
+      await engine.syncTable('tasks');
+
+      // The stale op is dropped (never pushed) and the queue is drained.
+      expect(adapter.pushedEntities, isEmpty);
       expect(await engine.pendingCount(), 0);
 
       await db.close();

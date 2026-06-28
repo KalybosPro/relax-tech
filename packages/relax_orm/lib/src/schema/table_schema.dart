@@ -4,8 +4,10 @@ import 'column_def.dart';
 
 /// Defines the schema for a table in RelaxORM.
 ///
-/// In Phase 1a, schemas are defined manually. In Phase 2, the code generator
-/// will produce these automatically from annotated classes.
+/// You can either write a [TableSchema] by hand (shown below) or annotate your
+/// model with `@RelaxTable()` and let the `relax_orm_generator` build it for you
+/// via `dart run build_runner build`. Both styles produce the same
+/// [TableSchema] and are fully supported.
 ///
 /// ```dart
 /// final userSchema = TableSchema<User>(
@@ -36,12 +38,26 @@ class TableSchema<T> {
   final T Function(Map<String, dynamic>) fromMap;
   final Map<String, dynamic> Function(T) toMap;
 
+  /// Version of this schema's on-the-wire row format.
+  ///
+  /// Bump this whenever a change to [columns] alters how values are SQL-encoded
+  /// (e.g. a column's [ColumnType] changes). Pending sync operations are stored
+  /// as SQL-encoded rows; the [SyncEngine] discards any queued operation whose
+  /// recorded version no longer matches the current schema version, so it never
+  /// decodes stale data with an incompatible schema. Defaults to `1`.
+  final int version;
+
   const TableSchema({
     required this.tableName,
     required this.columns,
     required this.fromMap,
     required this.toMap,
+    this.version = 1,
   });
+
+  /// The entity type [T] this schema maps. Used as an O(1) lookup key by
+  /// `RelaxDB.collection<T>()`.
+  Type get entityType => T;
 
   /// Returns the primary key column, or throws if none is defined.
   ColumnDef get primaryKey {

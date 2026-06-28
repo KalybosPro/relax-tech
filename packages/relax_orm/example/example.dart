@@ -7,6 +7,7 @@
 /// - Queries with filters, sorting, pagination
 /// - Real-time streams
 /// - Sync engine setup
+// ignore_for_file: avoid_print
 library;
 
 import 'dart:async';
@@ -160,9 +161,10 @@ class UserSyncAdapter implements SyncAdapter<User> {
   }
 
   @override
-  Future<void> pushDeletes(List<Object> ids) async {
+  Future<List<Object>> pushDeletes(List<Object> ids) async {
     // DELETE /api/users/batch
     print('Deleting $ids from server...');
+    return ids; // return the ids the server confirmed as deleted
   }
 
   @override

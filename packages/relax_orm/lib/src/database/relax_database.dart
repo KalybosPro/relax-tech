@@ -158,6 +158,12 @@ class RelaxDatabase extends GeneratedDatabase {
   }
 
   /// Inserts multiple rows in a single batch.
+  ///
+  /// Raw `customStatement`s inside a [batch] don't tell Drift which table was
+  /// written, so active `watch()` streams wouldn't be notified on their own.
+  /// We therefore emit an explicit [TableUpdate] for [table] after the batch so
+  /// that `watchAll()` / `watchOne()` listeners refresh (e.g. after a bulk
+  /// `Collection.addAll` import).
   Future<void> rawBatchInsert(
     String table,
     List<Map<String, Object?>> rows,
@@ -171,6 +177,7 @@ class RelaxDatabase extends GeneratedDatabase {
         b.customStatement(sql, [...row.values]);
       }
     });
+    notifyUpdates({TableUpdate(table, kind: UpdateKind.insert)});
     logger.log(RelaxLogCategory.crud,
         'BATCH INSERT $table (${rows.length} row(s))');
   }

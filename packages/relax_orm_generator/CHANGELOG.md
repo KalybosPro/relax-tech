@@ -1,3 +1,12 @@
+## 0.1.7
+
+### Changed
+
+- Widened the `relax_orm` dependency constraint to `>=0.1.7 <2.0.0` so the
+  generator works with the stable `relax_orm` 1.0.0 release. Generated output is
+  unchanged (the generator only uses the `TableSchema` API, which is unaffected
+  by the 1.0.0 sync-adapter changes).
+
 ## 0.1.6
 
 ### Added

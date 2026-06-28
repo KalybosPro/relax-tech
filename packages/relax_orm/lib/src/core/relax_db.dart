@@ -180,7 +180,9 @@ class RelaxDB {
 
     final schemaMap = <Type, TableSchema>{};
     for (final schema in schemas) {
-      schemaMap[schema.runtimeType] = schema;
+      // Key by the mapped entity type (T), not the schema's runtimeType, so
+      // collection<T>() resolves in O(1) via a direct lookup.
+      schemaMap[schema.entityType] = schema;
     }
 
     final db = RelaxDB._(
@@ -338,9 +340,8 @@ class RelaxDB {
   }
 
   TableSchema<T> _findSchema<T>() {
-    for (final schema in _schemas.values) {
-      if (schema is TableSchema<T>) return schema;
-    }
+    final schema = _schemas[T];
+    if (schema is TableSchema<T>) return schema;
     throw StateError(
       'No schema registered for type $T. '
       'Make sure you passed a TableSchema<$T> to RelaxDB.open().',

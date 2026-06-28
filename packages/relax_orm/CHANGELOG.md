@@ -1,3 +1,54 @@
+## 1.0.0
+
+First stable release. Addresses the findings of the 0.1.7 technical audit (sync
+engine, persistence, schema) and commits to a stable public API. Two changes to
+the `SyncAdapter` contract since 0.1.7 are breaking; see below.
+
+### Breaking
+
+- `SyncAdapter.pushDeletes` now returns `Future<List<Object>>` (the ids the
+  server confirmed as deleted) instead of `Future<void>` (SY-2).
+- `SyncAdapter.push` semantics tightened: return **only** the entities the
+  server accepted. Entities omitted from the result are treated as not-yet-synced
+  and stay queued for retry instead of being silently completed (SY-1).
+- `Collection.add` now returns `Future<T>` and `Collection.addAll` returns
+  `Future<List<T>>` (the stored entities). This is source-compatible with
+  existing `await`-and-ignore call sites (ORM-2).
+
+### Fixed
+
+- **SY-1 — Silent loss of unconfirmed pushes.** The engine now completes only
+  the queued operations whose entity the adapter confirmed (matched by primary
+  key); unconfirmed operations remain pending and are retried on the next sync.
+- **SY-2 — Partial deletes.** `pushDeletes` reports confirmed ids, so a partial
+  server-side delete no longer marks the whole batch as synced.
+- **ORM-1 — `addAll` didn't refresh streams.** `rawBatchInsert` now emits an
+  explicit table update, so active `watchAll()` / `watchOne()` listeners refresh
+  after a bulk import.
+- **ORM-2 — Generated ids unreachable.** `add()`/`addAll()` return the stored
+  entity (with any generated UUID primary key) instead of `void`.
+- **ORM-3 — `upsert()` race.** The existence check and the write now run inside a
+  single transaction, so a concurrent write to the same key can't turn the insert
+  into a `PRIMARY KEY` violation.
+
+### Changed
+
+- **SY-3 — Conflict-resolution asymmetry documented.** `SyncConfig.conflictResolver`
+  runs only on pull; push-confirmation write-backs are authoritative. Documented
+  in the docstring and README.
+- **SY-4 — Targeted queue clear.** `OfflineQueue.clear({String? tableName})` can
+  now purge a single table's pending operations.
+- **ORM-4 — Schema versioning for the offline queue.** `TableSchema` gains a
+  `version` field; queued operations record it, and the engine discards
+  operations whose recorded version no longer matches the current schema so stale
+  SQL-encoded rows are never decoded with an incompatible schema. (Existing
+  queued rows are treated as version `0`/"unspecified" and kept, so upgrading is
+  lossless.)
+- **ORM-5 — O(1) schema lookup.** `RelaxDB.collection<T>()` resolves schemas via
+  a direct type-keyed lookup instead of a linear scan.
+- **GEN-1 — Generator status.** Removed the stale "Phase 1a/Phase 2" comments;
+  the `relax_orm_generator` is available now, alongside hand-written schemas.
+
 ## 0.1.7
 
 ### Fixed

@@ -66,6 +66,25 @@ final userSchema = TableSchema<User>(
   },
 );
 
+// -- Model with a generatable (nullable) primary key (ORM-2) --
+
+class Note {
+  final String? id;
+  final String text;
+
+  Note({this.id, required this.text});
+}
+
+final noteSchema = TableSchema<Note>(
+  tableName: 'notes',
+  columns: [
+    ColumnDef.text('id', isPrimaryKey: true),
+    ColumnDef.text('text'),
+  ],
+  fromMap: (m) => Note(id: m['id'] as String?, text: m['text'] as String),
+  toMap: (n) => {'id': n.id, 'text': n.text},
+);
+
 // -- Helpers --
 
 User _makeUser(String id, {String name = 'Test', int age = 25, bool active = true}) =>
@@ -132,6 +151,44 @@ void main() {
 
       expect(await users.count(), 3);
       expect((await users.get('2'))!.name, 'Bob');
+    });
+
+    test('notifies active watchAll listeners (ORM-1)', () async {
+      // A watcher subscribed before the bulk insert must see the new rows.
+      final emissions = expectLater(
+        users.watchAll(),
+        emitsInOrder([
+          predicate<List<User>>((l) => l.isEmpty),
+          predicate<List<User>>((l) => l.length == 2),
+        ]),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+      await users.addAll([_makeUser('1'), _makeUser('2')]);
+
+      await emissions;
+    });
+  });
+
+  group('add return value (ORM-2)', () {
+    test('returns the stored entity with a generated primary key', () async {
+      final db = await RelaxDB.openInMemory(schemas: [noteSchema]);
+      final notes = db.collection<Note>();
+
+      final stored = await notes.add(Note(text: 'no id yet'));
+
+      expect(stored.id, isNotNull);
+      expect(stored.text, 'no id yet');
+      // The generated id is persisted and retrievable.
+      expect((await notes.get(stored.id!))!.text, 'no id yet');
+
+      await db.close();
+    });
+
+    test('add returns the entity unchanged when an id is supplied', () async {
+      final returned = await users.add(_makeUser('42', name: 'Zoe'));
+      expect(returned.id, '42');
+      expect(returned.name, 'Zoe');
     });
   });
 

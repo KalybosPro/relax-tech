@@ -21,7 +21,7 @@ Inspired by Firebase and PowerSync — but free, self-hosted, and with no SaaS d
 
 ```yaml
 dependencies:
-  relax_orm: ^0.1.4
+  relax_orm: ^1.0.0
 
 dev_dependencies:
   relax_orm_generator: ^0.1.6
@@ -77,8 +77,9 @@ final users = db.collection<User>();
 ## CRUD Operations
 
 ```dart
-// Create
-await users.add(User(id: '1', name: 'Alice', age: 30, active: true, createdAt: DateTime.now()));
+// Create — returns the stored entity, including a generated id when the
+// primary key is a null text column (the original object is left untouched).
+final stored = await users.add(User(id: '1', name: 'Alice', age: 30, active: true, createdAt: DateTime.now()));
 
 // Read
 final user = await users.get('1');
@@ -95,8 +96,9 @@ await users.upsert(user);
 await users.delete('1');
 await users.deleteAll();
 
-// Batch insert
-await users.addAll([user1, user2, user3]);
+// Batch insert — returns the stored entities; active watchAll/watchOne
+// streams are notified so the UI refreshes after a bulk import.
+final storedAll = await users.addAll([user1, user2, user3]);
 ```
 
 ## Queries
@@ -165,12 +167,16 @@ class UserSyncAdapter implements SyncAdapter<User> {
   @override
   Future<List<User>> push(List<User> entities) async {
     final response = await api.post('/users/batch', entities);
-    return response.users; // server-confirmed versions
+    // Return ONLY the entities the server accepted. Any entity you omit is
+    // treated as not-yet-synced and stays queued for the next sync, so a
+    // partial success never silently drops a change. Throw to fail the batch.
+    return response.acceptedUsers;
   }
 
   @override
-  Future<void> pushDeletes(List<Object> ids) async {
-    await api.delete('/users/batch', ids);
+  Future<List<Object>> pushDeletes(List<Object> ids) async {
+    // Return the ids the server confirmed as deleted (same retry contract).
+    return await api.delete('/users/batch', ids);
   }
 
   @override
@@ -273,6 +279,12 @@ ConflictResolver<User>.custom((local, remote) {
   return remote.updatedAt.isAfter(local.updatedAt) ? remote : local;
 })
 ```
+
+> **Note — where the resolver runs:** `conflictResolver` is applied only when
+> applying a **pull** (changes coming *from* the server). The server-confirmed
+> versions written back after a successful **push** are treated as authoritative
+> and overwrite the local row *without* running the resolver — a confirmed push
+> already reflects the state the server accepted.
 
 ## Encryption
 

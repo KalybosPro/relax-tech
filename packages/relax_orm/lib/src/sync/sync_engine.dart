@@ -13,6 +13,14 @@ import 'sync_status.dart';
 class SyncConfig<T> {
   final TableSchema<T> schema;
   final SyncAdapter<T> adapter;
+
+  /// Resolves local↔remote conflicts when applying a **pull** (`applyPull`).
+  ///
+  /// Note the deliberate asymmetry: this resolver runs only for entities
+  /// arriving from a pull. Entities written back after a successful **push**
+  /// (the server-confirmed versions returned by [SyncAdapter.push]) are treated
+  /// as authoritative and overwrite the local row *without* consulting the
+  /// resolver — a confirmed push already reflects the server's accepted state.
   final ConflictResolver<T> conflictResolver;
 
   /// How often to auto-sync when online (null = manual only).
@@ -105,6 +113,7 @@ class SyncEngine {
     required SyncOperationType type,
     required String entityId,
     Map<String, dynamic>? data,
+    int schemaVersion = 0,
   }) async {
     final op = SyncOperation(
       id: '${tableName}_${entityId}_${DateTime.now().microsecondsSinceEpoch}_${_opSeq++}',
@@ -113,6 +122,7 @@ class SyncEngine {
       entityId: entityId,
       data: data,
       createdAt: DateTime.now(),
+      schemaVersion: schemaVersion,
     );
     await _queue.enqueue(op);
   }
@@ -205,21 +215,57 @@ class SyncEngine {
     final pending = await _queue.getPending(tableName);
     if (pending.isEmpty) return;
 
+    // Drop operations whose recorded schema version no longer matches the
+    // current schema: their SQL-encoded payload can't be safely decoded with
+    // today's column types. Version 0 means "unspecified" (legacy/delete) and
+    // is always kept.
+    final currentVersion = reg.schemaVersion;
+    final stale = pending
+        .where((op) =>
+            op.schemaVersion != 0 && op.schemaVersion != currentVersion)
+        .toList();
+    if (stale.isNotEmpty) {
+      _db.logger.log(
+        RelaxLogCategory.sync,
+        'discarding ${stale.length} stale-schema op(s) on $tableName '
+        '(schema v$currentVersion)',
+        level: RelaxLogLevel.warning,
+      );
+      await _queue.completeAll(stale.map((op) => op.id).toList());
+    }
+    final live = pending.where((op) => !stale.contains(op)).toList();
+    if (live.isEmpty) return;
+
     _db.logger.log(
       RelaxLogCategory.sync,
-      'push $tableName (${pending.length} pending op(s))',
+      'push $tableName (${live.length} pending op(s))',
     );
     try {
-      await reg.pushOperations(_db, tableName, pending);
-      await _queue.completeAll(pending.map((op) => op.id).toList());
+      // Only operations whose entity was explicitly confirmed by the adapter
+      // are removed from the queue. Anything unconfirmed stays pending and is
+      // retried on the next sync, so a partial server-side success never
+      // silently drops an unsynced change.
+      final confirmedIds = await reg.pushOperations(_db, tableName, live);
+      await _queue.completeAll(confirmedIds.toList());
+
+      final unconfirmed =
+          live.where((op) => !confirmedIds.contains(op.id)).length;
+      if (unconfirmed > 0) {
+        _db.logger.log(
+          RelaxLogCategory.sync,
+          'push $tableName: $unconfirmed op(s) left pending (unconfirmed by '
+          'server) — will retry next sync',
+          level: RelaxLogLevel.warning,
+        );
+      }
     } catch (e) {
       _db.logger.log(
         RelaxLogCategory.sync,
-        'push $tableName failed — marking ${pending.length} op(s) failed',
+        'push $tableName failed — marking ${live.length} op(s) failed',
         level: RelaxLogLevel.warning,
         details: e,
       );
-      for (final op in pending) {
+      for (final op in live) {
         await _queue.markFailed(op.id);
       }
       rethrow;
@@ -263,11 +309,20 @@ class _SyncRegistration<T> {
   final SyncConfig<T> config;
   _SyncRegistration(this.config);
 
-  /// Pushes pending operations to the remote server (typed).
+  /// Current schema version for this registration's table.
+  int get schemaVersion => config.schema.version;
+
+  /// Pushes pending operations to the remote server (typed) and returns the ids
+  /// of the [pending] operations whose entity the server confirmed.
   ///
-  /// Server-confirmed versions returned by [SyncAdapter.push] (which may carry
-  /// server-assigned ids/timestamps) are written back into the local database.
-  Future<void> pushOperations(
+  /// Confirmation is matched by primary key: every queued operation for an
+  /// entity the adapter returns from [SyncAdapter.push] / [SyncAdapter.pushDeletes]
+  /// is reported as confirmed. Operations that coalesced away (e.g. an offline
+  /// add-then-delete that never reached the server) are confirmed too, since
+  /// there is nothing left to send. Anything else is left for the caller to
+  /// retry. Server-confirmed upsert versions (which may carry server-assigned
+  /// ids/timestamps) are written back into the local database.
+  Future<Set<String>> pushOperations(
     RelaxDatabase db,
     String tableName,
     List<SyncOperation> pending,
@@ -276,27 +331,57 @@ class _SyncRegistration<T> {
     // server gets a single write per entity instead of every offline change.
     final coalesced = SyncOperation.coalesce(pending);
 
+    // Map each entity to all of its queued operation ids (coalescing folded
+    // several rows into one effective op, but every original row must be cleared
+    // once the entity is confirmed).
+    final opIdsByEntity = <String, List<String>>{};
+    for (final op in pending) {
+      opIdsByEntity.putIfAbsent(op.entityId, () => []).add(op.id);
+    }
+
+    final confirmed = <String>{};
+
+    // Entities with no effective op left (add→delete) have nothing to push.
+    final liveEntityIds = <String>{
+      ...coalesced.upserts.map((op) => op.entityId),
+      ...coalesced.deletes.map((op) => op.entityId),
+    };
+    for (final entry in opIdsByEntity.entries) {
+      if (!liveEntityIds.contains(entry.key)) confirmed.addAll(entry.value);
+    }
+
     if (coalesced.upserts.isNotEmpty) {
       final entities = coalesced.upserts
           .where((op) => op.data != null)
           .map((op) => config.schema.rowToEntity(op.data!))
           .toList();
       if (entities.isNotEmpty) {
-        final confirmed = await config.adapter.push(entities);
-        if (confirmed.isNotEmpty) {
+        final serverConfirmed = await config.adapter.push(entities);
+        if (serverConfirmed.isNotEmpty) {
           await db.transaction(() async {
-            for (final entity in confirmed) {
+            for (final entity in serverConfirmed) {
               await _writeLocal(db, tableName, entity);
             }
           });
+          for (final entity in serverConfirmed) {
+            final entityId = config.schema.getPrimaryKeyValue(entity).toString();
+            final ids = opIdsByEntity[entityId];
+            if (ids != null) confirmed.addAll(ids);
+          }
         }
       }
     }
 
     if (coalesced.deletes.isNotEmpty) {
       final ids = coalesced.deletes.map((op) => op.entityId).toList();
-      await config.adapter.pushDeletes(ids);
+      final confirmedDeletes = await config.adapter.pushDeletes(ids);
+      for (final id in confirmedDeletes) {
+        final ids = opIdsByEntity[id.toString()];
+        if (ids != null) confirmed.addAll(ids);
+      }
     }
+
+    return confirmed;
   }
 
   /// Pulls remote changes and applies them locally with conflict resolution.

@@ -1,6 +1,19 @@
-# Large assets not needed in the published package
+# NOTE: `.gitignore` ignores any `build/` directory. That pattern also matches
+# the source directory `lib/src/commands/build/`, which would silently drop the
+# build commands from the published package (and break dartdoc / analysis on
+# pub.dev). Re-include it explicitly here.
+!lib/src/commands/build/
+!lib/src/commands/build/**
+
+# Large marketing assets not needed in the published package
 assets/logo_playstore.png
+assets/logo.png
 cahier_des_charges.md
+posts.md
+*.zip
+
+# Carousel banner tooling + generated images — build-time/marketing only.
+assets/carousel/
 
 # Example platform directories (heavy, not needed for pub.dev)
 example/android/

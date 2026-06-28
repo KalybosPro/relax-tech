@@ -1,7 +1,8 @@
 /// Marks a class as a RelaxORM table entity.
 ///
-/// Used by the code generator (Phase 2) to produce table schemas automatically.
-/// For now (Phase 1a), schemas are defined manually via [TableSchema].
+/// Run `dart run build_runner build` with the `relax_orm_generator` package to
+/// generate a `TableSchema` for the annotated class automatically. Writing the
+/// schema by hand with `TableSchema` remains fully supported.
 ///
 /// ```dart
 /// @RelaxTable()

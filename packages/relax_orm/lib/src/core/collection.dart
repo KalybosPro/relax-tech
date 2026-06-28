@@ -26,20 +26,27 @@ class Collection<T> {
   Collection(this._db, this._schema, {SyncEngine? syncEngine})
     : _syncEngine = syncEngine;
 
-  /// Inserts a new entity into the collection.
+  /// Inserts a new entity into the collection and returns the stored version.
+  ///
+  /// When the primary key is a `null` text column, RelaxORM generates a UUID;
+  /// the returned entity carries that generated id (the entity you passed in is
+  /// left untouched, since Dart models are usually immutable).
   ///
   /// If sync is enabled, the operation is queued for push to the server.
-  Future<void> add(T entity) async {
+  Future<T> add(T entity) async {
     final row = _schema.entityToRow(entity);
     await _db.rawInsert(_schema.tableName, row);
-    final updatedEntity = _schema.rowToEntity(row);
-    await _queueSync(SyncOperationType.add, updatedEntity);
+    final storedEntity = _schema.rowToEntity(row);
+    await _queueSync(SyncOperationType.add, storedEntity);
+    return storedEntity;
   }
 
-  /// Inserts multiple entities in a single batch operation.
-  Future<void> addAll(List<T> entities) async {
+  /// Inserts multiple entities in a single batch operation and returns the
+  /// stored versions (with any generated primary keys filled in).
+  Future<List<T>> addAll(List<T> entities) async {
     final rows = entities.map(_schema.entityToRow).toList();
     await _db.rawBatchInsert(_schema.tableName, rows);
+    return rows.map(_schema.rowToEntity).toList();
   }
 
   /// Updates an existing entity (matched by primary key).
@@ -61,13 +68,19 @@ class Collection<T> {
   }
 
   /// Inserts the entity if it doesn't exist, updates it otherwise.
+  ///
+  /// The existence check and the write run inside a single transaction so a
+  /// concurrent write to the same primary key (e.g. a background sync pull)
+  /// can't slip in between and turn the insert into a `PRIMARY KEY` violation.
   Future<void> upsert(T entity) async {
-    final exists = await get(_schema.getPrimaryKeyValue(entity));
-    if (exists != null) {
-      await update(entity);
-    } else {
-      await add(entity);
-    }
+    await _db.transaction(() async {
+      final exists = await get(_schema.getPrimaryKeyValue(entity));
+      if (exists != null) {
+        await update(entity);
+      } else {
+        await add(entity);
+      }
+    });
   }
 
   /// Deletes an entity by its primary key value.
@@ -164,6 +177,7 @@ class Collection<T> {
       type: type,
       entityId: id,
       data: data,
+      schemaVersion: _schema.version,
     );
   }
 

@@ -27,9 +27,25 @@ class OfflineQueue {
         data TEXT,
         created_at INTEGER NOT NULL,
         status TEXT NOT NULL DEFAULT 'pending',
-        retry_count INTEGER NOT NULL DEFAULT 0
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        schema_version INTEGER NOT NULL DEFAULT 0
       )
     ''');
+    // Bring databases created before schema versioning up to date. Existing rows
+    // keep schema_version 0 ("unspecified"), so they're never invalidated.
+    await _ensureColumn('schema_version', "INTEGER NOT NULL DEFAULT 0");
+  }
+
+  /// Adds [column] to the queue table if it isn't already present.
+  Future<void> _ensureColumn(String column, String definition) async {
+    final info = await _db.customSelect('PRAGMA table_info($_table)').get();
+    final hasColumn =
+        info.any((row) => row.data['name'] == column);
+    if (!hasColumn) {
+      await _db.customStatement(
+        'ALTER TABLE $_table ADD COLUMN $column $definition',
+      );
+    }
   }
 
   /// Enqueues a new operation, coalescing it into the existing *pending*
@@ -140,6 +156,7 @@ class OfflineQueue {
       // A freshly merged op should be retried cleanly.
       status: OperationStatus.pending,
       retryCount: 0,
+      schemaVersion: prev.schemaVersion,
     );
   }
 
@@ -223,9 +240,16 @@ class OfflineQueue {
     return _db.rawCount("$_table WHERE status = 'pending'");
   }
 
-  /// Clears all operations from the queue.
-  Future<void> clear() async {
-    await _db.rawDelete(_table, where: '1 = 1', whereArgs: []);
+  /// Clears operations from the queue.
+  ///
+  /// When [tableName] is given, only that table's operations are removed;
+  /// otherwise the whole queue is cleared.
+  Future<void> clear({String? tableName}) async {
+    if (tableName != null) {
+      await _db.rawDelete(_table, where: 'table_name = ?', whereArgs: [tableName]);
+    } else {
+      await _db.rawDelete(_table, where: '1 = 1', whereArgs: []);
+    }
   }
 
   // -- Serialization --
@@ -240,6 +264,7 @@ class OfflineQueue {
       'created_at': op.createdAt.millisecondsSinceEpoch,
       'status': op.status.name,
       'retry_count': op.retryCount,
+      'schema_version': op.schemaVersion,
     };
   }
 
@@ -255,6 +280,7 @@ class OfflineQueue {
       createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
       status: OperationStatus.values.byName(row['status'] as String),
       retryCount: row['retry_count'] as int,
+      schemaVersion: (row['schema_version'] as int?) ?? 0,
     );
   }
 }
