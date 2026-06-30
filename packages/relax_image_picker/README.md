@@ -97,14 +97,61 @@ Add only the lines for the features you enable:
 | Camera video with sound | `CAMERA`, `RECORD_AUDIO` | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` |
 | Documents only (`allowDocuments`) | *(none — uses SAF)* | *(none — uses the system file picker)* |
 
-### Store review notes
+### Google Play — Photo & Video Permissions policy
 
-- **Google Play — Photo & Video Permissions policy.** Requesting
-  `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` is allowed for a media picker (a
-  legitimate core use case), but Google may ask you to complete the *Photo and
-  Video Permissions declaration* in the Play Console. If your app only needs
-  occasional one-off selection, consider relying on the system **Android Photo
-  Picker** instead, which requires no permission.
+> **Read this before you publish.** This is the single most common reason an app
+> shipping a media picker gets rejected.
+
+This package renders its own in-app gallery grid (powered by `photo_manager`),
+which **requires** the broad `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`
+permissions. Under Google Play's *Photo and Video Permissions policy*, those
+permissions are only allowed when broad media access is a **core feature** of
+your app — which a media picker is. Removing the permissions is **not** an
+option here: without them the gallery returns nothing.
+
+To pass review you must do two things:
+
+**1. Complete the Photo & Video Permissions declaration.** In the Play Console,
+go to **Policy → App content → Photo and video permissions**, declare that you
+use these permissions, and describe the core feature that justifies them. A
+justification that gets approved reads roughly like:
+
+> The app provides an in-app media picker that lets the user browse, preview and
+> select multiple photos and videos from their library to attach to a
+> message/post, with a multi-select experience that the system picker does not
+> provide. Access to the media library is required to render this picker.
+
+Attaching a short screen recording of the picker in action makes approval far
+more likely. If your app only needs **occasional, one-off** selection, Google
+will likely reject the declaration — in that case you should use the system
+**Android Photo Picker** (no permission) instead of this package's gallery.
+
+**2. Support partial ("Selected photos") access.** On Android 14+ and iOS 14+
+the user can grant access to only a subset of their library. This package
+handles that automatically: it detects the limited state and shows a banner
+above the grid with a **Manage** button (`limitedAccessLabel` /
+`manageAccessLabel` in `RelaxPickerTheme`) that re-opens the system selector so
+the user can widen their selection. Honoring least-privilege access like this is
+exactly what reviewers look for — don't disable it.
+
+> **Distributing `READ_MEDIA_*` to consumer apps.** If you build a library or
+> module on top of this package, remember that **every app that ships it inherits
+> the declaration requirement**. Call it out in your own docs.
+
+If a transitive dependency pulls in a media permission you don't want, strip it
+with the manifest merger:
+
+```xml
+<!-- in your android/app/src/main/AndroidManifest.xml,
+     with xmlns:tools="http://schemas.android.com/tools" on <manifest> -->
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO"
+    tools:node="remove" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    tools:node="remove" />
+```
+
+### Other store notes
+
 - **Apple App Store.** The `*UsageDescription` strings are mandatory — without
   them the app crashes on access and is rejected. Vague strings are a common
   rejection reason; describe the concrete user-facing benefit.

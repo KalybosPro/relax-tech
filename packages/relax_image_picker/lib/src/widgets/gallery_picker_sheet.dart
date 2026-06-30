@@ -78,6 +78,11 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
 
   bool _isLoading = true;
   bool _isLoadingNext = false;
+
+  /// True when the OS only granted access to a user-picked subset of the
+  /// library (Android 14+ "Selected photos" / iOS limited access). In that case
+  /// we surface a banner letting the user grant access to more items.
+  bool _isLimited = false;
   bool _isProcessing = false;
   int _currentPage = 0;
   bool _hasMore = true;
@@ -117,8 +122,19 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
   // Gallery loading
   // ---------------------------------------------------------------------------
 
+  RequestType get _requestType => widget.allowImages && widget.allowVideos
+      ? RequestType.common
+      : widget.allowImages
+          ? RequestType.image
+          : RequestType.video;
+
   Future<void> _initializeGallery() async {
     setState(() => _isLoading = true);
+
+    // Permission was already requested by the controller; here we only read the
+    // resolved state so we know whether to show the "limited access" banner.
+    final permissionState = await PhotoManager.requestPermissionExtend();
+    _isLimited = permissionState.isLimited;
 
     final filterOption = FilterOptionGroup(
       imageOption: const FilterOption(),
@@ -127,11 +143,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
     );
 
     final albums = await PhotoManager.getAssetPathList(
-      type: widget.allowImages && widget.allowVideos
-          ? RequestType.common
-          : widget.allowImages
-          ? RequestType.image
-          : RequestType.video,
+      type: _requestType,
       filterOption: filterOption,
       hasAll: true,
     );
@@ -140,9 +152,24 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
       _albums = albums;
       _currentAlbum = albums.first;
       await _loadPage(reset: true);
+    } else {
+      _albums = [];
+      _currentAlbum = null;
+      _assets.clear();
     }
 
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  /// Re-opens the system "selected photos" picker so the user can widen the
+  /// granted subset, then reloads the grid with the new selection. No-op on
+  /// platforms/OS versions without limited access.
+  Future<void> _manageLimitedAccess() async {
+    await PhotoManager.presentLimited(type: _requestType);
+    // The plugin caches the asset list; clear it so the newly granted items
+    // show up instead of the stale subset.
+    await PhotoManager.clearFileCache();
+    if (mounted) await _initializeGallery();
   }
 
   Future<void> _loadPage({bool reset = false}) async {
@@ -639,8 +666,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
     final hasCameraTile = widget.enableCamera;
     final itemCount = _assets.length + (hasCameraTile ? 1 : 0);
 
+    final Widget grid;
     if (itemCount == 0) {
-      return _t.emptyMediaBuilder?.call(context) ??
+      grid = _t.emptyMediaBuilder?.call(context) ??
           Center(
             child: Text(
               _t.noMediaLabel,
@@ -648,8 +676,60 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
                   TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
             ),
           );
+    } else {
+      grid = _buildAssetGrid(cs, itemCount, hasCameraTile);
     }
 
+    // When access is limited, the grid alone can look empty or partial; the
+    // banner explains why and lets the user grant access to more items.
+    if (!_isLimited) return grid;
+    return Column(
+      children: [
+        _buildLimitedAccessBanner(cs),
+        Expanded(child: grid),
+      ],
+    );
+  }
+
+  Widget _buildLimitedAccessBanner(ColorScheme cs) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: widget.theme.accentColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 18, color: widget.theme.accentColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _t.limitedAccessLabel,
+              style: _t.fileSizeTextStyle ??
+                  TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurface.withValues(alpha: 0.8),
+                  ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: _manageLimitedAccess,
+            style: TextButton.styleFrom(
+              foregroundColor: widget.theme.accentColor,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(_t.manageAccessLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssetGrid(ColorScheme cs, int itemCount, bool hasCameraTile) {
     return GridView.builder(
       controller: _scrollController,
       padding: const .symmetric(horizontal: 2),

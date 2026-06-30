@@ -68,6 +68,9 @@ class RelaxPickerTheme {
     this.videoLabel = 'Vidéo',
     this.selectTooltip = 'Sélectionner',
     this.deselectTooltip = 'Désélectionner',
+    this.limitedAccessLabel =
+        'Vous n\'avez autorisé l\'accès qu\'à certaines photos',
+    this.manageAccessLabel = 'Gérer',
     this.maxSelectionLabelBuilder,
 
     // Widget-slot builders (full overrides; null → default widget)
@@ -143,6 +146,14 @@ class RelaxPickerTheme {
   final String selectTooltip;
   final String deselectTooltip;
 
+  /// Shown in the banner when the user granted access to only a subset of their
+  /// library (Android 14+ "Selected photos" / iOS limited access).
+  final String limitedAccessLabel;
+
+  /// Action label on the limited-access banner that re-opens the system picker
+  /// so the user can grant access to more items.
+  final String manageAccessLabel;
+
   /// Builds the "maximum reached" message; defaults to `Maximum <n>`.
   final String Function(int maxSelection)? maxSelectionLabelBuilder;
 
@@ -211,6 +222,8 @@ class RelaxPickerTheme {
     String? videoLabel,
     String? selectTooltip,
     String? deselectTooltip,
+    String? limitedAccessLabel,
+    String? manageAccessLabel,
     String Function(int maxSelection)? maxSelectionLabelBuilder,
     RelaxSendButtonBuilder? sendButtonBuilder,
     RelaxTextButtonBuilder? cancelButtonBuilder,
@@ -274,6 +287,8 @@ class RelaxPickerTheme {
       videoLabel: videoLabel ?? this.videoLabel,
       selectTooltip: selectTooltip ?? this.selectTooltip,
       deselectTooltip: deselectTooltip ?? this.deselectTooltip,
+      limitedAccessLabel: limitedAccessLabel ?? this.limitedAccessLabel,
+      manageAccessLabel: manageAccessLabel ?? this.manageAccessLabel,
       maxSelectionLabelBuilder:
           maxSelectionLabelBuilder ?? this.maxSelectionLabelBuilder,
       sendButtonBuilder: sendButtonBuilder ?? this.sendButtonBuilder,
