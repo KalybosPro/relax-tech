@@ -7,10 +7,7 @@ import '../../utils/sdk_helper.dart';
 class SdkConfigCommand extends Command<int> {
   SdkConfigCommand({required Logger logger}) : _logger = logger {
     argParser
-      ..addOption(
-        'cache-path',
-        help: 'Override the SDK cache directory path.',
-      )
+      ..addOption('cache-path', help: 'Override the SDK cache directory path.')
       ..addOption(
         'flutter-url',
         help: 'Override the Flutter git repository URL.',
@@ -68,8 +65,9 @@ class SdkConfigCommand extends Command<int> {
       _logger.info('');
       _logger.info(
         darkGray.wrap(
-          'Use --cache-path or --flutter-url to override defaults.',
-        ) ?? '',
+              'Use --cache-path or --flutter-url to override defaults.',
+            ) ??
+            '',
       );
       _logger.info('');
     }

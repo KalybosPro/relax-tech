@@ -38,8 +38,7 @@ class PubAddCommand extends Command<int> {
 
     final version = argResults?['version'] as String?;
     // flutter pub add accepts "package:^1.0.0" syntax for pinned versions
-    final packageSpec =
-        version != null ? '$packageName:$version' : packageName;
+    final packageSpec = version != null ? '$packageName:$version' : packageName;
 
     final progress = _logger.progress(
       'Adding ${lightCyan.wrap(packageName)}...',

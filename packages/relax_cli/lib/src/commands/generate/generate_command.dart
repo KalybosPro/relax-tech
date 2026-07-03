@@ -5,6 +5,7 @@ import 'feature_command.dart';
 import 'model_command.dart';
 import 'module_command.dart';
 import 'page_command.dart';
+import 'router_command.dart';
 
 /// Parent command for code generation: `relax generate <subcommand>`.
 class GenerateCommand extends Command<int> {
@@ -13,6 +14,7 @@ class GenerateCommand extends Command<int> {
     addSubcommand(ModuleCommand(logger: logger));
     addSubcommand(ModelCommand(logger: logger));
     addSubcommand(PageCommand(logger: logger));
+    addSubcommand(RouterCommand(logger: logger));
   }
 
   @override

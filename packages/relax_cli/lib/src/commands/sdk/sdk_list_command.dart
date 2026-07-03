@@ -33,7 +33,9 @@ class SdkListCommand extends Command<int> {
 
     if (versions.isEmpty) {
       _logger.warn('No Flutter SDK versions installed.');
-      _logger.info('Run ${lightCyan.wrap("relax sdk install <version>")} to install one.');
+      _logger.info(
+        'Run ${lightCyan.wrap("relax sdk install <version>")} to install one.',
+      );
       _logger.info('');
       return ExitCode.success.code;
     }

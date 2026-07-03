@@ -38,7 +38,8 @@ class SdkReleasesCommand extends Command<int> {
   String get description => 'List available Flutter SDK releases.';
 
   @override
-  String get invocation => 'relax sdk releases [--channel <channel>] [--limit <n>]';
+  String get invocation =>
+      'relax sdk releases [--channel <channel>] [--limit <n>]';
 
   @override
   Future<int> run() async {
@@ -50,7 +51,9 @@ class SdkReleasesCommand extends Command<int> {
     try {
       final response = await http.get(Uri.parse(releasesUrl));
       if (response.statusCode != 200) {
-        progress.fail('Failed to fetch releases (HTTP ${response.statusCode}).');
+        progress.fail(
+          'Failed to fetch releases (HTTP ${response.statusCode}).',
+        );
         return ExitCode.software.code;
       }
 
@@ -86,17 +89,20 @@ class SdkReleasesCommand extends Command<int> {
         final vColored = ch == 'stable'
             ? green.wrap(v)!
             : ch == 'beta'
-                ? yellow.wrap(v)!
-                : lightCyan.wrap(v)!;
-        _logger.info('  ${_col(vColored, 20 + _ansiPad(vColored, v))}${_col(ch, 10)}${_col(dart, 14)}$date');
+            ? yellow.wrap(v)!
+            : lightCyan.wrap(v)!;
+        _logger.info(
+          '  ${_col(vColored, 20 + _ansiPad(vColored, v))}${_col(ch, 10)}${_col(dart, 14)}$date',
+        );
       }
 
       _logger.info('');
       if (filtered.length > limit) {
         _logger.info(
           darkGray.wrap(
-            'Showing $limit of ${filtered.length} releases. Use --limit to see more.',
-          ) ?? '',
+                'Showing $limit of ${filtered.length} releases. Use --limit to see more.',
+              ) ??
+              '',
         );
         _logger.info('');
       }
@@ -111,12 +117,10 @@ class SdkReleasesCommand extends Command<int> {
     }
   }
 
-  String _col(String text, int width) =>
-      text.padRight(width);
+  String _col(String text, int width) => text.padRight(width);
 
   /// Extra padding to compensate for ANSI escape codes in coloured strings.
-  int _ansiPad(String coloured, String plain) =>
-      coloured.length - plain.length;
+  int _ansiPad(String coloured, String plain) => coloured.length - plain.length;
 
   String _formatDate(String iso) {
     if (iso.isEmpty) return '—';

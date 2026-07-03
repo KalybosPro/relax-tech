@@ -124,26 +124,28 @@ void main() {
       }
     });
 
-    test('generated model has correct class name and RelaxORM annotations',
-        () async {
-      await createProject('app');
-      final originalDir = Directory.current;
-      Directory.current = Directory('${tempDir.path}/app');
+    test(
+      'generated model has correct class name and RelaxORM annotations',
+      () async {
+        await createProject('app');
+        final originalDir = Directory.current;
+        Directory.current = Directory('${tempDir.path}/app');
 
-      try {
-        await runner.run(['generate', 'module', 'shopping_cart']);
+        try {
+          await runner.run(['generate', 'module', 'shopping_cart']);
 
-        final model = File(
-          '${tempDir.path}/app/lib/modules/shopping_cart/models/shopping_cart.dart',
-        ).readAsStringSync();
-        expect(model, contains('class ShoppingCart'));
-        expect(model, contains('@RelaxTable()'));
-        expect(model, contains('@PrimaryKey()'));
-        expect(model, contains("part 'shopping_cart.g.dart'"));
-      } finally {
-        Directory.current = originalDir;
-      }
-    });
+          final model = File(
+            '${tempDir.path}/app/lib/modules/shopping_cart/models/shopping_cart.dart',
+          ).readAsStringSync();
+          expect(model, contains('class ShoppingCart'));
+          expect(model, contains('@RelaxTable()'));
+          expect(model, contains('@PrimaryKey()'));
+          expect(model, contains("part 'shopping_cart.g.dart'"));
+        } finally {
+          Directory.current = originalDir;
+        }
+      },
+    );
 
     test('generated repository uses abstract interface class', () async {
       await createProject('app');

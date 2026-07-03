@@ -10,15 +10,9 @@ abstract final class PageTemplate {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get bloc => [
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_page.dart',
-          _blocPage,
-        ),
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_view.dart',
-          _blocView,
-        ),
-      ];
+    TemplateFile('view/{{page_name.snakeCase()}}_page.dart', _blocPage),
+    TemplateFile('view/{{page_name.snakeCase()}}_view.dart', _blocView),
+  ];
 
   static const _blocPage = '''
 import 'package:flutter/material.dart';
@@ -29,6 +23,12 @@ import '{{page_name.snakeCase()}}_view.dart';
 
 class {{page_name.pascalCase()}}Page extends StatelessWidget {
   const {{page_name.pascalCase()}}Page({super.key});
+
+  /// Route name used with `context.goNamed({{page_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// Path registered as a child route under the feature.
+  static const routePath = '{{{route_path}}}';
 
   @override
   Widget build(BuildContext context) {
@@ -77,15 +77,9 @@ class {{page_name.pascalCase()}}View extends StatelessWidget {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get provider => [
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_page.dart',
-          _providerPage,
-        ),
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_view.dart',
-          _providerView,
-        ),
-      ];
+    TemplateFile('view/{{page_name.snakeCase()}}_page.dart', _providerPage),
+    TemplateFile('view/{{page_name.snakeCase()}}_view.dart', _providerView),
+  ];
 
   static const _providerPage = '''
 import 'package:flutter/material.dart';
@@ -96,6 +90,12 @@ import '{{page_name.snakeCase()}}_view.dart';
 
 class {{page_name.pascalCase()}}Page extends StatelessWidget {
   const {{page_name.pascalCase()}}Page({super.key});
+
+  /// Route name used with `context.goNamed({{page_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// Path registered as a child route under the feature.
+  static const routePath = '{{{route_path}}}';
 
   @override
   Widget build(BuildContext context) {
@@ -147,15 +147,9 @@ class {{page_name.pascalCase()}}View extends StatelessWidget {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get riverpod => [
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_page.dart',
-          _riverpodPage,
-        ),
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_view.dart',
-          _riverpodView,
-        ),
-      ];
+    TemplateFile('view/{{page_name.snakeCase()}}_page.dart', _riverpodPage),
+    TemplateFile('view/{{page_name.snakeCase()}}_view.dart', _riverpodView),
+  ];
 
   static const _riverpodPage = '''
 import 'package:flutter/material.dart';
@@ -166,6 +160,12 @@ import '{{page_name.snakeCase()}}_view.dart';
 
 class {{page_name.pascalCase()}}Page extends ConsumerStatefulWidget {
   const {{page_name.pascalCase()}}Page({super.key});
+
+  /// Route name used with `context.goNamed({{page_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// Path registered as a child route under the feature.
+  static const routePath = '{{{route_path}}}';
 
   @override
   ConsumerState<{{page_name.pascalCase()}}Page> createState() => _{{page_name.pascalCase()}}PageState();
@@ -225,15 +225,9 @@ class {{page_name.pascalCase()}}View extends ConsumerWidget {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get getx => [
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_page.dart',
-          _getxPage,
-        ),
-        TemplateFile(
-          'view/{{page_name.snakeCase()}}_view.dart',
-          _getxView,
-        ),
-      ];
+    TemplateFile('view/{{page_name.snakeCase()}}_page.dart', _getxPage),
+    TemplateFile('view/{{page_name.snakeCase()}}_view.dart', _getxView),
+  ];
 
   static const _getxPage = '''
 import 'package:flutter/material.dart';
@@ -242,6 +236,12 @@ import '{{page_name.snakeCase()}}_view.dart';
 
 class {{page_name.pascalCase()}}Page extends StatelessWidget {
   const {{page_name.pascalCase()}}Page({super.key});
+
+  /// Route name used with `Get.toNamed({{page_name.pascalCase()}}Page.routePath)`.
+  static const routeName = '{{route_name}}';
+
+  /// Absolute route path registered in [appPages].
+  static const routePath = '{{{route_path}}}';
 
   @override
   Widget build(BuildContext context) {

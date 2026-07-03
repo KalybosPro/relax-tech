@@ -34,7 +34,15 @@ abstract final class GetxAppTemplate {
       SharedTemplate.appBarrel,
     ),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
+    TemplateFile(
+      SharedTemplate.p('lib/app/router/app_pages.dart'),
+      SharedTemplate.appPagesGetx,
+    ),
 
+    TemplateFile(
+      SharedTemplate.p('lib/features/features.dart'),
+      SharedTemplate.featuresBarrel,
+    ),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
       SharedTemplate.p('lib/features/home/controllers/home_controller.dart'),
@@ -100,7 +108,8 @@ import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
-import '../../features/home/home.dart';
+import '../../features/features.dart';
+import '../router/app_pages.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -117,8 +126,8 @@ class App extends StatelessWidget {
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
-          initialBinding: HomeBinding(),
-          home: const HomePage(),
+          initialRoute: HomePage.routePath,
+          getPages: appPages,
         ),
       ),
     );
@@ -170,6 +179,12 @@ import 'home_view.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  /// Route name used with `Get.toNamed(HomePage.routeName)`.
+  static const routeName = 'home';
+
+  /// Route path registered in [appPages] and used with `Get.toNamed`.
+  static const routePath = '/';
 
   @override
   Widget build(BuildContext context) {

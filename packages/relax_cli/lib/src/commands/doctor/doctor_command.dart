@@ -15,15 +15,12 @@ class DoctorCommand extends Command<int> {
   String get name => 'doctor';
 
   @override
-  String get description =>
-      'Check your environment for required dependencies.';
+  String get description => 'Check your environment for required dependencies.';
 
   @override
   Future<int> run() async {
     _logger.info('');
-    _logger.info(
-      lightCyan.wrap('relax doctor') ?? 'relax doctor',
-    );
+    _logger.info(lightCyan.wrap('relax doctor') ?? 'relax doctor');
     _logger.info(darkGray.wrap('v$version') ?? 'v$version');
     _logger.info('');
 
@@ -109,7 +106,9 @@ class DoctorCommand extends Command<int> {
 
   String? _extractFlutterVersion(String output) {
     // --machine outputs JSON, but fallback to line parsing
-    final match = RegExp(r'"frameworkVersion"\s*:\s*"([^"]+)"').firstMatch(output);
+    final match = RegExp(
+      r'"frameworkVersion"\s*:\s*"([^"]+)"',
+    ).firstMatch(output);
     if (match != null) return match.group(1);
     // Fallback: "Flutter X.Y.Z ..."
     final fallback = RegExp(r'Flutter\s+(\S+)').firstMatch(output);

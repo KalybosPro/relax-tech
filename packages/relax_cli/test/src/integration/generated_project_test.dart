@@ -58,11 +58,7 @@ void main() {
         );
 
         // No empty file (template issue)
-        expect(
-          content.trim(),
-          isNotEmpty,
-          reason: '${file.path} is empty',
-        );
+        expect(content.trim(), isNotEmpty, reason: '${file.path} is empty');
       }
     });
   }
@@ -94,19 +90,18 @@ void main() {
     }
 
     // Verify specific substitutions
-    final pubspec =
-        File('${projectDir.path}/pubspec.yaml').readAsStringSync();
+    final pubspec = File('${projectDir.path}/pubspec.yaml').readAsStringSync();
     expect(pubspec, contains('name: custom_app'));
     expect(pubspec, contains('description: A test description'));
 
-    final colors =
-        File('${projectDir.path}/lib/core/theme/app_colors.dart')
-            .readAsStringSync();
+    final colors = File(
+      '${projectDir.path}/lib/core/theme/app_colors.dart',
+    ).readAsStringSync();
     expect(colors, contains('0xFFFF5722'));
 
-    final typo =
-        File('${projectDir.path}/lib/core/theme/app_typography.dart')
-            .readAsStringSync();
+    final typo = File(
+      '${projectDir.path}/lib/core/theme/app_typography.dart',
+    ).readAsStringSync();
     expect(typo, contains("'Inter'"));
   });
 
@@ -126,8 +121,9 @@ void main() {
       projectDir: Directory('${tempDir.path}/test_app'),
     );
 
-    final featureDir =
-        Directory('${tempDir.path}/test_app/lib/features/user_settings');
+    final featureDir = Directory(
+      '${tempDir.path}/test_app/lib/features/user_settings',
+    );
     expect(featureDir.existsSync(), isTrue);
 
     final dartFiles = featureDir
@@ -163,13 +159,12 @@ void main() {
       outputDir: Directory('${tempDir.path}/test_app/lib/modules'),
     );
 
-    final moduleDir =
-        Directory('${tempDir.path}/test_app/lib/modules/shopping_cart');
+    final moduleDir = Directory(
+      '${tempDir.path}/test_app/lib/modules/shopping_cart',
+    );
     expect(moduleDir.existsSync(), isTrue);
 
-    final allFiles = moduleDir
-        .listSync(recursive: true)
-        .whereType<File>();
+    final allFiles = moduleDir.listSync(recursive: true).whereType<File>();
 
     for (final file in allFiles) {
       final content = file.readAsStringSync();
@@ -181,8 +176,9 @@ void main() {
     }
 
     // Verify naming
-    final model =
-        File('${moduleDir.path}/models/shopping_cart.dart').readAsStringSync();
+    final model = File(
+      '${moduleDir.path}/models/shopping_cart.dart',
+    ).readAsStringSync();
     expect(model, contains('class ShoppingCart'));
   });
 }
@@ -191,12 +187,7 @@ void main() {
 bool _isTextFile(String path) {
   // Only check files we generate (templates). Platform files from
   // `flutter create` may contain `{{` in C++ comments (e.g. Runner.rc).
-  const textExtensions = {
-    '.dart',
-    '.yaml',
-    '.yml',
-    '.md',
-  };
+  const textExtensions = {'.dart', '.yaml', '.yml', '.md'};
   final ext = path.contains('.') ? '.${path.split('.').last}' : '';
   return textExtensions.contains(ext);
 }

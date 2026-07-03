@@ -34,7 +34,15 @@ abstract final class ProviderAppTemplate {
       SharedTemplate.appBarrel,
     ),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
+    TemplateFile(
+      SharedTemplate.p('lib/app/router/app_router.dart'),
+      SharedTemplate.appRouter,
+    ),
 
+    TemplateFile(
+      SharedTemplate.p('lib/features/features.dart'),
+      SharedTemplate.featuresBarrel,
+    ),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
       SharedTemplate.p('lib/features/home/notifiers/home_notifier.dart'),
@@ -76,6 +84,7 @@ dependencies:
   
   provider: ^6.1.0
   get_it: ^8.0.3
+  go_router: ^14.6.0
   slang: ^4.14.0
   slang_flutter: ^4.14.0
   relax_orm: ^0.1.4
@@ -100,7 +109,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
-import '../../features/home/home.dart';
+import '../../features/features.dart';
+import '../router/app_router.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -113,7 +123,7 @@ class App extends StatelessWidget {
           providers: [
             ChangeNotifierProvider(create: (_) => HomeNotifier()..init()),
           ],
-          child: MaterialApp(
+          child: MaterialApp.router(
             title: t.appName,
             debugShowCheckedModeBanner: false,
             locale: TranslationProvider.of(context).flutterLocale,
@@ -121,7 +131,7 @@ class App extends StatelessWidget {
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
-            home: const HomePage(),
+            routerConfig: appRouter,
           ),
         ),
       ),
@@ -177,6 +187,12 @@ import 'home_view.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  /// Route name used with `context.goNamed(HomePage.routeName)`.
+  static const routeName = 'home';
+
+  /// URL path registered in the app router.
+  static const routePath = '/';
 
   @override
   Widget build(BuildContext context) {

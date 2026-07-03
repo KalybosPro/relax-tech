@@ -19,7 +19,6 @@ import 'package:relax_storage/relax_storage.dart';
 /// final token = storage.token;
 /// ```
 class CachedStorage {
-
   CachedStorage(EnvValue env) : box = RelaxStorage(env(Env.encryptionKey));
 
   final RelaxStorage box;

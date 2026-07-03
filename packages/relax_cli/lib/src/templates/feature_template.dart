@@ -12,13 +12,19 @@ abstract final class FeatureTemplate {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get bloc => [
-        TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _blocBarrel),
-        TemplateFile(_p('bloc/{{feature_name.snakeCase()}}_bloc.dart'), _bloc),
-        TemplateFile(_p('bloc/{{feature_name.snakeCase()}}_event.dart'), _blocEvent),
-        TemplateFile(_p('bloc/{{feature_name.snakeCase()}}_state.dart'), _blocState),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_page.dart'), _blocPage),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_view.dart'), _blocView),
-      ];
+    TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _blocBarrel),
+    TemplateFile(_p('bloc/{{feature_name.snakeCase()}}_bloc.dart'), _bloc),
+    TemplateFile(
+      _p('bloc/{{feature_name.snakeCase()}}_event.dart'),
+      _blocEvent,
+    ),
+    TemplateFile(
+      _p('bloc/{{feature_name.snakeCase()}}_state.dart'),
+      _blocState,
+    ),
+    TemplateFile(_p('view/{{feature_name.snakeCase()}}_page.dart'), _blocPage),
+    TemplateFile(_p('view/{{feature_name.snakeCase()}}_view.dart'), _blocView),
+  ];
 
   static const _blocBarrel = '''
 export 'bloc/{{feature_name.snakeCase()}}_bloc.dart';
@@ -91,6 +97,12 @@ import '{{feature_name.snakeCase()}}_view.dart';
 class {{feature_name.pascalCase()}}Page extends StatelessWidget {
   const {{feature_name.pascalCase()}}Page({super.key});
 
+  /// Route name used with `context.goNamed({{feature_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// URL path registered in the app router.
+  static const routePath = '{{{route_path}}}';
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -143,12 +155,24 @@ class {{feature_name.pascalCase()}}View extends StatelessWidget {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get provider => [
-        TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _providerBarrel),
-        TemplateFile(_p('notifiers/{{feature_name.snakeCase()}}_notifier.dart'), _providerNotifier),
-        TemplateFile(_p('models/{{feature_name.snakeCase()}}_state.dart'), _providerState),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_page.dart'), _providerPage),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_view.dart'), _providerView),
-      ];
+    TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _providerBarrel),
+    TemplateFile(
+      _p('notifiers/{{feature_name.snakeCase()}}_notifier.dart'),
+      _providerNotifier,
+    ),
+    TemplateFile(
+      _p('models/{{feature_name.snakeCase()}}_state.dart'),
+      _providerState,
+    ),
+    TemplateFile(
+      _p('view/{{feature_name.snakeCase()}}_page.dart'),
+      _providerPage,
+    ),
+    TemplateFile(
+      _p('view/{{feature_name.snakeCase()}}_view.dart'),
+      _providerView,
+    ),
+  ];
 
   static const _providerBarrel = '''
 export 'notifiers/{{feature_name.snakeCase()}}_notifier.dart';
@@ -200,6 +224,12 @@ import '{{feature_name.snakeCase()}}_view.dart';
 class {{feature_name.pascalCase()}}Page extends StatelessWidget {
   const {{feature_name.pascalCase()}}Page({super.key});
 
+  /// Route name used with `context.goNamed({{feature_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// URL path registered in the app router.
+  static const routePath = '{{{route_path}}}';
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -250,12 +280,24 @@ class {{feature_name.pascalCase()}}View extends StatelessWidget {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get riverpod => [
-        TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _riverpodBarrel),
-        TemplateFile(_p('providers/{{feature_name.snakeCase()}}_provider.dart'), _riverpodProvider),
-        TemplateFile(_p('models/{{feature_name.snakeCase()}}_state.dart'), _riverpodState),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_page.dart'), _riverpodPage),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_view.dart'), _riverpodView),
-      ];
+    TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _riverpodBarrel),
+    TemplateFile(
+      _p('providers/{{feature_name.snakeCase()}}_provider.dart'),
+      _riverpodProvider,
+    ),
+    TemplateFile(
+      _p('models/{{feature_name.snakeCase()}}_state.dart'),
+      _riverpodState,
+    ),
+    TemplateFile(
+      _p('view/{{feature_name.snakeCase()}}_page.dart'),
+      _riverpodPage,
+    ),
+    TemplateFile(
+      _p('view/{{feature_name.snakeCase()}}_view.dart'),
+      _riverpodView,
+    ),
+  ];
 
   static const _riverpodBarrel = '''
 export 'providers/{{feature_name.snakeCase()}}_provider.dart';
@@ -309,6 +351,12 @@ import '{{feature_name.snakeCase()}}_view.dart';
 
 class {{feature_name.pascalCase()}}Page extends ConsumerStatefulWidget {
   const {{feature_name.pascalCase()}}Page({super.key});
+
+  /// Route name used with `context.goNamed({{feature_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// URL path registered in the app router.
+  static const routePath = '{{{route_path}}}';
 
   @override
   ConsumerState<{{feature_name.pascalCase()}}Page> createState() => _{{feature_name.pascalCase()}}PageState();
@@ -368,12 +416,18 @@ class {{feature_name.pascalCase()}}View extends ConsumerWidget {
   // ═══════════════════════════════════════════════════════════════
 
   static List<TemplateFile> get getx => [
-        TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _getxBarrel),
-        TemplateFile(_p('controllers/{{feature_name.snakeCase()}}_controller.dart'), _getxController),
-        TemplateFile(_p('bindings/{{feature_name.snakeCase()}}_binding.dart'), _getxBinding),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_page.dart'), _getxPage),
-        TemplateFile(_p('view/{{feature_name.snakeCase()}}_view.dart'), _getxView),
-      ];
+    TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _getxBarrel),
+    TemplateFile(
+      _p('controllers/{{feature_name.snakeCase()}}_controller.dart'),
+      _getxController,
+    ),
+    TemplateFile(
+      _p('bindings/{{feature_name.snakeCase()}}_binding.dart'),
+      _getxBinding,
+    ),
+    TemplateFile(_p('view/{{feature_name.snakeCase()}}_page.dart'), _getxPage),
+    TemplateFile(_p('view/{{feature_name.snakeCase()}}_view.dart'), _getxView),
+  ];
 
   static const _getxBarrel = '''
 export 'controllers/{{feature_name.snakeCase()}}_controller.dart';
@@ -419,6 +473,12 @@ import '{{feature_name.snakeCase()}}_view.dart';
 
 class {{feature_name.pascalCase()}}Page extends StatelessWidget {
   const {{feature_name.pascalCase()}}Page({super.key});
+
+  /// Route name used with `Get.toNamed({{feature_name.pascalCase()}}Page.routeName)`.
+  static const routeName = '{{route_name}}';
+
+  /// Route path registered in [appPages] and used with `Get.toNamed`.
+  static const routePath = '{{{route_path}}}';
 
   @override
   Widget build(BuildContext context) {

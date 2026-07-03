@@ -27,10 +27,7 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      expect(
-        Directory('${tempDir.path}/my_project').existsSync(),
-        isTrue,
-      );
+      expect(Directory('${tempDir.path}/my_project').existsSync(), isTrue);
     });
 
     test('generated files contain substituted project name', () async {
@@ -40,13 +37,14 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final pubspec =
-          File('${tempDir.path}/awesome_app/pubspec.yaml').readAsStringSync();
+      final pubspec = File(
+        '${tempDir.path}/awesome_app/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspec, contains('name: awesome_app'));
 
-      final appView =
-          File('${tempDir.path}/awesome_app/lib/app/view/app.dart')
-              .readAsStringSync();
+      final appView = File(
+        '${tempDir.path}/awesome_app/lib/app/view/app.dart',
+      ).readAsStringSync();
       expect(appView, contains('Awesome App'));
     });
 
@@ -57,9 +55,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final theme =
-          File('${tempDir.path}/test_app/lib/core/theme/app_theme.dart')
-              .readAsStringSync();
+      final theme = File(
+        '${tempDir.path}/test_app/lib/core/theme/app_theme.dart',
+      ).readAsStringSync();
       expect(theme, contains('static ThemeData get light'));
       expect(theme, contains('static ThemeData get dark'));
       expect(theme, contains('useMaterial3: true'));
@@ -73,9 +71,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final colors =
-          File('${tempDir.path}/test_app/lib/core/theme/app_colors.dart')
-              .readAsStringSync();
+      final colors = File(
+        '${tempDir.path}/test_app/lib/core/theme/app_colors.dart',
+      ).readAsStringSync();
       expect(colors, contains('static const seed'));
       expect(colors, contains('0xFF6750A4'));
     });
@@ -88,9 +86,9 @@ void main() {
         primaryColor: '1565C0',
       );
 
-      final colors =
-          File('${tempDir.path}/test_app/lib/core/theme/app_colors.dart')
-              .readAsStringSync();
+      final colors = File(
+        '${tempDir.path}/test_app/lib/core/theme/app_colors.dart',
+      ).readAsStringSync();
       expect(colors, contains('0xFF1565C0'));
     });
 
@@ -102,9 +100,9 @@ void main() {
         fontFamily: 'Poppins',
       );
 
-      final typo =
-          File('${tempDir.path}/test_app/lib/core/theme/app_typography.dart')
-              .readAsStringSync();
+      final typo = File(
+        '${tempDir.path}/test_app/lib/core/theme/app_typography.dart',
+      ).readAsStringSync();
       expect(typo, contains("'Poppins'"));
     });
 
@@ -116,8 +114,9 @@ void main() {
         description: 'My custom app description',
       );
 
-      final pubspec =
-          File('${tempDir.path}/test_app/pubspec.yaml').readAsStringSync();
+      final pubspec = File(
+        '${tempDir.path}/test_app/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspec, contains('description: My custom app description'));
     });
   });
@@ -139,14 +138,14 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final event =
-          File('${tempDir.path}/test_app/lib/features/home/bloc/home_event.dart')
-              .readAsStringSync();
+      final event = File(
+        '${tempDir.path}/test_app/lib/features/home/bloc/home_event.dart',
+      ).readAsStringSync();
       expect(event, contains('sealed class HomeEvent'));
 
-      final state =
-          File('${tempDir.path}/test_app/lib/features/home/bloc/home_state.dart')
-              .readAsStringSync();
+      final state = File(
+        '${tempDir.path}/test_app/lib/features/home/bloc/home_state.dart',
+      ).readAsStringSync();
       expect(state, contains('sealed class HomeState'));
     });
 
@@ -157,8 +156,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final pubspec =
-          File('${tempDir.path}/test_app/pubspec.yaml').readAsStringSync();
+      final pubspec = File(
+        '${tempDir.path}/test_app/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspec, contains('flutter_bloc'));
       expect(pubspec, contains('equatable'));
     });
@@ -186,9 +186,9 @@ void main() {
       ).readAsStringSync();
       expect(notifier, contains('class HomeNotifier extends ChangeNotifier'));
 
-      final view =
-          File('${tempDir.path}/test_app/lib/features/home/view/home_view.dart')
-              .readAsStringSync();
+      final view = File(
+        '${tempDir.path}/test_app/lib/features/home/view/home_view.dart',
+      ).readAsStringSync();
       expect(view, contains('context.watch<HomeNotifier>()'));
     });
 
@@ -199,8 +199,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final pubspec =
-          File('${tempDir.path}/test_app/pubspec.yaml').readAsStringSync();
+      final pubspec = File(
+        '${tempDir.path}/test_app/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspec, contains('provider:'));
     });
   });
@@ -227,9 +228,9 @@ void main() {
       ).readAsStringSync();
       expect(provider, contains('class HomeNotifier extends Notifier'));
 
-      final view =
-          File('${tempDir.path}/test_app/lib/features/home/view/home_view.dart')
-              .readAsStringSync();
+      final view = File(
+        '${tempDir.path}/test_app/lib/features/home/view/home_view.dart',
+      ).readAsStringSync();
       expect(view, contains('ConsumerWidget'));
       expect(view, contains('ref.watch(homeProvider)'));
     });
@@ -241,9 +242,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final bootstrap =
-          File('${tempDir.path}/test_app/lib/bootstrap.dart')
-              .readAsStringSync();
+      final bootstrap = File(
+        '${tempDir.path}/test_app/lib/bootstrap.dart',
+      ).readAsStringSync();
       expect(bootstrap, contains('ProviderScope'));
     });
 
@@ -254,8 +255,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final pubspec =
-          File('${tempDir.path}/test_app/pubspec.yaml').readAsStringSync();
+      final pubspec = File(
+        '${tempDir.path}/test_app/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspec, contains('flutter_riverpod'));
     });
   });
@@ -280,11 +282,14 @@ void main() {
       final controller = File(
         '${tempDir.path}/test_app/lib/features/home/controllers/home_controller.dart',
       ).readAsStringSync();
-      expect(controller, contains('class HomeController extends GetxController'));
+      expect(
+        controller,
+        contains('class HomeController extends GetxController'),
+      );
 
-      final view =
-          File('${tempDir.path}/test_app/lib/features/home/view/home_view.dart')
-              .readAsStringSync();
+      final view = File(
+        '${tempDir.path}/test_app/lib/features/home/view/home_view.dart',
+      ).readAsStringSync();
       expect(view, contains('GetView<HomeController>'));
       expect(view, contains('Obx('));
     });
@@ -296,9 +301,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final appView =
-          File('${tempDir.path}/test_app/lib/app/view/app.dart')
-              .readAsStringSync();
+      final appView = File(
+        '${tempDir.path}/test_app/lib/app/view/app.dart',
+      ).readAsStringSync();
       expect(appView, contains('GetMaterialApp'));
     });
 
@@ -322,8 +327,9 @@ void main() {
         outputDirectory: tempDir,
       );
 
-      final pubspec =
-          File('${tempDir.path}/test_app/pubspec.yaml').readAsStringSync();
+      final pubspec = File(
+        '${tempDir.path}/test_app/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspec, contains('get:'));
     });
   });

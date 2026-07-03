@@ -41,8 +41,7 @@ void main() {
     });
 
     test('exits with usage code when directory already exists', () async {
-      final existing = Directory('${tempDir.path}/existing_app')
-        ..createSync();
+      final existing = Directory('${tempDir.path}/existing_app')..createSync();
 
       final originalDir = Directory.current;
       Directory.current = tempDir;
@@ -61,12 +60,7 @@ void main() {
       Directory.current = tempDir;
 
       try {
-        final exitCode = await runner.run([
-          'create',
-          'test_app',
-          '-a',
-          'bloc',
-        ]);
+        final exitCode = await runner.run(['create', 'test_app', '-a', 'bloc']);
         expect(exitCode, equals(ExitCode.success.code));
 
         final projectDir = Directory('${tempDir.path}/test_app');
@@ -115,8 +109,9 @@ void main() {
       try {
         await runner.run(['create', 'cool_app', '-a', 'bloc']);
 
-        final pubspec =
-            File('${tempDir.path}/cool_app/pubspec.yaml').readAsStringSync();
+        final pubspec = File(
+          '${tempDir.path}/cool_app/pubspec.yaml',
+        ).readAsStringSync();
         expect(pubspec, contains('name: cool_app'));
         expect(pubspec, contains('flutter_bloc'));
         expect(pubspec, contains('equatable'));
@@ -132,8 +127,9 @@ void main() {
       try {
         await runner.run(['create', 'my_cool_app', '-a', 'bloc']);
 
-        final appView = File('${tempDir.path}/my_cool_app/lib/app/view/app.dart')
-            .readAsStringSync();
+        final appView = File(
+          '${tempDir.path}/my_cool_app/lib/app/view/app.dart',
+        ).readAsStringSync();
         expect(appView, contains("'My Cool App'"));
       } finally {
         Directory.current = originalDir;
@@ -145,14 +141,7 @@ void main() {
       Directory.current = tempDir;
 
       try {
-        await runner.run([
-          'create',
-          'org_app',
-          '-a',
-          'bloc',
-          '-o',
-          'dev.acme',
-        ]);
+        await runner.run(['create', 'org_app', '-a', 'bloc', '-o', 'dev.acme']);
 
         final buildGradle = File(
           '${tempDir.path}/org_app/android/app/build.gradle.kts',
@@ -177,10 +166,7 @@ void main() {
             arch,
           ]);
           expect(exitCode, equals(ExitCode.success.code));
-          expect(
-            Directory('${tempDir.path}/${arch}_app').existsSync(),
-            isTrue,
-          );
+          expect(Directory('${tempDir.path}/${arch}_app').existsSync(), isTrue);
         } finally {
           Directory.current = originalDir;
         }

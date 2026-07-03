@@ -70,10 +70,10 @@ Future<int> installSdk({
     );
     final resolved = await resolvePartialVersion(version);
     if (resolved == null) {
-      resolveProgress.fail('Could not resolve version "${lightCyan.wrap(version)}".');
-      logger.err(
-        'No Flutter release found matching "$version".',
+      resolveProgress.fail(
+        'Could not resolve version "${lightCyan.wrap(version)}".',
       );
+      logger.err('No Flutter release found matching "$version".');
       logger.info(
         'Use a full version (e.g. ${lightCyan.wrap("3.41.9")}) or a channel '
         '(${lightCyan.wrap("stable")}, ${lightCyan.wrap("beta")}).',
@@ -99,7 +99,9 @@ Future<int> installSdk({
 
   if (isSdkInstalled(resolvedVersion) && force) {
     final dir = Directory(sdkCachePath(resolvedVersion));
-    logger.info('Removing existing installation of ${lightCyan.wrap(resolvedVersion)}...');
+    logger.info(
+      'Removing existing installation of ${lightCyan.wrap(resolvedVersion)}...',
+    );
     dir.deleteSync(recursive: true);
   }
 
@@ -125,9 +127,12 @@ Future<int> installSdk({
   }
 
   if (!skipPub) {
-    final pubProgress = logger.progress('Running flutter pub get (SDK bootstrap)...');
+    final pubProgress = logger.progress(
+      'Running flutter pub get (SDK bootstrap)...',
+    );
     try {
-      final binary = sdkCachePath(resolvedVersion) +
+      final binary =
+          sdkCachePath(resolvedVersion) +
           (Platform.isWindows ? r'\bin\flutter.bat' : '/bin/flutter');
       final result = await Process.run(
         binary,

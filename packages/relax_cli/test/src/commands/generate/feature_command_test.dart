@@ -71,7 +71,13 @@ void main() {
       Directory.current = emptyDir;
 
       try {
-        final code = await runner.run(['generate', 'feature', 'foo', '-a', 'bloc']);
+        final code = await runner.run([
+          'generate',
+          'feature',
+          'foo',
+          '-a',
+          'bloc',
+        ]);
         expect(code, equals(ExitCode.usage.code));
       } finally {
         Directory.current = originalDir;
@@ -139,8 +145,9 @@ void main() {
 
         // Bloc-specific: should have bloc/ directory
         expect(
-          File('${tempDir.path}/app/lib/features/profile/bloc/profile_bloc.dart')
-              .existsSync(),
+          File(
+            '${tempDir.path}/app/lib/features/profile/bloc/profile_bloc.dart',
+          ).existsSync(),
           isTrue,
         );
       } finally {
@@ -158,8 +165,9 @@ void main() {
 
         // Riverpod-specific: should have providers/ directory
         expect(
-          File('${tempDir.path}/app/lib/features/cart/providers/cart_provider.dart')
-              .existsSync(),
+          File(
+            '${tempDir.path}/app/lib/features/cart/providers/cart_provider.dart',
+          ).existsSync(),
           isTrue,
         );
       } finally {
@@ -174,18 +182,13 @@ void main() {
 
       try {
         // Override detected bloc with provider
-        await runner.run([
-          'generate',
-          'feature',
-          'mixed',
-          '-a',
-          'provider',
-        ]);
+        await runner.run(['generate', 'feature', 'mixed', '-a', 'provider']);
 
         // Should use provider pattern despite project being bloc
         expect(
-          File('${tempDir.path}/app/lib/features/mixed/notifiers/mixed_notifier.dart')
-              .existsSync(),
+          File(
+            '${tempDir.path}/app/lib/features/mixed/notifiers/mixed_notifier.dart',
+          ).existsSync(),
           isTrue,
         );
       } finally {
@@ -230,8 +233,9 @@ void main() {
         final code = await runner.run(['g', 'feature', 'a/b/c/login']);
         expect(code, equals(ExitCode.success.code));
         expect(
-          File('${tempDir.path}/app/lib/features/a/b/c/login/login.dart')
-              .existsSync(),
+          File(
+            '${tempDir.path}/app/lib/features/a/b/c/login/login.dart',
+          ).existsSync(),
           isTrue,
         );
       } finally {
@@ -267,6 +271,130 @@ void main() {
       } finally {
         Directory.current = originalDir;
       }
+    });
+
+    group('route wiring', () {
+      for (final arch in ['bloc', 'provider', 'riverpod', 'getx']) {
+        test('registers a $arch feature in the app router', () async {
+          await createProject('app_$arch', arch);
+          final originalDir = Directory.current;
+          Directory.current = Directory('${tempDir.path}/app_$arch');
+
+          try {
+            final code = await runner.run(['g', 'feature', 'cart']);
+            expect(code, equals(ExitCode.success.code));
+
+            // The page declares its own route identity.
+            final page = File(
+              '${tempDir.path}/app_$arch/lib/features/cart/view/cart_page.dart',
+            ).readAsStringSync();
+            expect(page, contains("static const routeName = 'cart';"));
+            expect(page, contains("static const routePath = '/cart';"));
+
+            // The feature is registered in the aggregate barrel, which the
+            // router imports.
+            final barrel = File(
+              '${tempDir.path}/app_$arch/lib/features/features.dart',
+            ).readAsStringSync();
+            expect(barrel, contains("export 'cart/cart.dart';"));
+
+            // GetX uses app_pages.dart (GetPage + binding); the rest use
+            // app_router.dart (go_router GoRoute).
+            if (arch == 'getx') {
+              final pages = File(
+                '${tempDir.path}/app_$arch/lib/app/router/app_pages.dart',
+              ).readAsStringSync();
+              expect(pages, contains('name: CartPage.routePath,'));
+              expect(pages, contains('binding: CartBinding(),'));
+            } else {
+              final router = File(
+                '${tempDir.path}/app_$arch/lib/app/router/app_router.dart',
+              ).readAsStringSync();
+              expect(router, contains('path: CartPage.routePath,'));
+              expect(
+                router,
+                contains('builder: (context, state) => const CartPage(),'),
+              );
+            }
+          } finally {
+            Directory.current = originalDir;
+          }
+        });
+      }
+
+      test('--no-route leaves the router unchanged', () async {
+        await createProject('app', 'bloc');
+        final originalDir = Directory.current;
+        Directory.current = Directory('${tempDir.path}/app');
+
+        try {
+          final routerFile = File(
+            '${tempDir.path}/app/lib/app/router/app_router.dart',
+          );
+          final before = routerFile.readAsStringSync();
+
+          final code = await runner.run(['g', 'feature', 'cart', '--no-route']);
+          expect(code, equals(ExitCode.success.code));
+          expect(routerFile.readAsStringSync(), equals(before));
+        } finally {
+          Directory.current = originalDir;
+        }
+      });
+
+      test('nested feature route uses the full path', () async {
+        await createProject('app', 'bloc');
+        final originalDir = Directory.current;
+        Directory.current = Directory('${tempDir.path}/app');
+
+        try {
+          await runner.run(['g', 'feature', 'auth/login']);
+
+          final page = File(
+            '${tempDir.path}/app/lib/features/auth/login/view/login_page.dart',
+          ).readAsStringSync();
+          expect(page, contains("static const routeName = 'authLogin';"));
+          expect(page, contains("static const routePath = '/auth/login';"));
+
+          final barrel = File(
+            '${tempDir.path}/app/lib/features/features.dart',
+          ).readAsStringSync();
+          expect(barrel, contains("export 'auth/login/login.dart';"));
+
+          final router = File(
+            '${tempDir.path}/app/lib/app/router/app_router.dart',
+          ).readAsStringSync();
+          expect(router, contains('path: LoginPage.routePath,'));
+        } finally {
+          Directory.current = originalDir;
+        }
+      });
+
+      test('re-registering the same route is idempotent', () async {
+        await createProject('app', 'bloc');
+        final originalDir = Directory.current;
+        Directory.current = Directory('${tempDir.path}/app');
+
+        try {
+          await runner.run(['g', 'feature', 'cart']);
+          // Deleting the feature dir lets us regenerate without the
+          // "already exists" guard, exercising the router idempotency guard.
+          Directory(
+            '${tempDir.path}/app/lib/features/cart',
+          ).deleteSync(recursive: true);
+          await runner.run(['g', 'feature', 'cart']);
+
+          final router = File(
+            '${tempDir.path}/app/lib/app/router/app_router.dart',
+          ).readAsStringSync();
+          expect(
+            'CartPage.routePath'.allMatches(router).length,
+            equals(1),
+            reason: 'route registered exactly once',
+          );
+        } finally {
+          Directory.current = originalDir;
+        }
+      });
     });
   });
 }

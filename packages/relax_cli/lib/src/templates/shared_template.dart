@@ -525,6 +525,72 @@ Future<void> setUpRegister(EnvValue env) async {
 }
 ''';
 
+  // ─── Features barrel ───────────────────────────────────────────
+
+  /// Aggregate barrel re-exporting every feature. This is the single import
+  /// the router (and anything else) uses to reach feature pages. The
+  /// `relax:features` anchor is the insertion point for `relax generate
+  /// feature`; do not remove it.
+  static const featuresBarrel = '''
+export 'home/home.dart';
+// relax:features
+''';
+
+  // ─── Router (go_router) ────────────────────────────────────────
+
+  /// App-level router. Lives in the composition root (`lib/app/`), so it is
+  /// allowed to depend on features — the Clean Architecture dependency rule
+  /// points inward, and features never depend on this file.
+  ///
+  /// Feature pages are reached through the aggregate `features/features.dart`
+  /// barrel. The `relax:router-routes` anchor is the insertion point for
+  /// `relax generate feature`; do not remove it.
+  static const appRouter = '''
+import 'package:go_router/go_router.dart';
+
+import '../../features/features.dart';
+
+/// The application router.
+///
+/// Each feature owns its own [HomePage.routeName] / [HomePage.routePath]; this
+/// file only aggregates them into a single [GoRouter].
+final appRouter = GoRouter(
+  initialLocation: HomePage.routePath,
+  routes: [
+    GoRoute(
+      path: HomePage.routePath,
+      name: HomePage.routeName,
+      builder: (context, state) => const HomePage(),
+      routes: [
+        // relax:routes-home
+      ],
+    ),
+    // relax:router-routes
+  ],
+);
+''';
+
+  /// GetX variant of the app router: a list of [GetPage] entries. Each feature
+  /// carries its own binding, so navigation is `Get.toNamed(<Page>.routePath)`.
+  ///
+  /// Uses the same `relax:router-routes` anchor as the go_router variant so the
+  /// generator can insert into either file uniformly.
+  static const appPagesGetx = '''
+import 'package:get/get.dart';
+
+import '../../features/features.dart';
+
+/// The application routes (GetX).
+final appPages = <GetPage<dynamic>>[
+  GetPage(
+    name: HomePage.routePath,
+    page: () => const HomePage(),
+    binding: HomeBinding(),
+  ),
+  // relax:router-routes
+];
+''';
+
   // ─── Flavor entry points ──────────────────────────────────────
 
   static const mainDevelopment = '''

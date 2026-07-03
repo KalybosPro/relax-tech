@@ -51,8 +51,8 @@ String get releasesUrl {
   final os = Platform.isWindows
       ? 'windows'
       : Platform.isMacOS
-          ? 'macos'
-          : 'linux';
+      ? 'macos'
+      : 'linux';
   return 'https://storage.googleapis.com/flutter_infra_release/releases/releases_$os.json';
 }
 
@@ -107,8 +107,7 @@ void writeProjectVersion(String version) {
   final file = File(projectConfigPath);
   file.parent.createSync(recursive: true);
   file.writeAsStringSync(
-    const JsonEncoder.withIndent('  ')
-        .convert({'flutterSdkVersion': version}),
+    const JsonEncoder.withIndent('  ').convert({'flutterSdkVersion': version}),
   );
 }
 
@@ -236,8 +235,8 @@ Future<String?> resolvePartialVersion(String partial) async {
     final response = await http.get(Uri.parse(releasesUrl));
     if (response.statusCode != 200) return null;
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final releases =
-        (json['releases'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final releases = (json['releases'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
 
     // Prefer latest stable match.
     for (final r in releases) {
@@ -263,9 +262,13 @@ Future<ProcessResult> gitCloneFlutter(String version) {
   final dest = sdkCachePath(version);
   Directory(dest).createSync(recursive: true);
   final gitUrl = readFlutterUrlOverride() ?? flutterGitUrl;
-  return Process.run(
-    'git',
-    ['clone', '-b', version, '--depth', '1', gitUrl, dest],
-    runInShell: true,
-  );
+  return Process.run('git', [
+    'clone',
+    '-b',
+    version,
+    '--depth',
+    '1',
+    gitUrl,
+    dest,
+  ], runInShell: true);
 }
