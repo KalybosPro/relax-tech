@@ -19,10 +19,7 @@ void main() {
 
     test('includes pubspec.yaml', () {
       final paths = BlocAppTemplate.files.map((f) => f.path).toList();
-      expect(
-        paths.any((p) => p.endsWith('pubspec.yaml')),
-        isTrue,
-      );
+      expect(paths.any((p) => p.endsWith('pubspec.yaml')), isTrue);
     });
 
     test('includes bootstrap and flavor entry points', () {

@@ -63,9 +63,7 @@ class SdkDoctorCommand extends Command<int> {
         allGood = false;
       }
     } else {
-      _logger.info(
-        '  ${yellow.wrap("[-]")} Global version: not set',
-      );
+      _logger.info('  ${yellow.wrap("[-]")} Global version: not set');
     }
 
     // 5. Project version

@@ -11,11 +11,8 @@ import 'package:mason/mason.dart';
 /// ```
 abstract final class ModelTemplate {
   static List<TemplateFile> get files => [
-        TemplateFile(
-          '{{model_name.snakeCase()}}.dart',
-          _modelFile,
-        ),
-      ];
+    TemplateFile('{{model_name.snakeCase()}}.dart', _modelFile),
+  ];
 
   static const _modelFile = '''
 import 'package:relax_orm/relax_orm.dart';

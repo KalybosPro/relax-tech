@@ -45,9 +45,7 @@ class SdkGlobalCommand extends Command<int> {
     final version = rest.first;
 
     if (!isSdkInstalled(version)) {
-      _logger.err(
-        'Flutter ${lightCyan.wrap(version)} is not installed.',
-      );
+      _logger.err('Flutter ${lightCyan.wrap(version)} is not installed.');
       _logger.info(
         'Run ${lightCyan.wrap("relax sdk install $version")} first.',
       );

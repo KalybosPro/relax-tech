@@ -54,6 +54,8 @@ T chooseOneOf<T>(
 
   // Exhausted attempts — fall back to default or first choice
   final fallback = defaultValue ?? choices.first;
-  logger.warn('No valid input after $maxAttempts attempts. Using "${display(fallback)}".');
+  logger.warn(
+    'No valid input after $maxAttempts attempts. Using "${display(fallback)}".',
+  );
   return fallback;
 }

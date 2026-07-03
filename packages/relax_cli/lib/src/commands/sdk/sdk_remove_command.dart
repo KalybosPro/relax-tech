@@ -43,9 +43,7 @@ class SdkRemoveCommand extends Command<int> {
     final force = argResults!['force'] as bool;
 
     if (!isSdkInstalled(version)) {
-      _logger.err(
-        'Flutter ${lightCyan.wrap(version)} is not installed.',
-      );
+      _logger.err('Flutter ${lightCyan.wrap(version)} is not installed.');
       return ExitCode.usage.code;
     }
 
@@ -59,7 +57,9 @@ class SdkRemoveCommand extends Command<int> {
       }
     }
 
-    final progress = _logger.progress('Removing Flutter ${lightCyan.wrap(version)}...');
+    final progress = _logger.progress(
+      'Removing Flutter ${lightCyan.wrap(version)}...',
+    );
     try {
       Directory(sdkCachePath(version)).deleteSync(recursive: true);
       progress.complete('Flutter ${lightCyan.wrap(version)} removed.');

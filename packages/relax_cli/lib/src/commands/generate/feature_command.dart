@@ -20,6 +20,11 @@ class FeatureCommand extends Command<int> {
         for (final arch in Architecture.values) arch.name: arch.label,
       },
     );
+    argParser.addFlag(
+      'route',
+      defaultsTo: true,
+      help: 'Register the feature in the app router (lib/app/router).',
+    );
   }
 
   final Logger _logger;
@@ -75,21 +80,24 @@ class FeatureCommand extends Command<int> {
     );
     _logger.info('');
 
+    final wireRoute = argResults?['route'] as bool? ?? true;
     final generator = FeatureGenerator(logger: _logger);
 
     try {
-      final generatedFiles = await generator.generate(
+      final result = await generator.generate(
         featureName: featureName,
         architecture: architecture,
         projectDir: Directory.current,
         subPath: subPath,
+        wireRoute: wireRoute,
       );
 
       _logger.info('');
       _logger.success(
         'Generated feature "$featureSpec" '
-        '(${generatedFiles.length} files).',
+        '(${result.files.length} files).',
       );
+      _reportRouteWiring(result.routeWiring);
       _logger.info('');
 
       return ExitCode.success.code;
@@ -137,4 +145,24 @@ class FeatureCommand extends Command<int> {
     }
   }
 
+  void _reportRouteWiring(RouteWiring wiring) {
+    switch (wiring) {
+      case RouteWiring.wired:
+        _logger.info('Route registered in lib/app/router/app_router.dart.');
+      case RouteWiring.alreadyPresent:
+        _logger.info('Route already registered — router left unchanged.');
+      case RouteWiring.routerMissing:
+        _logger.warn(
+          'No app router found (lib/app/router/app_router.dart). '
+          'Route not registered.',
+        );
+      case RouteWiring.anchorMissing:
+        _logger.warn(
+          'Router anchors (// relax:router-*) not found. '
+          'Add the route manually.',
+        );
+      case RouteWiring.skipped:
+        break;
+    }
+  }
 }

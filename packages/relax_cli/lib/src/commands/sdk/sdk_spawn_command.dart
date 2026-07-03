@@ -39,9 +39,7 @@ class SdkSpawnCommand extends Command<int> {
     final args = rest.skip(2).toList();
 
     if (!isSdkInstalled(version)) {
-      _logger.err(
-        'Flutter ${lightCyan.wrap(version)} is not installed.',
-      );
+      _logger.err('Flutter ${lightCyan.wrap(version)} is not installed.');
       _logger.info(
         'Run ${lightCyan.wrap("relax sdk install $version")} first.',
       );
@@ -53,9 +51,7 @@ class SdkSpawnCommand extends Command<int> {
     final sep = Platform.isWindows ? ';' : ':';
     env['PATH'] = '$sdkBin$sep${env['PATH'] ?? ''}';
 
-    _logger.detail(
-      'Spawning ${lightCyan.wrap(command)} with Flutter $version',
-    );
+    _logger.detail('Spawning ${lightCyan.wrap(command)} with Flutter $version');
 
     try {
       final process = await Process.start(

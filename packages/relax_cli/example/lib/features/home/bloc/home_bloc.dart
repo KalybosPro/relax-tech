@@ -9,10 +9,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeStarted>(_onStarted);
   }
 
-  Future<void> _onStarted(
-    HomeStarted event,
-    Emitter<HomeState> emit,
-  ) async {
+  Future<void> _onStarted(HomeStarted event, Emitter<HomeState> emit) async {
     emit(const HomeLoaded());
   }
 }

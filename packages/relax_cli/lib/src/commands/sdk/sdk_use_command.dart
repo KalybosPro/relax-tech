@@ -55,9 +55,7 @@ class SdkUseCommand extends Command<int> {
         final code = await installSdk(version: version, logger: _logger);
         if (code != ExitCode.success.code) return code;
       } else {
-        _logger.err(
-          'Flutter ${lightCyan.wrap(version)} is not installed.',
-        );
+        _logger.err('Flutter ${lightCyan.wrap(version)} is not installed.');
         _logger.info(
           'Run ${lightCyan.wrap("relax sdk install $version")} to install it, '
           'or use ${lightCyan.wrap("--force")} to install automatically.',
@@ -67,9 +65,7 @@ class SdkUseCommand extends Command<int> {
     }
 
     writeProjectVersion(version);
-    _logger.success(
-      'Project pinned to Flutter ${lightCyan.wrap(version)}.',
-    );
+    _logger.success('Project pinned to Flutter ${lightCyan.wrap(version)}.');
 
     try {
       linkProjectSdk(version);

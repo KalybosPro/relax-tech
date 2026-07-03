@@ -50,29 +50,45 @@ relax g feature auth/login             # nested: creates lib/features/auth/ then
 
 Any generated name may include a `/`-separated parent path. The missing folders are created first, and class/file names are derived from the **last segment only** (`auth/login` → `LoginBloc`, `login.dart`). Works at arbitrary depth (`account/admin/login`); a plain name with no `/` behaves as before.
 
+**Automatic route registration:** the feature is wired into the app router automatically for every architecture, so the page is immediately reachable — no manual editing. Insertion is idempotent; pass `--no-route` to skip it.
+
+| Architecture | Router file | Inserted entry | Navigate with |
+|-------------|-------------|----------------|---------------|
+| Bloc / Provider / Riverpod | `lib/app/router/app_router.dart` | `GoRoute` (go_router) | `context.goNamed(<Name>Page.routeName)` |
+| GetX | `lib/app/router/app_pages.dart` | `GetPage` + the feature's `Binding` | `Get.toNamed(<Name>Page.routePath)` |
+
 ### `relax generate page` — Add a page to an existing feature
 
 ```bash
-relax generate page home detail         # add detail page to home feature
-relax generate page auth login -a bloc  # override architecture
-relax generate page auth/login form     # nested feature folder
-relax g page settings notifications     # shorthand alias
+relax generate page product product_details   # two-arg form
+relax generate page product/product_details   # single path spec (leaf = page)
+relax generate page auth/login form           # nested feature folder
+relax g page product detail --no-route        # skip route registration
 ```
 
 Generates a `Page` + `View` widget pair inside `lib/features/<folder_name>/view/`. The target feature folder must already exist (create it with `relax generate feature` first) and may be nested (e.g. `auth/login`).
 
 ```
-lib/features/home/view/
-├── detail_page.dart    # new — wired to the feature's state manager
-└── detail_view.dart    # new — Scaffold with title and body
+lib/features/product/view/
+├── product_details_page.dart    # new — wired to the feature's state manager
+└── product_details_view.dart    # new — Scaffold with title and body
 ```
 
-After generation, add the export to the feature's barrel file:
+Two things happen automatically:
 
-```dart
-// lib/features/home/home.dart
-export 'view/detail_page.dart';
+- **Auto-export** — the new page is added to the feature's barrel (`lib/features/<feature>/<feature>.dart`), no manual `export` needed.
+- **Child route** — the page is registered as a **child route of its feature**. With go_router the page becomes a nested `GoRoute` under the feature's route (so `product_details` lives at `/product/product_details`); with GetX it becomes a flat `GetPage` at `/product/product_details` carrying the feature's `Binding`. Pass `--no-route` to skip.
+
+### `relax generate router` — Add navigation to an existing project
+
+```bash
+relax generate router          # auto-detects architecture
+relax generate router -a getx  # override architecture
 ```
+
+Retroactively scaffolds the navigation layer for projects created before navigation support (or where the router was removed). It creates the router file (`lib/app/router/app_router.dart`, or `app_pages.dart` for GetX), gives `HomePage` its `routeName`/`routePath`, rewires `lib/app/view/app.dart` to `MaterialApp.router` / `GetMaterialApp(getPages:)`, and adds `go_router` to `pubspec.yaml` (non-GetX).
+
+Idempotent and safe: re-running reports *"already present"*, and any hand-customized `app.dart` it can't recognize degrades to actionable warnings instead of corrupting the file.
 
 ### `relax generate module` — Add a domain/data module
 

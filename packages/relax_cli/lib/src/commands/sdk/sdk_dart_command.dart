@@ -16,8 +16,7 @@ class SdkDartCommand extends Command<int> {
   String get name => 'dart';
 
   @override
-  String get description =>
-      'Run a Dart command using the pinned SDK version.';
+  String get description => 'Run a Dart command using the pinned SDK version.';
 
   @override
   String get invocation => 'relax sdk dart <dart-args...>';

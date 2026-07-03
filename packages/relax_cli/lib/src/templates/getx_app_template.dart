@@ -34,7 +34,15 @@ abstract final class GetxAppTemplate {
       SharedTemplate.appBarrel,
     ),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
+    TemplateFile(
+      SharedTemplate.p('lib/app/router/app_pages.dart'),
+      SharedTemplate.appPagesGetx,
+    ),
 
+    TemplateFile(
+      SharedTemplate.p('lib/features/features.dart'),
+      SharedTemplate.featuresBarrel,
+    ),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
       SharedTemplate.p('lib/features/home/controllers/home_controller.dart'),
@@ -75,7 +83,7 @@ dependencies:
   get_it: ^8.0.3
   slang: ^4.14.0
   slang_flutter: ^4.14.0
-  relax_orm: ^0.1.4
+  relax_orm: ^1.0.0
   relax_storage: ^1.0.1
   env:
     path: packages/env
@@ -88,7 +96,7 @@ dev_dependencies:
   
   flutter_lints: ^5.0.0
   build_runner: ^2.4.0
-  relax_orm_generator: ^0.1.6
+  relax_orm_generator: ^0.1.7
 
 flutter:
   uses-material-design: true
@@ -100,7 +108,8 @@ import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
-import '../../features/home/home.dart';
+import '../../features/features.dart';
+import '../router/app_pages.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -117,8 +126,8 @@ class App extends StatelessWidget {
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
-          initialBinding: HomeBinding(),
-          home: const HomePage(),
+          initialRoute: HomePage.routePath,
+          getPages: appPages,
         ),
       ),
     );
@@ -170,6 +179,12 @@ import 'home_view.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  /// Route name used with `Get.toNamed(HomePage.routeName)`.
+  static const routeName = 'home';
+
+  /// Route path registered in [appPages] and used with `Get.toNamed`.
+  static const routePath = '/';
 
   @override
   Widget build(BuildContext context) {

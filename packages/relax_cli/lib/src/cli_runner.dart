@@ -10,12 +10,12 @@ class RelaxCommandRunner extends CommandRunner<int> {
   ///
   /// If no [logger] is provided, a default [Logger] is used.
   RelaxCommandRunner({Logger? logger})
-      : _logger = logger ?? Logger(),
-        super(
-          'relax',
-          'Generate Flutter projects with clean architecture.\n'
-              'Version: $version',
-        ) {
+    : _logger = logger ?? Logger(),
+      super(
+        'relax',
+        'Generate Flutter projects with clean architecture.\n'
+            'Version: $version',
+      ) {
     argParser.addFlag(
       'version',
       abbr: 'v',

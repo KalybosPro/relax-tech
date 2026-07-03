@@ -1,3 +1,23 @@
+## 1.0.1
+
+- **Changed** generated project dependencies to the current stable RelaxORM: `relax_orm: ^1.0.0` (was `^0.1.4`) and `relax_orm_generator: ^0.1.7` (was `^0.1.6`), across all four architectures. The `Collection` CRUD used by generated modules is source-compatible with RelaxORM 1.0.0.
+
+## 1.0.0
+
+First stable release. The command surface and generated project structure are now considered stable.
+
+- **Added** an automatic navigation layer to generated projects for **all four architectures**.
+  - `relax create` now scaffolds a router in the app composition root — `lib/app/router/app_router.dart` (go_router) for Bloc/Provider/Riverpod, or `lib/app/router/app_pages.dart` (GetX `getPages`) for GetX — and wires `MaterialApp.router` / `GetMaterialApp(getPages:)`. The router lives in `app/`, so features never depend on it (Clean Architecture dependency rule preserved).
+  - Each feature owns its route identity: generated pages expose `static const routeName` / `routePath`. Navigate with `context.goNamed(CartPage.routeName)` (go_router) or `Get.toNamed(CartPage.routePath)` (GetX).
+  - `relax g feature <name>` now **auto-registers** the feature's route — a `GoRoute` for go_router architectures, or a `GetPage` carrying the feature's `Binding` for GetX — and exports the feature from `features/features.dart`, with no manual editing. Route name/path derive from the full path spec, so `auth/login` and `admin/login` don't collide.
+  - Opt out with `relax g feature <name> --no-route`.
+  - Insertion is idempotent and anchor-based (`// relax:router-*`); re-running never duplicates a route, and a missing router/anchor degrades to a warning instead of failing.
+- **Added** `relax generate router` — retroactively scaffolds the navigation layer into an **existing** project (created before navigation support, or where the router was removed).
+  - Auto-detects the architecture, creates the router file, gives `HomePage` its `routeName`/`routePath`, rewires `app/view/app.dart` to `MaterialApp.router` / `GetMaterialApp(getPages:)`, adds the `go_router` dependency (non-GetX), and creates the `features/features.dart` barrel from existing features.
+  - Idempotent and safe: re-running reports "already present", and any hand-customized `app.dart` it can't recognize degrades to actionable warnings instead of corrupting the file.
+- **Added** an aggregate `lib/features/features.dart` barrel that re-exports every feature. It is the single import the router uses to reach feature pages. `relax generate feature` registers each new feature there automatically (replacing per-feature router imports).
+- **Changed** `relax generate page` — the page name may now be given as a single path spec (`relax g page product/product_details`, leaf = page) in addition to the two-argument form. The new page is **auto-exported** from its feature barrel, and **registered as a child route of its feature**: a nested `GoRoute` under the feature route for go_router, or a flat `GetPage` (with the feature `Binding`) at `/<feature>/<page>` for GetX. Pass `--no-route` to skip.
+
 ## 0.1.7
 
 - **Added** path-spec support to every `relax generate` subcommand — the name argument may now include a `/`-separated parent path, and the missing folders are created before the component is generated.

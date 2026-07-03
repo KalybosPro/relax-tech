@@ -34,14 +34,17 @@ Future<void> bootstrap(
 
   Bloc.observer = const AppBlocObserver();
 
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    LocaleSettings.useDeviceLocale();
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      LocaleSettings.useDeviceLocale();
 
-    await di.setUpRegister(env);
+      await di.setUpRegister(env);
 
-    runApp(builder());
-  }, (error, stack) {
-    log(error.toString(), stackTrace: stack);
-  });
+      runApp(builder());
+    },
+    (error, stack) {
+      log(error.toString(), stackTrace: stack);
+    },
+  );
 }
