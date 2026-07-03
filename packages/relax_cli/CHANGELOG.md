@@ -1,3 +1,7 @@
+## 1.0.1
+
+- **Changed** generated project dependencies to the current stable RelaxORM: `relax_orm: ^1.0.0` (was `^0.1.4`) and `relax_orm_generator: ^0.1.7` (was `^0.1.6`), across all four architectures. The `Collection` CRUD used by generated modules is source-compatible with RelaxORM 1.0.0.
+
 ## 1.0.0
 
 First stable release. The command surface and generated project structure are now considered stable.
