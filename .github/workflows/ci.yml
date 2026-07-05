@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  relax_cli:
+    name: relax_cli · analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Flutter provides both `flutter` and a matching `dart`. Some relax_cli
+      # integration tests shell out to `flutter`, so we set it up here.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Resolve workspace
+        run: dart pub get
+
+      - name: Analyze
+        working-directory: packages/relax_cli
+        run: dart analyze
+
+      - name: Test
+        working-directory: packages/relax_cli
+        run: dart test --concurrency=1
+
+  # To extend coverage to more packages, add jobs modeled on the one above
+  # (e.g. relax_orm, relax_storage). Enable a `dart format --set-exit-if-changed`
+  # step once each package's sources are fully formatted.

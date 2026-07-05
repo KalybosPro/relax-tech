@@ -2,6 +2,10 @@
 .dart_tool/
 .packages
 build/
+# …but keep source directories literally named "build" under lib/ (e.g. the
+# relax_cli `build` command). Only build OUTPUT should be ignored.
+!packages/**/lib/**/build/
+!packages/**/lib/**/build/**
 .pub-cache/
 .pub/
 pubspec_overrides.yaml
@@ -15,6 +19,7 @@ packages/*/pubspec.lock
 .vscode/
 *.iml
 marketing
+.claude/
 
 # OS
 .DS_Store
