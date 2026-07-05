@@ -1,0 +1,53 @@
+name: 💡 Feature request
+description: Suggest an idea or improvement
+title: "[<package>] <short description>"
+labels: ["enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape the roadmap! Please check
+        [existing issues](https://github.com/KalybosPro/relax-tech/issues) and the
+        [roadmap](https://github.com/KalybosPro/relax-tech/blob/main/README.md#roadmap)
+        first.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - relax_cli
+        - relax_orm
+        - relax_orm_generator
+        - relax_image_picker
+        - relax_storage
+        - relax_pay
+        - env_builder_cli
+        - new package / suite-wide
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the user problem or friction. "I'm always frustrated when …"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should happen? Include example CLI syntax, API, or generated output if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches or workarounds you've thought about.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to help implement this
+          required: false

@@ -120,17 +120,19 @@ void main() {
       }
     });
 
-    test('generated app view contains title-cased project name', () async {
+    test('generated i18n contains title-cased project name', () async {
       final originalDir = Directory.current;
       Directory.current = tempDir;
 
       try {
         await runner.run(['create', 'my_cool_app', '-a', 'bloc']);
 
-        final appView = File(
-          '${tempDir.path}/my_cool_app/lib/app/view/app.dart',
+        // The app name lives in the i18n strings; the app widget reads it via
+        // `t.appName` rather than embedding a literal.
+        final i18n = File(
+          '${tempDir.path}/my_cool_app/lib/i18n/en.i18n.json',
         ).readAsStringSync();
-        expect(appView, contains("'My Cool App'"));
+        expect(i18n, contains('My Cool App'));
       } finally {
         Directory.current = originalDir;
       }

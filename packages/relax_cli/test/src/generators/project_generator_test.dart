@@ -42,10 +42,12 @@ void main() {
       ).readAsStringSync();
       expect(pubspec, contains('name: awesome_app'));
 
-      final appView = File(
-        '${tempDir.path}/awesome_app/lib/app/view/app.dart',
+      // The title-cased app name lives in the i18n strings; the app widget
+      // reads it via `t.appName` rather than embedding a literal.
+      final i18n = File(
+        '${tempDir.path}/awesome_app/lib/i18n/en.i18n.json',
       ).readAsStringSync();
-      expect(appView, contains('Awesome App'));
+      expect(i18n, contains('Awesome App'));
     });
 
     test('generated theme files contain light and dark themes', () async {
@@ -122,13 +124,13 @@ void main() {
   });
 
   group('Bloc template', () {
-    test('generates 17 files', () async {
+    test('generates 31 files', () async {
       final files = await generator.generate(
         projectName: 'test_app',
         architecture: Architecture.bloc,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(25));
+      expect(files, hasLength(31));
     });
 
     test('uses sealed classes for events and states', () async {
@@ -165,13 +167,13 @@ void main() {
   });
 
   group('Provider template', () {
-    test('generates 16 files', () async {
+    test('generates 30 files', () async {
       final files = await generator.generate(
         projectName: 'test_app',
         architecture: Architecture.provider,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(24));
+      expect(files, hasLength(30));
     });
 
     test('uses ChangeNotifier pattern', () async {
@@ -207,13 +209,13 @@ void main() {
   });
 
   group('Riverpod template', () {
-    test('generates 16 files', () async {
+    test('generates 30 files', () async {
       final files = await generator.generate(
         projectName: 'test_app',
         architecture: Architecture.riverpod,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(24));
+      expect(files, hasLength(30));
     });
 
     test('uses Notifier and ConsumerWidget pattern', () async {
@@ -263,13 +265,13 @@ void main() {
   });
 
   group('GetX template', () {
-    test('generates 16 files', () async {
+    test('generates 30 files', () async {
       final files = await generator.generate(
         projectName: 'test_app',
         architecture: Architecture.getx,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(24));
+      expect(files, hasLength(30));
     });
 
     test('uses GetxController and Obx pattern', () async {

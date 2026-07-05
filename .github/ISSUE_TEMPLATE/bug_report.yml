@@ -1,0 +1,68 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+title: "[<package>] <short description>"
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please search
+        [existing issues](https://github.com/KalybosPro/relax-tech/issues) first
+        to avoid duplicates.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package is affected?
+      options:
+        - relax_cli
+        - relax_orm
+        - relax_orm_generator
+        - relax_image_picker
+        - relax_storage
+        - relax_pay
+        - env_builder_cli
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      description: e.g. relax_cli 1.1.0 (run `relax --version` or check pubspec.lock)
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands or code, ideally a minimal reproduction.
+      placeholder: |
+        1. Run `relax create demo -a bloc`
+        2. Run `relax quality`
+        3. See error …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output / logs
+      description: Paste any error output or stack traces. This is automatically formatted as code.
+      render: shell
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Output of `relax doctor` (or `dart --version` and `flutter --version`) and your OS.
+      placeholder: |
+        Dart 3.11.0 · Flutter 3.29.0 · Windows 11
+    validations:
+      required: true

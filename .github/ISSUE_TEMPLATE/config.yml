@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & discussions
+    url: https://github.com/KalybosPro/relax-tech/discussions
+    about: Ask questions, share what you built, or discuss ideas before opening an issue.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/KalybosPro/relax-tech/security/advisories/new
+    about: Please report vulnerabilities privately, not as public issues.
+  - name: 📦 Browse the packages on pub.dev
+    url: https://pub.dev/packages?q=relax
+    about: Docs and API references for each published package.

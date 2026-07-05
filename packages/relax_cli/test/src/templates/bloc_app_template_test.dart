@@ -3,8 +3,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('BlocAppTemplate', () {
-    test('contains 17 template files', () {
-      expect(BlocAppTemplate.files, hasLength(25));
+    test('contains 31 template files', () {
+      expect(BlocAppTemplate.files, hasLength(31));
     });
 
     test('all file paths start with project_name variable', () {
