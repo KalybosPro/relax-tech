@@ -95,12 +95,12 @@ void main() {
     expect(pubspec, contains('description: A test description'));
 
     final colors = File(
-      '${projectDir.path}/lib/core/theme/app_colors.dart',
+      '${projectDir.path}/lib/core/ui/theme/app_colors.dart',
     ).readAsStringSync();
     expect(colors, contains('0xFFFF5722'));
 
     final typo = File(
-      '${projectDir.path}/lib/core/theme/app_typography.dart',
+      '${projectDir.path}/lib/core/ui/theme/app_typography.dart',
     ).readAsStringSync();
     expect(typo, contains("'Inter'"));
   });

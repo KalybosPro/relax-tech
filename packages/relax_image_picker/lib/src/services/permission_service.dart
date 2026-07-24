@@ -1,90 +1,48 @@
-import 'package:photo_manager/photo_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
-  /// Request permissions based on the media types and features needed.
-  /// 
-  /// Requests gallery access for [allowImages] and [allowVideos],
-  /// and camera permission for [enableCamera].
-  /// 
-  /// Returns true if all requested permissions are granted.
+  /// Request the permissions the enabled features need.
+  ///
+  /// Gallery browsing goes through the OS photo picker and documents through the
+  /// Storage Access Framework, so **neither needs a runtime permission**. The
+  /// only permissions requested here are camera + microphone, and only when the
+  /// in-app camera ([enableCamera]) is enabled.
+  ///
+  /// Returns true if all requested permissions are granted (always true when the
+  /// camera is disabled, since nothing needs to be requested).
   Future<bool> requestMediaPermissions({
     bool allowImages = true,
     bool allowVideos = true,
     bool allowDocuments = true,
     bool enableCamera = true,
   }) async {
-    final requiredPermissions = <Permission>[];
+    if (!enableCamera) return true;
 
-    // Request photo/video library access if needed
-    if (allowImages || allowVideos) {
-      final photoState = await PhotoManager.requestPermissionExtend();
-      if (!photoState.isAuth && !photoState.isLimited) {
-        return false;
-      }
-    }
+    final statuses = await [
+      Permission.camera,
+      Permission.microphone,
+    ].request();
 
-    // Request camera permission if enabled
-    if (enableCamera) {
-      requiredPermissions.add(Permission.camera);
-    }
-
-    // Request microphone permission for video recording
-    if (enableCamera) {
-      requiredPermissions.add(Permission.microphone);
-    }
-
-    // Documents are accessed through the platform document provider
-    // (Storage Access Framework on Android), which requires no runtime
-    // permission on Android 13+. `allowDocuments` is intentionally not gated.
-
-    if (requiredPermissions.isEmpty) {
-      return true;
-    }
-
-    // Request all required permissions
-    final statuses = await requiredPermissions.request();
-
-    // Check if all required permissions are granted
-    for (final permission in requiredPermissions) {
-      if (statuses[permission] != PermissionStatus.granted) {
-        return false;
-      }
-    }
-
-    return true;
+    return statuses[Permission.camera] == PermissionStatus.granted &&
+        statuses[Permission.microphone] == PermissionStatus.granted;
   }
 
-  /// Check if all required permissions are currently granted.
+  /// Check whether the permissions needed by the enabled features are granted.
+  ///
+  /// Only the camera + microphone are checked (and only when [enableCamera] is
+  /// set); gallery and documents require no runtime permission.
   Future<bool> checkPermissionsStatus({
     bool allowImages = true,
     bool allowVideos = true,
     bool allowDocuments = false,
     bool enableCamera = true,
   }) async {
-    // Check photo/video library access
-    if (allowImages || allowVideos) {
-      final permissionState = await PhotoManager.requestPermissionExtend();
-      if (!permissionState.isAuth && !permissionState.isLimited) {
-        return false;
-      }
-    }
+    if (!enableCamera) return true;
 
-    // Check camera permission
-    if (enableCamera) {
-      final cameraStatus = await Permission.camera.status;
-      if (!cameraStatus.isGranted) {
-        return false;
-      }
+    final cameraStatus = await Permission.camera.status;
+    if (!cameraStatus.isGranted) return false;
 
-      final micStatus = await Permission.microphone.status;
-      if (!micStatus.isGranted) {
-        return false;
-      }
-    }
-
-    // Documents use the Storage Access Framework; no runtime check needed.
-
-    return true;
+    final micStatus = await Permission.microphone.status;
+    return micStatus.isGranted;
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:photo_manager/photo_manager.dart';
 
 import 'relax_document_file.dart';
+import 'relax_media_file.dart';
 
 /// Widget-slot builders used by [RelaxPickerTheme].
 ///
@@ -42,14 +42,16 @@ typedef RelaxTabBuilder = Widget Function(
   required VoidCallback onTap,
 });
 
-/// A media (photo/video) grid tile.
+/// A media (photo/video) grid tile in the selection tray.
 ///
-/// [thumbnail] is the ready-made async thumbnail widget — reuse it to avoid
-/// re-implementing loading/caching. [selectionIndex] is the 1-based selection
-/// order (meaningful only when [selected]).
+/// [media] is the picked file (a [RelaxImageFile] or [RelaxVideoFile]).
+/// [thumbnail] is the ready-made thumbnail widget — reuse it to avoid
+/// re-implementing image loading. [selectionIndex] is the 1-based selection
+/// order. Every tile in the tray is a selected item, so [selected] is always
+/// `true`; a tap deselects (removes) it.
 typedef RelaxMediaTileBuilder = Widget Function(
   BuildContext context, {
-  required AssetEntity asset,
+  required RelaxMediaFile media,
   required bool selected,
   required int selectionIndex,
   required bool isVideo,

@@ -89,6 +89,8 @@ dependencies:
   slang_flutter: ^4.14.0
   relax_orm: ^1.0.0
   relax_storage: ^1.0.1
+  dio: ^5.7.0
+  web_socket_channel: ^3.0.1
   env:
     path: packages/env
 

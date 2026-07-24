@@ -1,17 +1,20 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Camera capture + microphone for video recording -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Camera capture + microphone for video recording (in-app camera only) -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
-    <!-- Gallery access on Android 13+ (API 33+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
-    <!-- Android 14 (API 34) partial / "selected photos" access -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
+    <!-- Gallery browsing goes through the OS photo picker and documents through
+         the Storage Access Framework, so no granular media permission is
+         required.
 
-    <!-- Gallery access on Android 12 and below -->
+         The camera dependency declares legacy write-storage (maxSdkVersion 28),
+         which makes the manifest merger auto-add an *unscoped* legacy
+         read-storage permission. Scope it so it never applies on modern
+         Android. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32"/>
+        android:maxSdkVersion="32"
+        tools:node="replace"/>
 
     <application
         android:label="relax_image_picker_example"

@@ -25,7 +25,6 @@ class RelaxPickerTheme {
 
     // Text styles
     this.titleTextStyle,
-    this.albumTextStyle,
     this.tabTextStyle,
     this.counterTextStyle,
     this.fileNameTextStyle,
@@ -47,7 +46,7 @@ class RelaxPickerTheme {
     this.cameraTileIcon = Icons.photo_camera,
     this.galleryTabIcon = Icons.photo_library_outlined,
     this.documentsTabIcon = Icons.insert_drive_file_outlined,
-    this.albumDropdownIcon = Icons.keyboard_arrow_down,
+    this.addFromGalleryIcon = Icons.add_photo_alternate_outlined,
     this.sendIcon = Icons.send_rounded,
     this.previewIcon = Icons.visibility_outlined,
     this.selectedIcon = Icons.check_circle,
@@ -68,9 +67,7 @@ class RelaxPickerTheme {
     this.videoLabel = 'Vidéo',
     this.selectTooltip = 'Sélectionner',
     this.deselectTooltip = 'Désélectionner',
-    this.limitedAccessLabel =
-        'Vous n\'avez autorisé l\'accès qu\'à certaines photos',
-    this.manageAccessLabel = 'Gérer',
+    this.addFromGalleryLabel = 'Galerie',
     this.maxSelectionLabelBuilder,
 
     // Widget-slot builders (full overrides; null → default widget)
@@ -102,7 +99,6 @@ class RelaxPickerTheme {
 
   // --- Text styles ---
   final TextStyle? titleTextStyle;
-  final TextStyle? albumTextStyle;
   final TextStyle? tabTextStyle;
   final TextStyle? counterTextStyle;
   final TextStyle? fileNameTextStyle;
@@ -124,7 +120,9 @@ class RelaxPickerTheme {
   final IconData cameraTileIcon;
   final IconData galleryTabIcon;
   final IconData documentsTabIcon;
-  final IconData albumDropdownIcon;
+
+  /// Icon on the "add from gallery" tile that launches the OS photo picker.
+  final IconData addFromGalleryIcon;
   final IconData sendIcon;
   final IconData previewIcon;
   final IconData selectedIcon;
@@ -146,13 +144,8 @@ class RelaxPickerTheme {
   final String selectTooltip;
   final String deselectTooltip;
 
-  /// Shown in the banner when the user granted access to only a subset of their
-  /// library (Android 14+ "Selected photos" / iOS limited access).
-  final String limitedAccessLabel;
-
-  /// Action label on the limited-access banner that re-opens the system picker
-  /// so the user can grant access to more items.
-  final String manageAccessLabel;
+  /// Caption on the tile that launches the OS photo picker.
+  final String addFromGalleryLabel;
 
   /// Builds the "maximum reached" message; defaults to `Maximum <n>`.
   final String Function(int maxSelection)? maxSelectionLabelBuilder;
@@ -185,7 +178,6 @@ class RelaxPickerTheme {
     double? heightFactor,
     Color? dragHandleColor,
     TextStyle? titleTextStyle,
-    TextStyle? albumTextStyle,
     TextStyle? tabTextStyle,
     TextStyle? counterTextStyle,
     TextStyle? fileNameTextStyle,
@@ -203,7 +195,7 @@ class RelaxPickerTheme {
     IconData? cameraTileIcon,
     IconData? galleryTabIcon,
     IconData? documentsTabIcon,
-    IconData? albumDropdownIcon,
+    IconData? addFromGalleryIcon,
     IconData? sendIcon,
     IconData? previewIcon,
     IconData? selectedIcon,
@@ -222,8 +214,7 @@ class RelaxPickerTheme {
     String? videoLabel,
     String? selectTooltip,
     String? deselectTooltip,
-    String? limitedAccessLabel,
-    String? manageAccessLabel,
+    String? addFromGalleryLabel,
     String Function(int maxSelection)? maxSelectionLabelBuilder,
     RelaxSendButtonBuilder? sendButtonBuilder,
     RelaxTextButtonBuilder? cancelButtonBuilder,
@@ -246,7 +237,6 @@ class RelaxPickerTheme {
       heightFactor: heightFactor ?? this.heightFactor,
       dragHandleColor: dragHandleColor ?? this.dragHandleColor,
       titleTextStyle: titleTextStyle ?? this.titleTextStyle,
-      albumTextStyle: albumTextStyle ?? this.albumTextStyle,
       tabTextStyle: tabTextStyle ?? this.tabTextStyle,
       counterTextStyle: counterTextStyle ?? this.counterTextStyle,
       fileNameTextStyle: fileNameTextStyle ?? this.fileNameTextStyle,
@@ -268,7 +258,7 @@ class RelaxPickerTheme {
       cameraTileIcon: cameraTileIcon ?? this.cameraTileIcon,
       galleryTabIcon: galleryTabIcon ?? this.galleryTabIcon,
       documentsTabIcon: documentsTabIcon ?? this.documentsTabIcon,
-      albumDropdownIcon: albumDropdownIcon ?? this.albumDropdownIcon,
+      addFromGalleryIcon: addFromGalleryIcon ?? this.addFromGalleryIcon,
       sendIcon: sendIcon ?? this.sendIcon,
       previewIcon: previewIcon ?? this.previewIcon,
       selectedIcon: selectedIcon ?? this.selectedIcon,
@@ -287,8 +277,7 @@ class RelaxPickerTheme {
       videoLabel: videoLabel ?? this.videoLabel,
       selectTooltip: selectTooltip ?? this.selectTooltip,
       deselectTooltip: deselectTooltip ?? this.deselectTooltip,
-      limitedAccessLabel: limitedAccessLabel ?? this.limitedAccessLabel,
-      manageAccessLabel: manageAccessLabel ?? this.manageAccessLabel,
+      addFromGalleryLabel: addFromGalleryLabel ?? this.addFromGalleryLabel,
       maxSelectionLabelBuilder:
           maxSelectionLabelBuilder ?? this.maxSelectionLabelBuilder,
       sendButtonBuilder: sendButtonBuilder ?? this.sendButtonBuilder,

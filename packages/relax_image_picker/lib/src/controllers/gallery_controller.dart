@@ -1,15 +1,16 @@
-/// Controller for gallery workflows and media pagination.
+/// Controller for gallery workflows.
+///
+/// Gallery browsing is delegated to the OS photo picker (see
+/// `GalleryPickerSheet`), which returns files directly — there is no in-app
+/// library index or pagination to manage.
 class GalleryController {
-  /// Loads media assets in pages and maintains selected items.
-  Future<void> initialize() async {
-    // Initialize photo_manager, cache, and album index.
-  }
+  /// Prepares any gallery-related state.
+  Future<void> initialize() async {}
 
-  Future<void> loadNextPage() async {
-    // Paginated load of thumbnails and asset metadata.
-  }
+  /// Launches the OS photo picker and appends the selection.
+  Future<void> addFromGallery() async {}
 
-  void toggleSelection(String assetId) {
-    // Select or deselect an asset and update counters.
+  void toggleSelection(String id) {
+    // Select or deselect a picked item and update counters.
   }
 }

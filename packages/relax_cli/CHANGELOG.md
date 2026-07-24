@@ -1,3 +1,13 @@
+## 1.2.0
+
+- **Changed** the generated project architecture to a three-layer, feature-first layout across all four state managers (Bloc, Provider, Riverpod, GetX):
+  - **`core/`** (infrastructure, no feature knowledge) is now split into `network/` (a Dio `ApiClient` reading `Env.baseUrl` with a bearer-token interceptor backed by `CachedStorage`), `database/` (an `AppDatabase` wrapping RelaxORM's encrypted `RelaxDB`), `encryption/` (an `AppEncrypter` over `relax_storage`'s AES `Encrypter`), `cache/` (the existing `CachedStorage`), `websocket/` (a `SocketService` over `web_socket_channel`), `ui/` (theme — moved from `core/theme/`), `utils/` (`Validators` + `BuildContext`/`String` extensions), and `di/`.
+  - **`shared/`** — a new cross-feature layer with `widgets/` (`AppLoader`, `PrimaryButton`), `models/` (`Result<T>`), and `services/` (`LoggerService`).
+  - **`features/`** — `home/` remains the working sample; add more with `relax generate feature <name>`.
+  - Everything is reached through the stable `core/core.dart` and `shared/shared.dart` barrels, so feature code is unaffected by the internal reorganization.
+- **Added** `dio: ^5.7.0` and `web_socket_channel: ^3.0.1` to the generated dependencies (used by `core/network` and `core/websocket`).
+- **Added** registration of `ApiClient`, `AppEncrypter`, `SocketService`, `LoggerService`, and (lazily/async) `AppDatabase` in the generated `core/di/di.dart`.
+
 ## 1.1.0
 
 - **Added** `relax quality` — a read-only architecture and code-quality analyzer for any Flutter project, independent of state management (GetX, Bloc/Cubit, Riverpod, Provider, MobX, or none). It never writes to source files and never runs `flutter test`.

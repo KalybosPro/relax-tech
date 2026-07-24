@@ -3,14 +3,14 @@
 ## Features
 
 - 📱 **WhatsApp-style UX** — bottom-sheet interface with smooth animations
-- 🖼️ **Gallery browsing** — paginated media loading with album selection
+- 🖼️ **Gallery browsing** — multi-select via the OS photo picker (no permission)
 - 📷 **Camera integration** — capture photos and videos without leaving the picker
 - 📄 **Document selection** — pick files from device storage, with recent-documents recall between sessions
 - 👁️ **Full-screen preview** — review images, videos, and documents before confirming
 - 🗜️ **Optional compression** — shrink images on the fly
-- 🔒 **Smart permissions** — handles Android 13+ scoped storage and iOS limited photo access
+- 🔒 **Permission-free gallery** — browses via the OS photo picker (Android Photo Picker / iOS `PHPickerViewController`), so no `READ_MEDIA_*` declarations and no Google Play *Photo & Video Permissions* review
 - 🎨 **Deep customization** — `RelaxPickerTheme` exposes colors, text/button styles, icons, labels, and full widget-slot builders
-- ⚡ **High performance** — lazy loading, thumbnail caching, and optimized scrolling
+- ⚡ **Lightweight** — no in-app library scanning; the OS returns only what the user picks
 
 ## Screenshots
 
@@ -24,7 +24,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  relax_image_picker: ^1.0.0
+  relax_image_picker: ^2.0.0
 ```
 
 Then run:
@@ -35,49 +35,48 @@ flutter pub get
 
 ### Platform setup
 
-> **Declare only what you actually use.** The lists below are the *full set* for
-> the "everything enabled" case. Requesting permissions you don't need is the
-> most common cause of store rejections — pick the minimal set that matches the
-> features you turn on (see [Minimal permission sets](#minimal-permission-sets)).
+> **The gallery needs no media-storage permission.** Browsing is delegated to
+> the OS photo picker and documents to the Storage Access Framework, so the only
+> permissions you ever declare are for the optional **in-app camera**.
 
 #### Android
 
-Declare the permissions your enabled features need in
+Gallery browsing goes through the Android Photo Picker and documents through the
+Storage Access Framework, so you **never** declare `READ_MEDIA_IMAGES`,
+`READ_MEDIA_VIDEO` or `READ_EXTERNAL_STORAGE`. Only the in-app camera
+(`enableCamera`) needs permissions, in
 `android/app/src/main/AndroidManifest.xml`:
 
 ```xml
-<!-- Camera capture (enableCamera) -->
+<!-- Camera capture (only when enableCamera: true) -->
 <uses-permission android:name="android.permission.CAMERA" />
 <!-- Recording video *with sound* via the in-picker camera -->
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-<!-- Gallery browsing — Android 13+ (API 33+) granular media permissions -->
-<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-<!-- Android 14+ (API 34+) partial / "selected photos" access -->
-<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
-<!-- Gallery browsing on older versions (API ≤ 32) -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-    android:maxSdkVersion="32" />
 ```
 
-> **Documents (`allowDocuments`) need no storage permission.** Document picking
-> goes through the Storage Access Framework (SAF), so an app that only picks
-> documents can omit *all* the `READ_MEDIA_*` / `READ_EXTERNAL_STORAGE` lines.
+> With `enableCamera: false`, the picker needs **zero** manifest permissions.
+> The package also never requests `MANAGE_EXTERNAL_STORAGE`.
+
+> **Legacy `READ_EXTERNAL_STORAGE`.** The `camera` dependency declares
+> `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion="28"`), which makes Android's manifest
+> merger auto-add an *unscoped* legacy `READ_EXTERNAL_STORAGE`. It is inert on
+> Android 13+ and does **not** fall under the Photo & Video Permissions policy,
+> but you can scope it out of modern Android by adding this to your app manifest
+> (with `xmlns:tools="http://schemas.android.com/tools"` on `<manifest>`):
 >
-> The package never requests `MANAGE_EXTERNAL_STORAGE` (the broad "All files
-> access" permission that triggers a heavy Play review).
+> ```xml
+> <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+>     android:maxSdkVersion="32" tools:node="replace" />
+> ```
 
 #### iOS
 
-Add usage descriptions to `ios/Runner/Info.plist`. **Make the strings specific
-to your app** — Apple frequently rejects vague purpose strings. Replace the
-examples below with text that states the concrete user benefit.
+Gallery picking uses the system photo picker (`PHPickerViewController`), which
+needs **no** `NSPhotoLibraryUsageDescription`. Only add usage strings for the
+in-app camera in `ios/Runner/Info.plist`, and **make them specific** — Apple
+frequently rejects vague purpose strings:
 
 ```xml
-<!-- Gallery browsing -->
-<key>NSPhotoLibraryUsageDescription</key>
-<string>Allows you to attach photos and videos to your messages.</string>
 <!-- Camera capture (enableCamera) -->
 <key>NSCameraUsageDescription</key>
 <string>Lets you take a photo or record a video to send.</string>
@@ -92,71 +91,24 @@ Add only the lines for the features you enable:
 
 | Feature you use | Android | iOS |
 |---|---|---|
-| Gallery (`allowImages` / `allowVideos`) | `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, `READ_EXTERNAL_STORAGE` (≤32) | `NSPhotoLibraryUsageDescription` |
+| Gallery (`allowImages` / `allowVideos`) | *(none — OS photo picker)* | *(none — system photo picker)* |
+| Documents (`allowDocuments`) | *(none — uses SAF)* | *(none — uses the system file picker)* |
 | Camera photo (`enableCamera`) | `CAMERA` | `NSCameraUsageDescription` |
 | Camera video with sound | `CAMERA`, `RECORD_AUDIO` | `NSCameraUsageDescription`, `NSMicrophoneUsageDescription` |
-| Documents only (`allowDocuments`) | *(none — uses SAF)* | *(none — uses the system file picker)* |
 
-### Google Play — Photo & Video Permissions policy
+### Store review — no media-permission gate
 
-> **Read this before you publish.** This is the single most common reason an app
-> shipping a media picker gets rejected.
+Because gallery browsing uses the OS photo picker, the app declares **no**
+`READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`, so Google Play's *Photo and Video
+Permissions policy* declaration **does not apply** — the single most common
+media-picker rejection is removed entirely. The OS picker also gives the user
+least-privilege, per-pick access with no in-app library scanning.
 
-This package renders its own in-app gallery grid (powered by `photo_manager`),
-which **requires** the broad `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`
-permissions. Under Google Play's *Photo and Video Permissions policy*, those
-permissions are only allowed when broad media access is a **core feature** of
-your app — which a media picker is. Removing the permissions is **not** an
-option here: without them the gallery returns nothing.
-
-To pass review you must do two things:
-
-**1. Complete the Photo & Video Permissions declaration.** In the Play Console,
-go to **Policy → App content → Photo and video permissions**, declare that you
-use these permissions, and describe the core feature that justifies them. A
-justification that gets approved reads roughly like:
-
-> The app provides an in-app media picker that lets the user browse, preview and
-> select multiple photos and videos from their library to attach to a
-> message/post, with a multi-select experience that the system picker does not
-> provide. Access to the media library is required to render this picker.
-
-Attaching a short screen recording of the picker in action makes approval far
-more likely. If your app only needs **occasional, one-off** selection, Google
-will likely reject the declaration — in that case you should use the system
-**Android Photo Picker** (no permission) instead of this package's gallery.
-
-**2. Support partial ("Selected photos") access.** On Android 14+ and iOS 14+
-the user can grant access to only a subset of their library. This package
-handles that automatically: it detects the limited state and shows a banner
-above the grid with a **Manage** button (`limitedAccessLabel` /
-`manageAccessLabel` in `RelaxPickerTheme`) that re-opens the system selector so
-the user can widen their selection. Honoring least-privilege access like this is
-exactly what reviewers look for — don't disable it.
-
-> **Distributing `READ_MEDIA_*` to consumer apps.** If you build a library or
-> module on top of this package, remember that **every app that ships it inherits
-> the declaration requirement**. Call it out in your own docs.
-
-If a transitive dependency pulls in a media permission you don't want, strip it
-with the manifest merger:
-
-```xml
-<!-- in your android/app/src/main/AndroidManifest.xml,
-     with xmlns:tools="http://schemas.android.com/tools" on <manifest> -->
-<uses-permission android:name="android.permission.READ_MEDIA_VIDEO"
-    tools:node="remove" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-    tools:node="remove" />
-```
-
-### Other store notes
-
-- **Apple App Store.** The `*UsageDescription` strings are mandatory — without
-  them the app crashes on access and is rejected. Vague strings are a common
-  rejection reason; describe the concrete user-facing benefit.
-- **Data safety / privacy.** Declare media and camera access in the Play
-  *Data safety* form and your App Store *privacy* details.
+- **Apple App Store.** The camera `*UsageDescription` strings are mandatory when
+  `enableCamera` is on — without them the app crashes on access. The photo
+  library string is **not** required for the system picker.
+- **Data safety / privacy.** Still declare any camera access in the Play *Data
+  safety* form and your App Store *privacy* details.
 
 ## Usage
 
@@ -287,12 +239,17 @@ All selected media organized by type.
 - **`RelaxVideoFile`** adds `duration`, `width`, `height`, `isMuted`, `albumId?`
 - **`RelaxDocumentFile`** adds `fileName`, `extension`, `canPreview` (plus `toJson` / `fromJson` for caching)
 
+> **Metadata note.** The OS photo picker returns files, not library metadata.
+> Image `width`/`height` are derived on the fly; gallery-picked **videos** carry
+> no `duration`/dimensions (they default to `Duration.zero` / `0`). `albumId` is
+> always `null` for gallery picks.
+
 ## Platform support
 
 | Platform | Supported | Notes |
 |---|---|---|
-| Android | ✅ | Scoped storage (Android 13+) and legacy storage |
-| iOS | ✅ | Limited photo library access (iOS 14+) supported |
+| Android | ✅ | Gallery via the Android Photo Picker (`ACTION_PICK_IMAGES`, SAF fallback ≤ API 32) — no media permission |
+| iOS | ✅ | Gallery via the system photo picker (`PHPickerViewController`) — no photo-library permission |
 
 ## Architecture
 

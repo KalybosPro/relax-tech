@@ -5,16 +5,48 @@ abstract final class SharedTemplate {
   /// Prefixes a relative path with the mustache project directory.
   static String p(String path) => '{{project_name.snakeCase()}}/$path';
 
-  /// Returns the common [TemplateFile] list (analysis_options, core/theme, env, i18n).
+  /// Returns the common [TemplateFile] list shared by every architecture:
+  /// the `core/` infrastructure layer, the `shared/` cross-feature layer,
+  /// reserved feature placeholders, env/flavor files, i18n and tooling.
   static List<TemplateFile> coreFiles() => [
     TemplateFile(p('analysis_options.yaml'), analysisOptions),
+    // ── Core barrel ─────────────────────────────────────────
     TemplateFile(p('lib/core/core.dart'), coreBarrel),
-    TemplateFile(p('lib/core/theme/app_theme.dart'), appTheme),
-    TemplateFile(p('lib/core/theme/app_colors.dart'), appColors),
-    TemplateFile(p('lib/core/theme/app_typography.dart'), appTypography),
+    // ── Network ─────────────────────────────────────────────
+    TemplateFile(p('lib/core/network/network.dart'), networkBarrel),
+    TemplateFile(p('lib/core/network/api_client.dart'), apiClient),
+    // ── Database ────────────────────────────────────────────
+    TemplateFile(p('lib/core/database/database.dart'), databaseBarrel),
+    TemplateFile(p('lib/core/database/app_database.dart'), appDatabase),
+    // ── Encryption ──────────────────────────────────────────
+    TemplateFile(p('lib/core/encryption/encryption.dart'), encryptionBarrel),
+    TemplateFile(p('lib/core/encryption/app_encrypter.dart'), appEncrypter),
+    // ── Cache ───────────────────────────────────────────────
+    TemplateFile(p('lib/core/cache/cache.dart'), cacheBarrel),
     TemplateFile(p('lib/core/cache/cached_storage.dart'), cachedStorage),
+    // ── WebSocket ───────────────────────────────────────────
+    TemplateFile(p('lib/core/websocket/websocket.dart'), websocketBarrel),
+    TemplateFile(p('lib/core/websocket/socket_service.dart'), socketService),
+    // ── UI (theme) ──────────────────────────────────────────
+    TemplateFile(p('lib/core/ui/ui.dart'), uiBarrel),
+    TemplateFile(p('lib/core/ui/theme/app_theme.dart'), appTheme),
+    TemplateFile(p('lib/core/ui/theme/app_colors.dart'), appColors),
+    TemplateFile(p('lib/core/ui/theme/app_typography.dart'), appTypography),
+    // ── Utils ───────────────────────────────────────────────
+    TemplateFile(p('lib/core/utils/utils.dart'), utilsBarrel),
+    TemplateFile(p('lib/core/utils/validators.dart'), validators),
+    TemplateFile(p('lib/core/utils/extensions.dart'), extensions),
     // ── DI ──────────────────────────────────────────────────
     TemplateFile(p('lib/core/di/di.dart'), diSetup),
+    // ── Shared (cross-feature) ──────────────────────────────
+    TemplateFile(p('lib/shared/shared.dart'), sharedBarrel),
+    TemplateFile(p('lib/shared/widgets/widgets.dart'), widgetsBarrel),
+    TemplateFile(p('lib/shared/widgets/app_loader.dart'), appLoader),
+    TemplateFile(p('lib/shared/widgets/primary_button.dart'), primaryButton),
+    TemplateFile(p('lib/shared/models/models.dart'), modelsBarrel),
+    TemplateFile(p('lib/shared/models/result.dart'), resultModel),
+    TemplateFile(p('lib/shared/services/services.dart'), servicesBarrel),
+    TemplateFile(p('lib/shared/services/logger_service.dart'), loggerService),
     // ── Env / Flavor ────────────────────────────────────────
     TemplateFile(p('.env.development'), envDevelopment),
     TemplateFile(p('.env.staging'), envStaging),
@@ -112,18 +144,34 @@ flutter run --flavor production -t lib/main_production.dart
 
 ## Architecture
 
-This project uses **$archName** for state management.
+This project uses **$archName** for state management, organized in three layers:
+`core/` (infrastructure), `shared/` (cross-feature), and `features/` (screens),
+composed together in `app/`.
 
 ```
 lib/
-\u251c\u2500\u2500 app/              \u2192 Application root (MaterialApp)
-\u251c\u2500\u2500 core/             \u2192 Theme, colors, typography, DI
+\u251c\u2500\u2500 app/              \u2192 Composition root: MaterialApp + router + DI wiring
+\u251c\u2500\u2500 core/             \u2192 Infrastructure (no feature knowledge)
+\u2502   \u251c\u2500\u2500 network/      \u2192 Dio ApiClient (base URL + auth interceptor)
+\u2502   \u251c\u2500\u2500 database/     \u2192 RelaxORM local-first database
+\u2502   \u251c\u2500\u2500 encryption/   \u2192 AES encrypt/decrypt helper
+\u2502   \u251c\u2500\u2500 cache/        \u2192 Encrypted key-value storage
+\u2502   \u251c\u2500\u2500 websocket/    \u2192 Realtime socket service
+\u2502   \u251c\u2500\u2500 ui/           \u2192 Theme, colors, typography
+\u2502   \u251c\u2500\u2500 utils/        \u2192 Validators & extensions
+\u2502   \u2514\u2500\u2500 di/           \u2192 get_it service locator
+\u251c\u2500\u2500 shared/           \u2192 Reused across features
+\u2502   \u251c\u2500\u2500 widgets/      \u2192 Shared widgets (AppLoader, PrimaryButton)
+\u2502   \u251c\u2500\u2500 models/       \u2192 Shared models (Result<T>)
+\u2502   \u2514\u2500\u2500 services/     \u2192 Shared services (LoggerService)
 \u251c\u2500\u2500 i18n/             \u2192 Localization (slang)
-\u2514\u2500\u2500 features/         \u2192 Feature modules (home, ...)
-    \u2514\u2500\u2500 <feature>/
-        \u251c\u2500\u2500 $featureDir
-        \u2514\u2500\u2500 view/     \u2192 Pages & Widgets
+\u2514\u2500\u2500 features/         \u2192 Feature modules
+    \u2514\u2500\u2500 home/         \u2192 Working sample ($featureDir + view/)
 ```
+
+> `core/` and `shared/` are reached through the `core/core.dart` and
+> `shared/shared.dart` barrels, so imports stay stable if the internals move.
+> Add new features with `relax generate feature <name>`.
 
 ## Localization (i18n)
 
@@ -260,14 +308,411 @@ void main() {
 
   // ─── Core barrel ───────────────────────────────────────────────
 
+  /// Single import for the whole infrastructure layer. Views and features
+  /// reach theme, DI, storage, networking, etc. through `core/core.dart`, so
+  /// the internal folder layout can change without touching feature code.
   static const coreBarrel = '''
+export 'cache/cache.dart';
+export 'database/database.dart';
 export 'di/di.dart';
+export 'encryption/encryption.dart';
+export 'network/network.dart';
+export 'ui/ui.dart';
+export 'utils/utils.dart';
+export 'websocket/websocket.dart';
+export '../i18n/slang/translations.g.dart';
+''';
+
+  // ─── Network ───────────────────────────────────────────────────
+
+  static const networkBarrel = "export 'api_client.dart';\n";
+
+  static const apiClient = '''
+import 'package:dio/dio.dart';
+import 'package:env/env.dart';
+
+import '../cache/cached_storage.dart';
+
+/// Thin wrapper around [Dio] configured from the active flavor.
+///
+/// The base URL is read from `Env.baseUrl`, and a request interceptor attaches
+/// the bearer token persisted by [CachedStorage] (when present). Inject it via
+/// `getIt<ApiClient>()` and call the verb helpers, e.g.:
+///
+/// ```dart
+/// final res = await getIt<ApiClient>().get<Map<String, dynamic>>('/me');
+/// ```
+class ApiClient {
+  ApiClient({required EnvValue env, required CachedStorage storage})
+      : _storage = storage,
+        dio = Dio(
+          BaseOptions(
+            baseUrl: env(Env.baseUrl),
+            connectTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 15),
+          ),
+        ) {
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final token = _storage.token;
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer \$token';
+          }
+          handler.next(options);
+        },
+      ),
+    );
+  }
+
+  /// The underlying Dio instance — use it directly for advanced needs.
+  final Dio dio;
+
+  final CachedStorage _storage;
+
+  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? query}) =>
+      dio.get<T>(path, queryParameters: query);
+
+  Future<Response<T>> post<T>(String path, {Object? data}) =>
+      dio.post<T>(path, data: data);
+
+  Future<Response<T>> put<T>(String path, {Object? data}) =>
+      dio.put<T>(path, data: data);
+
+  Future<Response<T>> delete<T>(String path, {Object? data}) =>
+      dio.delete<T>(path, data: data);
+}
+''';
+
+  // ─── Database (RelaxORM) ───────────────────────────────────────
+
+  static const databaseBarrel = "export 'app_database.dart';\n";
+
+  static const appDatabase = '''
+import 'package:relax_orm/relax_orm.dart';
+
+/// Local-first database backed by [RelaxORM].
+///
+/// Opens (or creates) an encrypted SQLite database. Register generated
+/// `TableSchema`s (produced by `relax generate model`) in [_schemas], then
+/// read/write through typed collections:
+///
+/// ```dart
+/// final db = await getIt.getAsync<AppDatabase>();
+/// final users = db.raw.collection<User>();
+/// await users.add(user);
+/// ```
+class AppDatabase {
+  AppDatabase._(this.raw);
+
+  /// The underlying [RelaxDB] handle.
+  final RelaxDB raw;
+
+  /// Schemas registered with the database. Add generated schemas here, e.g.
+  /// `[userSchema, postSchema]`.
+  static const List<TableSchema> _schemas = <TableSchema>[];
+
+  /// Opens the database using the flavor's encryption key.
+  static Future<AppDatabase> open(String encryptionKey) async {
+    final db = await RelaxDB.open(
+      name: 'app',
+      schemas: _schemas,
+      encryptionKey: encryptionKey,
+    );
+    return AppDatabase._(db);
+  }
+}
+''';
+
+  // ─── Encryption ────────────────────────────────────────────────
+
+  static const encryptionBarrel = "export 'app_encrypter.dart';\n";
+
+  static const appEncrypter = '''
+import 'package:relax_storage/relax_storage.dart';
+
+/// AES-CBC encrypt/decrypt helper reusing the flavor's `ENCRYPTION_KEY`.
+///
+/// Wraps the [Encrypter] from `relax_storage` so the rest of the app depends
+/// on a small, stable surface instead of the crypto package directly.
+///
+/// ```dart
+/// final enc = getIt<AppEncrypter>();
+/// final payload = enc.encrypt('secret');
+/// final clear = enc.decrypt(payload);
+/// ```
+class AppEncrypter {
+  AppEncrypter(this._key) : _encrypter = Encrypter();
+
+  final String _key;
+  final IEncrypter _encrypter;
+
+  /// Returns `"IV_BASE64:CIPHER_BASE64"` for [data].
+  String encrypt(String data) => _encrypter.encrypt<String>(data, _key);
+
+  /// Reverses [encrypt] for a `"IV_BASE64:CIPHER_BASE64"` [payload].
+  String decrypt(String payload) => _encrypter.decrypt(payload, _key);
+}
+''';
+
+  // ─── Cache barrel ──────────────────────────────────────────────
+
+  static const cacheBarrel = "export 'cached_storage.dart';\n";
+
+  // ─── WebSocket ─────────────────────────────────────────────────
+
+  static const websocketBarrel = "export 'socket_service.dart';\n";
+
+  static const socketService = '''
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+/// Lightweight realtime channel over [WebSocketChannel].
+///
+/// Connect, listen to [stream], [send] messages and [disconnect]. A single
+/// instance is registered in DI; open one connection per app session:
+///
+/// ```dart
+/// final socket = getIt<SocketService>()
+///   ..connect(Uri.parse('wss://example.com/ws'));
+/// socket.stream.listen(print);
+/// socket.send('ping');
+/// ```
+class SocketService {
+  WebSocketChannel? _channel;
+
+  /// Whether a channel is currently open.
+  bool get isConnected => _channel != null;
+
+  /// Incoming messages from the server.
+  Stream<dynamic> get stream =>
+      _channel?.stream ?? const Stream<dynamic>.empty();
+
+  /// Opens a connection to [url] (e.g. `wss://...`).
+  void connect(Uri url) => _channel ??= WebSocketChannel.connect(url);
+
+  /// Sends [message] to the server. No-op when disconnected.
+  void send(Object? message) => _channel?.sink.add(message);
+
+  /// Closes the connection.
+  Future<void> disconnect() async {
+    await _channel?.sink.close();
+    _channel = null;
+  }
+}
+''';
+
+  // ─── UI barrel ─────────────────────────────────────────────────
+
+  static const uiBarrel = '''
 export 'theme/app_colors.dart';
 export 'theme/app_theme.dart';
 export 'theme/app_typography.dart';
-export 'cache/cached_storage.dart';
-export '../i18n/slang/translations.g.dart';
 ''';
+
+  // ─── Utils ─────────────────────────────────────────────────────
+
+  static const utilsBarrel = '''
+export 'extensions.dart';
+export 'validators.dart';
+''';
+
+  static const validators = '''
+/// Reusable, framework-agnostic form validators.
+///
+/// Each returns `null` when the input is valid, or an error message otherwise —
+/// the shape expected by [FormFieldValidator].
+abstract final class Validators {
+  static final _emailRegExp = RegExp(r'^[\\w.+-]+@[\\w-]+\\.[\\w.-]+\$');
+
+  /// Requires a non-empty, well-formed email address.
+  static String? email(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Email is required';
+    if (!_emailRegExp.hasMatch(v)) return 'Enter a valid email';
+    return null;
+  }
+
+  /// Requires a non-empty value. Pass [field] to name it in the message.
+  static String? notEmpty(String? value, {String field = 'This field'}) {
+    if (value == null || value.trim().isEmpty) return '\$field is required';
+    return null;
+  }
+
+  /// Requires at least [length] characters.
+  static String? minLength(String? value, int length) {
+    if ((value ?? '').length < length) {
+      return 'Must be at least \$length characters';
+    }
+    return null;
+  }
+}
+''';
+
+  static const extensions = '''
+import 'package:flutter/material.dart';
+
+/// Ergonomic shortcuts on [BuildContext].
+extension BuildContextX on BuildContext {
+  /// The active [ThemeData].
+  ThemeData get theme => Theme.of(this);
+
+  /// The active [TextTheme].
+  TextTheme get textTheme => Theme.of(this).textTheme;
+
+  /// The active [ColorScheme].
+  ColorScheme get colors => Theme.of(this).colorScheme;
+
+  /// The [MediaQueryData.size] of the current view.
+  Size get screenSize => MediaQuery.sizeOf(this);
+}
+
+/// Small [String] helpers.
+extension StringX on String {
+  /// Uppercases the first character, leaving the rest untouched.
+  String get capitalized =>
+      isEmpty ? this : '\${this[0].toUpperCase()}\${substring(1)}';
+
+  /// Whether the string is a syntactically valid email.
+  bool get isEmail =>
+      RegExp(r'^[\\w.+-]+@[\\w-]+\\.[\\w.-]+\$').hasMatch(trim());
+}
+''';
+
+  // ─── Shared (cross-feature) layer ──────────────────────────────
+
+  /// Single import for the cross-feature layer: widgets, models and services
+  /// reused by more than one feature but not part of core infrastructure.
+  static const sharedBarrel = '''
+export 'models/models.dart';
+export 'services/services.dart';
+export 'widgets/widgets.dart';
+''';
+
+  static const widgetsBarrel = '''
+export 'app_loader.dart';
+export 'primary_button.dart';
+''';
+
+  static const appLoader = '''
+import 'package:flutter/material.dart';
+
+/// Centered, theme-aware progress indicator used across features.
+class AppLoader extends StatelessWidget {
+  const AppLoader({super.key, this.size = 28});
+
+  /// Diameter of the spinner.
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox.square(
+        dimension: size,
+        child: const CircularProgressIndicator(strokeWidth: 3),
+      ),
+    );
+  }
+}
+''';
+
+  static const primaryButton = '''
+import 'package:flutter/material.dart';
+
+/// Full-width primary action button with a built-in loading state.
+class PrimaryButton extends StatelessWidget {
+  const PrimaryButton({
+    required this.label,
+    super.key,
+    this.onPressed,
+    this.isLoading = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading
+            ? const SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(label),
+      ),
+    );
+  }
+}
+''';
+
+  static const modelsBarrel = "export 'result.dart';\n";
+
+  static const resultModel = '''
+/// A minimal success/failure wrapper for operations that can fail without
+/// throwing — handy for repository and service return types.
+///
+/// ```dart
+/// final result = await repo.login(email, password);
+/// switch (result) {
+///   case Success(:final value):
+///     // use value
+///   case Failure(:final error):
+///     // show error
+/// }
+/// ```
+sealed class Result<T> {
+  const Result();
+
+  const factory Result.success(T value) = Success<T>;
+  const factory Result.failure(Object error) = Failure<T>;
+
+  /// Whether this is a [Success].
+  bool get isSuccess => this is Success<T>;
+}
+
+final class Success<T> extends Result<T> {
+  const Success(this.value);
+  final T value;
+}
+
+final class Failure<T> extends Result<T> {
+  const Failure(this.error);
+  final Object error;
+}
+''';
+
+  static const servicesBarrel = "export 'logger_service.dart';\n";
+
+  static const loggerService = '''
+import 'dart:developer' as developer;
+
+/// Dependency-free logging facade over `dart:developer`.
+///
+/// Registered in DI so features log through a single seam that can later be
+/// swapped for Crashlytics, Sentry, etc. without touching call sites.
+class LoggerService {
+  const LoggerService({this.name = 'app'});
+
+  /// Logical channel name shown alongside each entry.
+  final String name;
+
+  void info(String message) => developer.log(message, name: name);
+
+  void error(String message, [Object? error, StackTrace? stackTrace]) =>
+      developer.log(
+        message,
+        name: name,
+        error: error,
+        stackTrace: stackTrace,
+        level: 1000,
+      );
+}
+''';
+
 
   // ─── Cache ─────────────────────────────────────────────────────
 
@@ -506,21 +951,42 @@ ENCRYPTION_KEY=encry1234567890ABCDEF12GHIJK34LMNOP098QRSTUVWXYZabcdefghe567ijklm
   static const diSetup = '''
 import 'package:env/env.dart';
 import 'package:get_it/get_it.dart';
-import 'package:{{project_name.snakeCase()}}/core/cache/cached_storage.dart';
 import 'package:relax_storage/relax_storage.dart';
+import 'package:{{project_name.snakeCase()}}/core/cache/cached_storage.dart';
+import 'package:{{project_name.snakeCase()}}/core/database/app_database.dart';
+import 'package:{{project_name.snakeCase()}}/core/encryption/app_encrypter.dart';
+import 'package:{{project_name.snakeCase()}}/core/network/api_client.dart';
+import 'package:{{project_name.snakeCase()}}/core/websocket/socket_service.dart';
+import 'package:{{project_name.snakeCase()}}/shared/services/logger_service.dart';
 
 final getIt = GetIt.instance;
 
+/// Wires the core infrastructure into the service locator.
+///
+/// Called once from `bootstrap` before `runApp`. The database is registered
+/// lazily (`getAsync`) so it only opens the first time it is requested.
 Future<void> setUpRegister(EnvValue env) async {
   await RelaxStorage.init();
-  final cachedStorage = CachedStorage(env);
 
-  getIt.registerSingleton<EnvValue>(env);
-  getIt.registerSingleton<CachedStorage>(cachedStorage);
+  final cachedStorage = CachedStorage(env);
+  final encryptionKey = env(Env.encryptionKey);
+
+  getIt
+    ..registerSingleton<EnvValue>(env)
+    ..registerSingleton<CachedStorage>(cachedStorage)
+    ..registerSingleton<AppEncrypter>(AppEncrypter(encryptionKey))
+    ..registerLazySingleton<LoggerService>(LoggerService.new)
+    ..registerLazySingleton<SocketService>(SocketService.new)
+    ..registerLazySingleton<ApiClient>(
+      () => ApiClient(env: env, storage: cachedStorage),
+    )
+    ..registerLazySingletonAsync<AppDatabase>(
+      () => AppDatabase.open(encryptionKey),
+    );
 
   // Register your repositories and services here, for example:
   // getIt.registerLazySingleton<AuthRepository>(
-  //   () => AuthRepositoryImpl(env: env),
+  //   () => AuthRepositoryImpl(api: getIt<ApiClient>()),
   // );
 }
 ''';

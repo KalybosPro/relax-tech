@@ -58,7 +58,7 @@ void main() {
       );
 
       final theme = File(
-        '${tempDir.path}/test_app/lib/core/theme/app_theme.dart',
+        '${tempDir.path}/test_app/lib/core/ui/theme/app_theme.dart',
       ).readAsStringSync();
       expect(theme, contains('static ThemeData get light'));
       expect(theme, contains('static ThemeData get dark'));
@@ -74,7 +74,7 @@ void main() {
       );
 
       final colors = File(
-        '${tempDir.path}/test_app/lib/core/theme/app_colors.dart',
+        '${tempDir.path}/test_app/lib/core/ui/theme/app_colors.dart',
       ).readAsStringSync();
       expect(colors, contains('static const seed'));
       expect(colors, contains('0xFF6750A4'));
@@ -89,7 +89,7 @@ void main() {
       );
 
       final colors = File(
-        '${tempDir.path}/test_app/lib/core/theme/app_colors.dart',
+        '${tempDir.path}/test_app/lib/core/ui/theme/app_colors.dart',
       ).readAsStringSync();
       expect(colors, contains('0xFF1565C0'));
     });
@@ -103,7 +103,7 @@ void main() {
       );
 
       final typo = File(
-        '${tempDir.path}/test_app/lib/core/theme/app_typography.dart',
+        '${tempDir.path}/test_app/lib/core/ui/theme/app_typography.dart',
       ).readAsStringSync();
       expect(typo, contains("'Poppins'"));
     });
@@ -345,7 +345,7 @@ void main() {
           outputDirectory: tempDir,
         );
 
-        final base = '${tempDir.path}/test_app/lib/core/theme';
+        final base = '${tempDir.path}/test_app/lib/core/ui/theme';
         expect(File('$base/app_theme.dart').existsSync(), isTrue);
         expect(File('$base/app_colors.dart').existsSync(), isTrue);
         expect(File('$base/app_typography.dart').existsSync(), isTrue);
