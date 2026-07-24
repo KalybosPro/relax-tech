@@ -10,7 +10,7 @@ abstract final class GetxAppTemplate {
     TemplateFile(SharedTemplate.p('pubspec.yaml'), _pubspec),
     TemplateFile(
       SharedTemplate.p('README.md'),
-      SharedTemplate.readme('GetX', 'controllers/ → GetxControllers'),
+      SharedTemplate.readme('GetX', 'controllers/ (GetxController)'),
     ),
 
     TemplateFile(
@@ -29,13 +29,10 @@ abstract final class GetxAppTemplate {
       SharedTemplate.p('lib/main_production.dart'),
       SharedTemplate.mainProduction,
     ),
-    TemplateFile(
-      SharedTemplate.p('lib/app/app.dart'),
-      SharedTemplate.appBarrel,
-    ),
+    TemplateFile(SharedTemplate.p('lib/app/app.dart'), SharedTemplate.appBarrel),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
     TemplateFile(
-      SharedTemplate.p('lib/app/router/app_pages.dart'),
+      SharedTemplate.p('lib/core/routing/app_pages.dart'),
       SharedTemplate.appPagesGetx,
     ),
 
@@ -43,21 +40,26 @@ abstract final class GetxAppTemplate {
       SharedTemplate.p('lib/features/features.dart'),
       SharedTemplate.featuresBarrel,
     ),
+    ...SharedTemplate.homeSharedFiles(),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/controllers/home_controller.dart'),
+      SharedTemplate.p(
+        'lib/features/home/presentation/controllers/home_controller.dart',
+      ),
       _homeController,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/bindings/home_binding.dart'),
+      SharedTemplate.p(
+        'lib/features/home/presentation/controllers/home_binding.dart',
+      ),
       _homeBinding,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_page.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_page.dart'),
       _homePage,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_view.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_view.dart'),
       _homeView,
     ),
 
@@ -79,6 +81,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
   get: ^4.7.2
   get_it: ^8.0.3
   slang: ^4.14.0
@@ -93,9 +98,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-  
   flutter_lints: ^5.0.0
   build_runner: ^2.4.0
   relax_orm_generator: ^0.1.7
@@ -110,8 +112,8 @@ import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
+import '../../core/routing/app_pages.dart';
 import '../../features/features.dart';
-import '../router/app_pages.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -138,25 +140,42 @@ class App extends StatelessWidget {
 ''';
 
   static const _homeBarrel = '''
-export 'controllers/home_controller.dart';
-export 'bindings/home_binding.dart';
-export 'view/home_page.dart';
+export 'domain/entities/home_entity.dart';
+export 'presentation/controllers/home_binding.dart';
+export 'presentation/controllers/home_controller.dart';
+export 'presentation/pages/home_page.dart';
+export 'presentation/states/home_state.dart';
 ''';
 
   static const _homeController = '''
 import 'package:get/get.dart';
 
+import '../../data/datasources/home_local_datasource.dart';
+import '../../data/repositories/home_repository_impl.dart';
+import '../../domain/usecases/get_home_content_usecase.dart';
+import '../states/home_state.dart';
+
 class HomeController extends GetxController {
-  final isLoaded = false.obs;
+  HomeController({GetHomeContentUseCase? getContent})
+      : _getContent = getContent ??
+            const GetHomeContentUseCase(
+              HomeRepositoryImpl(HomeLocalDatasource()),
+            );
+
+  final GetHomeContentUseCase _getContent;
+
+  final Rx<HomeState> state = Rx<HomeState>(const HomeLoading());
 
   @override
   void onInit() {
     super.onInit();
-    _init();
+    load();
   }
 
-  Future<void> _init() async {
-    isLoaded.value = true;
+  Future<void> load() async {
+    state.value = const HomeLoading();
+    final content = await _getContent();
+    state.value = HomeLoaded(content);
   }
 }
 ''';
@@ -164,7 +183,7 @@ class HomeController extends GetxController {
   static const _homeBinding = '''
 import 'package:get/get.dart';
 
-import '../controllers/home_controller.dart';
+import 'home_controller.dart';
 
 class HomeBinding extends Bindings {
   @override
@@ -189,9 +208,7 @@ class HomePage extends StatelessWidget {
   static const routePath = '/';
 
   @override
-  Widget build(BuildContext context) {
-    return const HomeView();
-  }
+  Widget build(BuildContext context) => const HomeView();
 }
 ''';
 
@@ -200,8 +217,9 @@ class HomePage extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/core.dart';
+import '../../../../core/core.dart';
 import '../controllers/home_controller.dart';
+import '../states/home_state.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -212,19 +230,17 @@ class HomeView extends GetView<HomeController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '{{project_name.titleCase()}}',
-          style: theme.textTheme.titleLarge,
-        ),
+        title: Text(t.appName, style: theme.textTheme.titleLarge),
       ),
-      body: Obx(() {
-        if (!controller.isLoaded.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return Center(
+      body: Obx(
+        () => switch (controller.state.value) {
+          HomeLoading() => const Loading(),
+          HomeError(:final message) => ErrorView(message: message),
+          HomeLoaded() => Center(
 ${SharedTemplate.welcomeViewBody('GetX')}
-        );
-      }),
+          ),
+        },
+      ),
     );
   }
 }

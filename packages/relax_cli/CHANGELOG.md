@@ -1,3 +1,14 @@
+## 1.3.0
+
+- **Changed** the generated app to a full **Clean Architecture** (feature-first) across all four state managers (Bloc→Cubit, Provider, Riverpod, GetX), superseding the 1.2.0 layout.
+  - **Vertical-slice features.** Every feature is now `data/` (datasources, models, mappers, repository impl) + `domain/` (entities, repository contract, use cases, failure) + `presentation/` (pages, states, controller) + `routes.dart`. `relax generate feature <name>` scaffolds the entire slice (15 files) and wires the route; the sample `home/` feature is a complete, offline (network-free) slice.
+  - **Expanded `core/`** into 16 infrastructure folders: `config/` (app config, constants, flavors), `network/` (Dio client + `ApiClient` + auth/logging/retry interceptors + `NetworkInfo`), `database/`, `websocket/` (client + service), `cache/` (encrypted storage + `MemoryCache`), `encryption/`, `storage/` (secure storage, preferences, files), `services/` (connectivity, notifications, permissions, upload/download, analytics), `routing/` (router, routes, guards), `localization/`, `theme/` (colors, typography, theme, spacing, radius), `ui/` (generic widgets: loading, error, button, avatar, card), `errors/` (failures, exceptions, error mapper, `Result`), `extensions/`, `mixins/`, `utils/` (validators, logger, debouncer, formatter), and `dependency_injection/`.
+  - **Router moved to `core/routing/`** (out of `app/`). `app/` now holds only the root widget.
+  - **Removed the `shared/` layer** — cross-feature widgets/utilities are consolidated into `core/` (e.g. `core/ui/widgets`, `core/utils`, `core/extensions`).
+  - All of `core/` is reached through the `core/core.dart` barrel; features reference it by relative import, so the internal layout can evolve without touching feature code.
+- **Added** DI registration for the expanded services (`ApiClient`, `AppEncrypter`, `SocketService`, `MemoryCache`, connectivity/analytics/notification/permission/upload/download services, `AppConfig`, `NetworkInfo`, and lazy-async `AppDatabase`) in `core/dependency_injection/injection.dart`.
+- **Updated** `relax generate page` to scaffold into `presentation/pages/` against the feature's controller/state, and `relax generate router` to target `core/routing/`.
+
 ## 1.2.0
 
 - **Changed** the generated project architecture to a three-layer, feature-first layout across all four state managers (Bloc, Provider, Riverpod, GetX):

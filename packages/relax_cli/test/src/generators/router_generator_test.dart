@@ -62,9 +62,9 @@ class App extends StatelessWidget {
 
   File('${dir.path}/lib/features/home/home.dart')
     ..createSync(recursive: true)
-    ..writeAsStringSync("export 'view/home_page.dart';\n");
+    ..writeAsStringSync("export 'presentation/pages/home_page.dart';\n");
 
-  File('${dir.path}/lib/features/home/view/home_page.dart')
+  File('${dir.path}/lib/features/home/presentation/pages/home_page.dart')
     ..createSync(recursive: true)
     ..writeAsStringSync('''
 import 'package:flutter/material.dart';
@@ -108,7 +108,7 @@ void main() {
       expect(result.homePageWired, isTrue);
       expect(result.pubspecUpdated, isTrue);
 
-      final router = File('${tempDir.path}/lib/app/router/app_router.dart');
+      final router = File('${tempDir.path}/lib/core/routing/app_router.dart');
       expect(router.existsSync(), isTrue);
 
       // The aggregate barrel is created and exports the existing home feature.
@@ -121,12 +121,12 @@ void main() {
       ).readAsStringSync();
       expect(appView, contains('MaterialApp.router('));
       expect(appView, contains('routerConfig: appRouter'));
-      expect(appView, contains("import '../router/app_router.dart';"));
+      expect(appView, contains("import '../../core/routing/app_router.dart';"));
       // The now-unused home barrel import is dropped.
       expect(appView, isNot(contains("features/home/home.dart")));
 
       final home = File(
-        '${tempDir.path}/lib/features/home/view/home_page.dart',
+        '${tempDir.path}/lib/features/home/presentation/pages/home_page.dart',
       ).readAsStringSync();
       expect(home, contains("static const routePath = '/';"));
 
@@ -149,7 +149,7 @@ void main() {
       expect(result.pubspecUpdated, isFalse);
 
       expect(
-        File('${tempDir.path}/lib/app/router/app_pages.dart').existsSync(),
+        File('${tempDir.path}/lib/core/routing/app_pages.dart').existsSync(),
         isTrue,
       );
 
@@ -158,7 +158,7 @@ void main() {
       ).readAsStringSync();
       expect(appView, contains('getPages: appPages'));
       expect(appView, contains('initialRoute: HomePage.routePath'));
-      expect(appView, contains("import '../router/app_pages.dart';"));
+      expect(appView, contains("import '../../core/routing/app_pages.dart';"));
       // GetX still references HomePage.routePath, so its import stays.
       expect(appView, contains('features/home/home.dart'));
 
@@ -183,7 +183,7 @@ void main() {
     test('warns when the home page is missing instead of failing', () async {
       _seedLegacyProject(tempDir, getx: false);
       File(
-        '${tempDir.path}/lib/features/home/view/home_page.dart',
+        '${tempDir.path}/lib/features/home/presentation/pages/home_page.dart',
       ).deleteSync();
       final gen = RouterGenerator(logger: Logger(level: Level.quiet));
 
@@ -209,7 +209,7 @@ void main() {
         final code = await runner.run(['generate', 'router']);
         expect(code, equals(ExitCode.success.code));
         expect(
-          File('${tempDir.path}/lib/app/router/app_router.dart').existsSync(),
+          File('${tempDir.path}/lib/core/routing/app_router.dart').existsSync(),
           isTrue,
         );
       } finally {

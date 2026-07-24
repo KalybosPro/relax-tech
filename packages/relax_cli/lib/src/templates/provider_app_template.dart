@@ -10,7 +10,7 @@ abstract final class ProviderAppTemplate {
     TemplateFile(SharedTemplate.p('pubspec.yaml'), _pubspec),
     TemplateFile(
       SharedTemplate.p('README.md'),
-      SharedTemplate.readme('Provider', 'notifiers/ → ChangeNotifiers'),
+      SharedTemplate.readme('Provider', 'controllers/ (ChangeNotifier)'),
     ),
 
     TemplateFile(
@@ -29,13 +29,10 @@ abstract final class ProviderAppTemplate {
       SharedTemplate.p('lib/main_production.dart'),
       SharedTemplate.mainProduction,
     ),
-    TemplateFile(
-      SharedTemplate.p('lib/app/app.dart'),
-      SharedTemplate.appBarrel,
-    ),
+    TemplateFile(SharedTemplate.p('lib/app/app.dart'), SharedTemplate.appBarrel),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
     TemplateFile(
-      SharedTemplate.p('lib/app/router/app_router.dart'),
+      SharedTemplate.p('lib/core/routing/app_router.dart'),
       SharedTemplate.appRouter,
     ),
 
@@ -43,21 +40,20 @@ abstract final class ProviderAppTemplate {
       SharedTemplate.p('lib/features/features.dart'),
       SharedTemplate.featuresBarrel,
     ),
+    ...SharedTemplate.homeSharedFiles(),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/notifiers/home_notifier.dart'),
+      SharedTemplate.p(
+        'lib/features/home/presentation/controllers/home_notifier.dart',
+      ),
       _homeNotifier,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/models/home_state.dart'),
-      _homeState,
-    ),
-    TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_page.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_page.dart'),
       _homePage,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_view.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_view.dart'),
       _homeView,
     ),
 
@@ -81,7 +77,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  
+
   provider: ^6.1.0
   get_it: ^8.0.3
   go_router: ^14.6.0
@@ -107,12 +103,10 @@ flutter:
 
   static const _appView = '''
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
-import '../../features/features.dart';
-import '../router/app_router.dart';
+import '../../core/routing/app_router.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -121,20 +115,15 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return TranslationProvider(
       child: Builder(
-        builder: (context) => MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => HomeNotifier()..init()),
-          ],
-          child: MaterialApp.router(
-            title: t.appName,
-            debugShowCheckedModeBanner: false,
-            locale: TranslationProvider.of(context).flutterLocale,
-            supportedLocales: AppLocaleUtils.supportedLocales,
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            routerConfig: appRouter,
-          ),
+        builder: (context) => MaterialApp.router(
+          title: t.appName,
+          debugShowCheckedModeBanner: false,
+          locale: TranslationProvider.of(context).flutterLocale,
+          supportedLocales: AppLocaleUtils.supportedLocales,
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          routerConfig: appRouter,
         ),
       ),
     );
@@ -143,48 +132,47 @@ class App extends StatelessWidget {
 ''';
 
   static const _homeBarrel = '''
-export 'notifiers/home_notifier.dart';
-export 'models/home_state.dart';
-export 'view/home_page.dart';
+export 'domain/entities/home_entity.dart';
+export 'presentation/controllers/home_notifier.dart';
+export 'presentation/pages/home_page.dart';
+export 'presentation/states/home_state.dart';
 ''';
 
   static const _homeNotifier = '''
 import 'package:flutter/foundation.dart';
 
-import '../models/home_state.dart';
+import '../../data/datasources/home_local_datasource.dart';
+import '../../data/repositories/home_repository_impl.dart';
+import '../../domain/usecases/get_home_content_usecase.dart';
+import '../states/home_state.dart';
 
 class HomeNotifier extends ChangeNotifier {
-  HomeState _state = const HomeState.initial();
+  HomeNotifier({GetHomeContentUseCase? getContent})
+      : _getContent = getContent ??
+            const GetHomeContentUseCase(
+              HomeRepositoryImpl(HomeLocalDatasource()),
+            );
 
+  final GetHomeContentUseCase _getContent;
+
+  HomeState _state = const HomeLoading();
   HomeState get state => _state;
 
-  Future<void> init() async {
-    _state = const HomeState.loaded();
+  Future<void> load() async {
+    _state = const HomeLoading();
+    notifyListeners();
+    final content = await _getContent();
+    _state = HomeLoaded(content);
     notifyListeners();
   }
 }
 ''';
 
-  static const _homeState = '''
-sealed class HomeState {
-  const HomeState();
-
-  const factory HomeState.initial() = HomeInitial;
-  const factory HomeState.loaded() = HomeLoaded;
-}
-
-final class HomeInitial extends HomeState {
-  const HomeInitial();
-}
-
-final class HomeLoaded extends HomeState {
-  const HomeLoaded();
-}
-''';
-
   static const _homePage = '''
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../controllers/home_notifier.dart';
 import 'home_view.dart';
 
 class HomePage extends StatelessWidget {
@@ -198,7 +186,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HomeView();
+    return ChangeNotifierProvider(
+      create: (_) => HomeNotifier()..load(),
+      child: const HomeView(),
+    );
   }
 }
 ''';
@@ -208,9 +199,9 @@ class HomePage extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/core.dart';
-import '../models/home_state.dart';
-import '../notifiers/home_notifier.dart';
+import '../../../../core/core.dart';
+import '../controllers/home_notifier.dart';
+import '../states/home_state.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -222,15 +213,11 @@ class HomeView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '{{project_name.titleCase()}}',
-          style: theme.textTheme.titleLarge,
-        ),
+        title: Text(t.appName, style: theme.textTheme.titleLarge),
       ),
       body: switch (state) {
-        HomeInitial() => const Center(
-            child: CircularProgressIndicator(),
-          ),
+        HomeLoading() => const Loading(),
+        HomeError(:final message) => ErrorView(message: message),
         HomeLoaded() => Center(
 ${SharedTemplate.welcomeViewBody('Provider')}
           ),

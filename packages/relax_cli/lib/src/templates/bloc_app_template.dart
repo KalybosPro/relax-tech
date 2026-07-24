@@ -2,20 +2,20 @@ import 'package:mason/mason.dart';
 
 import 'shared_template.dart';
 
-/// All template files for a Flutter app with Bloc architecture.
+/// All template files for a Flutter app with Bloc (Cubit) architecture.
 abstract final class BlocAppTemplate {
   static List<TemplateFile> get files => [
-    // ── Shared core (analysis_options, theme) ───────────────────
+    // ── Shared core layer ───────────────────────────────────────
     ...SharedTemplate.coreFiles(),
 
     // ── Root files ──────────────────────────────────────────────
     TemplateFile(SharedTemplate.p('pubspec.yaml'), _pubspec),
     TemplateFile(
       SharedTemplate.p('README.md'),
-      SharedTemplate.readme('Bloc', 'bloc/     → Bloc, Events, States'),
+      SharedTemplate.readme('Bloc', 'controllers/ (Cubit)'),
     ),
 
-    // ── lib/ (flavor entry points) ────────────────────────────────
+    // ── lib/ (flavor entry points) ──────────────────────────────
     TemplateFile(
       SharedTemplate.p('lib/bootstrap.dart'),
       SharedTemplate.bootstrap,
@@ -32,40 +32,35 @@ abstract final class BlocAppTemplate {
       SharedTemplate.p('lib/main_production.dart'),
       SharedTemplate.mainProduction,
     ),
-    TemplateFile(
-      SharedTemplate.p('lib/app/app.dart'),
-      SharedTemplate.appBarrel,
-    ),
+    TemplateFile(SharedTemplate.p('lib/app/app.dart'), SharedTemplate.appBarrel),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
+
+    // ── Router (lives in core/routing) ──────────────────────────
     TemplateFile(
-      SharedTemplate.p('lib/app/router/app_router.dart'),
+      SharedTemplate.p('lib/core/routing/app_router.dart'),
       SharedTemplate.appRouter,
     ),
 
-    // ── lib/features/ ────────────────────────────────────────────
+    // ── lib/features/ ───────────────────────────────────────────
     TemplateFile(
       SharedTemplate.p('lib/features/features.dart'),
       SharedTemplate.featuresBarrel,
     ),
+    // Home — shared data/domain + Bloc presentation.
+    ...SharedTemplate.homeSharedFiles(),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/bloc/home_bloc.dart'),
-      _homeBloc,
+      SharedTemplate.p(
+        'lib/features/home/presentation/controllers/home_cubit.dart',
+      ),
+      _homeCubit,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/bloc/home_event.dart'),
-      _homeEvent,
-    ),
-    TemplateFile(
-      SharedTemplate.p('lib/features/home/bloc/home_state.dart'),
-      _homeState,
-    ),
-    TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_page.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_page.dart'),
       _homePage,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_view.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_view.dart'),
       _homeView,
     ),
 
@@ -90,7 +85,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  
+
   flutter_bloc: ^9.1.1
   bloc: ^9.2.0
   equatable: ^2.0.7
@@ -121,7 +116,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
-import '../router/app_router.dart';
+import '../../core/routing/app_router.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -147,62 +142,36 @@ class App extends StatelessWidget {
 ''';
 
   static const _homeBarrel = '''
-export 'bloc/home_bloc.dart';
-export 'view/home_page.dart';
+export 'domain/entities/home_entity.dart';
+export 'presentation/controllers/home_cubit.dart';
+export 'presentation/pages/home_page.dart';
+export 'presentation/states/home_state.dart';
 ''';
 
-  static const _homeBloc = '''
-import 'package:bloc/bloc.dart';
-import 'package:equatable/equatable.dart';
+  static const _homeCubit = '''
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-part 'home_event.dart';
-part 'home_state.dart';
+import '../../data/datasources/home_local_datasource.dart';
+import '../../data/repositories/home_repository_impl.dart';
+import '../../domain/usecases/get_home_content_usecase.dart';
+import '../states/home_state.dart';
 
-class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  HomeBloc() : super(const HomeInitial()) {
-    on<HomeStarted>(_onStarted);
+/// Loads the home content through the domain use case.
+class HomeCubit extends Cubit<HomeState> {
+  HomeCubit({GetHomeContentUseCase? getContent})
+      : _getContent = getContent ??
+            const GetHomeContentUseCase(
+              HomeRepositoryImpl(HomeLocalDatasource()),
+            ),
+        super(const HomeLoading());
+
+  final GetHomeContentUseCase _getContent;
+
+  Future<void> load() async {
+    emit(const HomeLoading());
+    final content = await _getContent();
+    emit(HomeLoaded(content));
   }
-
-  Future<void> _onStarted(
-    HomeStarted event,
-    Emitter<HomeState> emit,
-  ) async {
-    emit(const HomeLoaded());
-  }
-}
-''';
-
-  static const _homeEvent = '''
-part of 'home_bloc.dart';
-
-sealed class HomeEvent extends Equatable {
-  const HomeEvent();
-
-  @override
-  List<Object> get props => [];
-}
-
-final class HomeStarted extends HomeEvent {
-  const HomeStarted();
-}
-''';
-
-  static const _homeState = '''
-part of 'home_bloc.dart';
-
-sealed class HomeState extends Equatable {
-  const HomeState();
-
-  @override
-  List<Object> get props => [];
-}
-
-final class HomeInitial extends HomeState {
-  const HomeInitial();
-}
-
-final class HomeLoaded extends HomeState {
-  const HomeLoaded();
 }
 ''';
 
@@ -210,10 +179,9 @@ final class HomeLoaded extends HomeState {
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../bloc/home_bloc.dart';
+import '../controllers/home_cubit.dart';
 import 'home_view.dart';
 
-/// Wraps [HomeView] with its [HomeBloc] provider.
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -226,7 +194,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => HomeBloc()..add(const HomeStarted()),
+      create: (_) => HomeCubit()..load(),
       child: const HomeView(),
     );
   }
@@ -238,8 +206,9 @@ class HomePage extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/core.dart';
-import '../bloc/home_bloc.dart';
+import '../../../../core/core.dart';
+import '../controllers/home_cubit.dart';
+import '../states/home_state.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -250,17 +219,13 @@ class HomeView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '{{project_name.titleCase()}}',
-          style: theme.textTheme.titleLarge,
-        ),
+        title: Text(t.appName, style: theme.textTheme.titleLarge),
       ),
-      body: BlocBuilder<HomeBloc, HomeState>(
+      body: BlocBuilder<HomeCubit, HomeState>(
         builder: (context, state) {
           return switch (state) {
-            HomeInitial() => const Center(
-                child: CircularProgressIndicator(),
-              ),
+            HomeLoading() => const Loading(),
+            HomeError(:final message) => ErrorView(message: message),
             HomeLoaded() => Center(
 ${SharedTemplate.welcomeViewBody('Bloc')}
               ),

@@ -130,7 +130,7 @@ class FeatureGenerator {
     // feature) so `relax generate page` can register a page as a child route.
     final (routerFile, routeSnippet) = switch (architecture) {
       Architecture.getx => (
-        File('${projectDir.path}/lib/app/router/app_pages.dart'),
+        File('${projectDir.path}/lib/core/routing/app_pages.dart'),
         '  GetPage(\n'
             '    name: $pageClass.routePath,\n'
             '    page: () => const $pageClass(),\n'
@@ -138,7 +138,7 @@ class FeatureGenerator {
             '  ),',
       ),
       _ => (
-        File('${projectDir.path}/lib/app/router/app_router.dart'),
+        File('${projectDir.path}/lib/core/routing/app_router.dart'),
         '    GoRoute(\n'
             '      path: $pageClass.routePath,\n'
             '      name: $pageClass.routeName,\n'

@@ -48,7 +48,7 @@ void main() {
 
         expect(
           File(
-            '${tempDir.path}/app/lib/features/home/view/detail_page.dart',
+            '${tempDir.path}/app/lib/features/home/presentation/pages/detail_page.dart',
           ).existsSync(),
           isTrue,
         );
@@ -57,7 +57,7 @@ void main() {
         final barrel = File(
           '${tempDir.path}/app/lib/features/home/home.dart',
         ).readAsStringSync();
-        expect(barrel, contains("export 'view/detail_page.dart';"));
+        expect(barrel, contains("export 'presentation/pages/detail_page.dart';"));
       } finally {
         Directory.current = originalDir;
       }
@@ -74,14 +74,14 @@ void main() {
 
         expect(
           File(
-            '${tempDir.path}/app/lib/features/home/view/settings_page.dart',
+            '${tempDir.path}/app/lib/features/home/presentation/pages/settings_page.dart',
           ).existsSync(),
           isTrue,
         );
         final barrel = File(
           '${tempDir.path}/app/lib/features/home/home.dart',
         ).readAsStringSync();
-        expect(barrel, contains("export 'view/settings_page.dart';"));
+        expect(barrel, contains("export 'presentation/pages/settings_page.dart';"));
       } finally {
         Directory.current = originalDir;
       }
@@ -99,7 +99,7 @@ void main() {
         expect(code, equals(ExitCode.success.code));
 
         final router = File(
-          '${tempDir.path}/app/lib/app/router/app_router.dart',
+          '${tempDir.path}/app/lib/core/routing/app_router.dart',
         ).readAsStringSync();
 
         // The child GoRoute is nested under the product feature route.
@@ -114,7 +114,7 @@ void main() {
         );
 
         final page = File(
-          '${tempDir.path}/app/lib/features/product/view/product_details_page.dart',
+          '${tempDir.path}/app/lib/features/product/presentation/pages/product_details_page.dart',
         ).readAsStringSync();
         expect(
           page,
@@ -134,7 +134,7 @@ void main() {
       try {
         await runner.run(['g', 'feature', 'product']);
         final router = File(
-          '${tempDir.path}/app/lib/app/router/app_router.dart',
+          '${tempDir.path}/app/lib/core/routing/app_router.dart',
         );
         final before = router.readAsStringSync();
 

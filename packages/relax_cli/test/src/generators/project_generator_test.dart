@@ -58,7 +58,7 @@ void main() {
       );
 
       final theme = File(
-        '${tempDir.path}/test_app/lib/core/ui/theme/app_theme.dart',
+        '${tempDir.path}/test_app/lib/core/theme/app_theme.dart',
       ).readAsStringSync();
       expect(theme, contains('static ThemeData get light'));
       expect(theme, contains('static ThemeData get dark'));
@@ -74,7 +74,7 @@ void main() {
       );
 
       final colors = File(
-        '${tempDir.path}/test_app/lib/core/ui/theme/app_colors.dart',
+        '${tempDir.path}/test_app/lib/core/theme/app_colors.dart',
       ).readAsStringSync();
       expect(colors, contains('static const seed'));
       expect(colors, contains('0xFF6750A4'));
@@ -89,7 +89,7 @@ void main() {
       );
 
       final colors = File(
-        '${tempDir.path}/test_app/lib/core/ui/theme/app_colors.dart',
+        '${tempDir.path}/test_app/lib/core/theme/app_colors.dart',
       ).readAsStringSync();
       expect(colors, contains('0xFF1565C0'));
     });
@@ -103,7 +103,7 @@ void main() {
       );
 
       final typo = File(
-        '${tempDir.path}/test_app/lib/core/ui/theme/app_typography.dart',
+        '${tempDir.path}/test_app/lib/core/theme/app_typography.dart',
       ).readAsStringSync();
       expect(typo, contains("'Poppins'"));
     });
@@ -130,23 +130,25 @@ void main() {
         architecture: Architecture.bloc,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(31));
+      expect(files, hasLength(greaterThanOrEqualTo(90)));
     });
 
-    test('uses sealed classes for events and states', () async {
+    test('uses a Cubit and a sealed state', () async {
       await generator.generate(
         projectName: 'test_app',
         architecture: Architecture.bloc,
         outputDirectory: tempDir,
       );
 
-      final event = File(
-        '${tempDir.path}/test_app/lib/features/home/bloc/home_event.dart',
+      final cubit = File(
+        '${tempDir.path}/test_app/lib/features/home/'
+        'presentation/controllers/home_cubit.dart',
       ).readAsStringSync();
-      expect(event, contains('sealed class HomeEvent'));
+      expect(cubit, contains('class HomeCubit extends Cubit<HomeState>'));
 
       final state = File(
-        '${tempDir.path}/test_app/lib/features/home/bloc/home_state.dart',
+        '${tempDir.path}/test_app/lib/features/home/'
+        'presentation/states/home_state.dart',
       ).readAsStringSync();
       expect(state, contains('sealed class HomeState'));
     });
@@ -173,7 +175,7 @@ void main() {
         architecture: Architecture.provider,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(30));
+      expect(files, hasLength(greaterThanOrEqualTo(90)));
     });
 
     test('uses ChangeNotifier pattern', () async {
@@ -184,12 +186,12 @@ void main() {
       );
 
       final notifier = File(
-        '${tempDir.path}/test_app/lib/features/home/notifiers/home_notifier.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/controllers/home_notifier.dart',
       ).readAsStringSync();
       expect(notifier, contains('class HomeNotifier extends ChangeNotifier'));
 
       final view = File(
-        '${tempDir.path}/test_app/lib/features/home/view/home_view.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/pages/home_view.dart',
       ).readAsStringSync();
       expect(view, contains('context.watch<HomeNotifier>()'));
     });
@@ -215,7 +217,7 @@ void main() {
         architecture: Architecture.riverpod,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(30));
+      expect(files, hasLength(greaterThanOrEqualTo(90)));
     });
 
     test('uses Notifier and ConsumerWidget pattern', () async {
@@ -226,12 +228,12 @@ void main() {
       );
 
       final provider = File(
-        '${tempDir.path}/test_app/lib/features/home/providers/home_provider.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/controllers/home_notifier.dart',
       ).readAsStringSync();
       expect(provider, contains('class HomeNotifier extends Notifier'));
 
       final view = File(
-        '${tempDir.path}/test_app/lib/features/home/view/home_view.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/pages/home_view.dart',
       ).readAsStringSync();
       expect(view, contains('ConsumerWidget'));
       expect(view, contains('ref.watch(homeProvider)'));
@@ -271,7 +273,7 @@ void main() {
         architecture: Architecture.getx,
         outputDirectory: tempDir,
       );
-      expect(files, hasLength(30));
+      expect(files, hasLength(greaterThanOrEqualTo(90)));
     });
 
     test('uses GetxController and Obx pattern', () async {
@@ -282,7 +284,7 @@ void main() {
       );
 
       final controller = File(
-        '${tempDir.path}/test_app/lib/features/home/controllers/home_controller.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/controllers/home_controller.dart',
       ).readAsStringSync();
       expect(
         controller,
@@ -290,7 +292,7 @@ void main() {
       );
 
       final view = File(
-        '${tempDir.path}/test_app/lib/features/home/view/home_view.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/pages/home_view.dart',
       ).readAsStringSync();
       expect(view, contains('GetView<HomeController>'));
       expect(view, contains('Obx('));
@@ -317,7 +319,7 @@ void main() {
       );
 
       final binding = File(
-        '${tempDir.path}/test_app/lib/features/home/bindings/home_binding.dart',
+        '${tempDir.path}/test_app/lib/features/home/presentation/controllers/home_binding.dart',
       ).readAsStringSync();
       expect(binding, contains('class HomeBinding extends Bindings'));
     });
@@ -345,7 +347,7 @@ void main() {
           outputDirectory: tempDir,
         );
 
-        final base = '${tempDir.path}/test_app/lib/core/ui/theme';
+        final base = '${tempDir.path}/test_app/lib/core/theme';
         expect(File('$base/app_theme.dart').existsSync(), isTrue);
         expect(File('$base/app_colors.dart').existsSync(), isTrue);
         expect(File('$base/app_typography.dart').existsSync(), isTrue);

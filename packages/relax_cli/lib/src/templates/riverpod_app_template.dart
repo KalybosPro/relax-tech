@@ -10,7 +10,7 @@ abstract final class RiverpodAppTemplate {
     TemplateFile(SharedTemplate.p('pubspec.yaml'), _pubspec),
     TemplateFile(
       SharedTemplate.p('README.md'),
-      SharedTemplate.readme('Riverpod', 'providers/ → Notifiers & Providers'),
+      SharedTemplate.readme('Riverpod', 'controllers/ (Notifier)'),
     ),
 
     TemplateFile(
@@ -29,13 +29,10 @@ abstract final class RiverpodAppTemplate {
       SharedTemplate.p('lib/main_production.dart'),
       SharedTemplate.mainProduction,
     ),
-    TemplateFile(
-      SharedTemplate.p('lib/app/app.dart'),
-      SharedTemplate.appBarrel,
-    ),
+    TemplateFile(SharedTemplate.p('lib/app/app.dart'), SharedTemplate.appBarrel),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
     TemplateFile(
-      SharedTemplate.p('lib/app/router/app_router.dart'),
+      SharedTemplate.p('lib/core/routing/app_router.dart'),
       SharedTemplate.appRouter,
     ),
 
@@ -43,21 +40,20 @@ abstract final class RiverpodAppTemplate {
       SharedTemplate.p('lib/features/features.dart'),
       SharedTemplate.featuresBarrel,
     ),
+    ...SharedTemplate.homeSharedFiles(),
     TemplateFile(SharedTemplate.p('lib/features/home/home.dart'), _homeBarrel),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/providers/home_provider.dart'),
-      _homeProvider,
+      SharedTemplate.p(
+        'lib/features/home/presentation/controllers/home_notifier.dart',
+      ),
+      _homeNotifier,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/models/home_state.dart'),
-      _homeState,
-    ),
-    TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_page.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_page.dart'),
       _homePage,
     ),
     TemplateFile(
-      SharedTemplate.p('lib/features/home/view/home_view.dart'),
+      SharedTemplate.p('lib/features/home/presentation/pages/home_view.dart'),
       _homeView,
     ),
 
@@ -81,7 +77,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  
+
   flutter_riverpod: ^2.6.0
   get_it: ^8.0.3
   go_router: ^14.6.0
@@ -110,7 +106,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../core/core.dart';
-import '../router/app_router.dart';
+import '../../core/routing/app_router.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -136,43 +132,40 @@ class App extends StatelessWidget {
 ''';
 
   static const _homeBarrel = '''
-export 'providers/home_provider.dart';
-export 'models/home_state.dart';
-export 'view/home_page.dart';
+export 'domain/entities/home_entity.dart';
+export 'presentation/controllers/home_notifier.dart';
+export 'presentation/pages/home_page.dart';
+export 'presentation/states/home_state.dart';
 ''';
 
-  static const _homeProvider = '''
+  static const _homeNotifier = '''
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/home_state.dart';
+import '../../data/datasources/home_local_datasource.dart';
+import '../../data/repositories/home_repository_impl.dart';
+import '../../domain/usecases/get_home_content_usecase.dart';
+import '../states/home_state.dart';
 
 final homeProvider =
     NotifierProvider<HomeNotifier, HomeState>(HomeNotifier.new);
 
 class HomeNotifier extends Notifier<HomeState> {
+  late final GetHomeContentUseCase _getContent;
+
   @override
-  HomeState build() => const HomeState.initial();
-
-  void init() {
-    state = const HomeState.loaded();
+  HomeState build() {
+    _getContent = const GetHomeContentUseCase(
+      HomeRepositoryImpl(HomeLocalDatasource()),
+    );
+    Future.microtask(load);
+    return const HomeLoading();
   }
-}
-''';
 
-  static const _homeState = '''
-sealed class HomeState {
-  const HomeState();
-
-  const factory HomeState.initial() = HomeInitial;
-  const factory HomeState.loaded() = HomeLoaded;
-}
-
-final class HomeInitial extends HomeState {
-  const HomeInitial();
-}
-
-final class HomeLoaded extends HomeState {
-  const HomeLoaded();
+  Future<void> load() async {
+    state = const HomeLoading();
+    final content = await _getContent();
+    state = HomeLoaded(content);
+  }
 }
 ''';
 
@@ -180,10 +173,9 @@ final class HomeLoaded extends HomeState {
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/home_provider.dart';
 import 'home_view.dart';
 
-class HomePage extends ConsumerStatefulWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   /// Route name used with `context.goNamed(HomePage.routeName)`.
@@ -193,20 +185,7 @@ class HomePage extends ConsumerStatefulWidget {
   static const routePath = '/';
 
   @override
-  ConsumerState<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends ConsumerState<HomePage> {
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() => ref.read(homeProvider.notifier).init());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const HomeView();
-  }
+  Widget build(BuildContext context, WidgetRef ref) => const HomeView();
 }
 ''';
 
@@ -215,9 +194,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/core.dart';
-import '../models/home_state.dart';
-import '../providers/home_provider.dart';
+import '../../../../core/core.dart';
+import '../controllers/home_notifier.dart';
+import '../states/home_state.dart';
 
 class HomeView extends ConsumerWidget {
   const HomeView({super.key});
@@ -229,15 +208,11 @@ class HomeView extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '{{project_name.titleCase()}}',
-          style: theme.textTheme.titleLarge,
-        ),
+        title: Text(t.appName, style: theme.textTheme.titleLarge),
       ),
       body: switch (state) {
-        HomeInitial() => const Center(
-            child: CircularProgressIndicator(),
-          ),
+        HomeLoading() => const Loading(),
+        HomeError(:final message) => ErrorView(message: message),
         HomeLoaded() => Center(
 ${SharedTemplate.welcomeViewBody('Riverpod')}
           ),
