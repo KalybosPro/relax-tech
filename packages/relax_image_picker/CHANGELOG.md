@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-08-01
+
+### Added
+- **`galleryMode` — the in-app WhatsApp-style grid is back, as an opt-in.**
+  `RelaxImagePicker.pick(..., galleryMode: RelaxGalleryMode.inAppGrid)` renders
+  the device gallery (album selector, multi-select, "Selected photos" banner)
+  directly inside the sheet, powered by `photo_manager`.
+  - `RelaxGalleryMode.systemPicker` (default) keeps the permission-free OS
+    picker from 2.0.0.
+  - `inAppGrid` requires `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` (+ iOS
+    photo-library string) and a completed Google Play *Photo and Video
+    Permissions* declaration. See the README "Gallery modes" section.
+- Restored theme fields for the grid: `albumTextStyle`, `albumDropdownIcon`,
+  `limitedAccessLabel`, `manageAccessLabel`, and a `RelaxAssetTileBuilder`
+  (`assetTileBuilder`) for custom asset tiles.
+- Restored `AssetPreviewItem` for full-screen preview of live gallery assets.
+
+### Notes
+- `systemPicker` remains the default, so existing 2.0.0 apps are unaffected and
+  stay permission-free.
+
 ## [2.0.0] - 2026-07-13
 
 ### Changed — BREAKING

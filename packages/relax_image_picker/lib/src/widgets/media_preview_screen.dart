@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 import '../models/preview_item.dart';
 import '../models/relax_picker_theme.dart';
@@ -130,6 +132,10 @@ class _MediaPreviewScreenState extends State<MediaPreviewScreen> {
   String _label(PreviewItem item) {
     final t = widget.theme;
     switch (item) {
+      case AssetPreviewItem(:final asset):
+        return asset.type == AssetType.video
+            ? '${t.videoLabel} · ${_formatDuration(asset.videoDuration)}'
+            : t.photoLabel;
       case ImagePreviewItem():
         return t.photoLabel;
       case VideoPreviewItem(:final file):
@@ -157,6 +163,8 @@ class _PreviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (item) {
+      case AssetPreviewItem(:final asset):
+        return _AssetPage(asset: asset, theme: theme);
       case ImagePreviewItem(:final file):
         return _FileImagePage(path: file.path, theme: theme);
       case VideoPreviewItem(:final file):
@@ -175,6 +183,66 @@ class _PreviewPage extends StatelessWidget {
 
   String _basename(String path) =>
       path.isEmpty ? '' : path.split(RegExp(r'[/\\]')).last;
+}
+
+/// Gallery asset (in-app grid mode): a fast thumbnail first, then the
+/// full-resolution file.
+class _AssetPage extends StatefulWidget {
+  const _AssetPage({required this.asset, required this.theme});
+
+  final AssetEntity asset;
+  final RelaxPickerTheme theme;
+
+  @override
+  State<_AssetPage> createState() => _AssetPageState();
+}
+
+class _AssetPageState extends State<_AssetPage> {
+  File? _file;
+  Uint8List? _thumb;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final thumb = await widget.asset
+          .thumbnailDataWithSize(const ThumbnailSize.square(600));
+      if (mounted && thumb != null) setState(() => _thumb = thumb);
+
+      final file = await widget.asset.file;
+      if (mounted) setState(() => _file = file);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isVideo = widget.asset.type == AssetType.video;
+
+    Widget image;
+    if (_file != null && !isVideo) {
+      image = Image.file(_file!, fit: BoxFit.contain);
+    } else if (_thumb != null) {
+      image = Image.memory(_thumb!, fit: BoxFit.contain);
+    } else if (_failed) {
+      image = Icon(widget.theme.brokenImageIcon,
+          color: Colors.white54, size: 64);
+    } else {
+      image = const CircularProgressIndicator(color: Colors.white);
+    }
+
+    return _Centered(
+      showPlay: isVideo,
+      playIcon: widget.theme.playIcon,
+      child: image,
+    );
+  }
 }
 
 /// A picked image (already a file on disk).
@@ -280,14 +348,29 @@ class _DocumentPage extends StatelessWidget {
 }
 
 class _Centered extends StatelessWidget {
-  const _Centered({required this.child});
+  const _Centered({
+    required this.child,
+    this.showPlay = false,
+    this.playIcon = Icons.play_circle_fill,
+  });
 
   final Widget child;
+  final bool showPlay;
+  final IconData playIcon;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: InteractiveViewer(maxScale: 4, child: child),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          InteractiveViewer(maxScale: 4, child: child),
+          if (showPlay)
+            IgnorePointer(
+              child: Icon(playIcon, color: Colors.white70, size: 72),
+            ),
+        ],
+      ),
     );
   }
 }

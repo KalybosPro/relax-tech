@@ -294,6 +294,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
         return _media.any((e) => e.id == file.id);
       case DocumentPreviewItem(:final document):
         return _selectedDocuments.any((e) => e.path == document.path);
+      // The system-picker tray never surfaces live gallery assets.
+      case AssetPreviewItem():
+        return false;
     }
   }
 
@@ -314,6 +317,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
           } else if (_totalSelected < widget.maxSelection) {
             _selectedDocuments.add(document);
           }
+        case AssetPreviewItem():
+          break; // Not used by the system-picker tray.
       }
     });
   }

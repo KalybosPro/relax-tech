@@ -28,17 +28,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   RelaxPickerResult? _result;
 
-  /// Default look — no theme passed.
+  /// Default look with the in-app WhatsApp-style grid.
+  ///
+  /// `inAppGrid` renders the device gallery inside the sheet — it needs
+  /// `READ_MEDIA_*` (see AndroidManifest) and a Google Play *Photo and Video
+  /// Permissions* declaration.
   Future<void> _pickDefault() async {
     final result = await RelaxImagePicker.pick(
       context,
       maxSelection: 10,
+      galleryMode: RelaxGalleryMode.inAppGrid,
       accentColor: const Color(0xFF25D366),
     );
     _store(result);
   }
 
-  /// Fully customized: theme styling + several widget-slot builders.
+  /// Fully customized: theme styling + several widget-slot builders. Uses the
+  /// default permission-free `systemPicker` gallery mode.
   Future<void> _pickCustom() async {
     final result = await RelaxImagePicker.pick(
       context,

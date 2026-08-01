@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../models/relax_gallery_mode.dart';
 import '../models/relax_picker_result.dart';
 import '../models/relax_picker_theme.dart';
 import '../services/camera_service.dart';
@@ -22,6 +23,7 @@ class RelaxPickerController {
     bool enablePreview = true,
     int maxSelection = 30,
     bool enableCompression = false,
+    RelaxGalleryMode galleryMode = RelaxGalleryMode.systemPicker,
     List<String>? acceptedDocumentTypes,
     Color accentColor = const Color(0xFF25D366),
     RelaxPickerTheme? theme,
@@ -33,6 +35,13 @@ class RelaxPickerController {
     required String cameraTabText,
     required String documentsTabText,
   }) async {
+    // Least-privilege: we do NOT request photo-library access here. The OS
+    // picker never needs it, and the in-app grid requests `READ_MEDIA_*`
+    // lazily — only when its gallery view actually loads (see
+    // `InAppGalleryPickerSheet._initializeGallery`). This keeps the request tied
+    // to the user opening the gallery, which is what Google Play's Photo & Video
+    // Permissions policy expects. Only camera/mic (for the in-app camera) are
+    // requested up front.
     final permissionsGranted = await permissionService.requestMediaPermissions(
       allowImages: allowImages,
       allowVideos: allowVideos,
@@ -58,6 +67,7 @@ class RelaxPickerController {
       enablePreview: enablePreview,
       maxSelection: maxSelection,
       enableCompression: enableCompression,
+      galleryMode: galleryMode,
       accentColor: accentColor,
       theme: resolvedTheme,
       allowDocuments: allowDocuments,

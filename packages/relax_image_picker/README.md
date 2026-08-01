@@ -3,12 +3,12 @@
 ## Features
 
 - 📱 **WhatsApp-style UX** — bottom-sheet interface with smooth animations
-- 🖼️ **Gallery browsing** — multi-select via the OS photo picker (no permission)
+- 🖼️ **Two gallery modes** — the permission-free **OS photo picker** (default) or a WhatsApp-style **in-app grid** rendered right in the sheet
 - 📷 **Camera integration** — capture photos and videos without leaving the picker
 - 📄 **Document selection** — pick files from device storage, with recent-documents recall between sessions
 - 👁️ **Full-screen preview** — review images, videos, and documents before confirming
 - 🗜️ **Optional compression** — shrink images on the fly
-- 🔒 **Permission-free gallery** — browses via the OS photo picker (Android Photo Picker / iOS `PHPickerViewController`), so no `READ_MEDIA_*` declarations and no Google Play *Photo & Video Permissions* review
+- 🔒 **Permission-free by default** — the OS-picker mode needs no `READ_MEDIA_*` and no Google Play *Photo & Video Permissions* review (the grid mode is opt-in)
 - 🎨 **Deep customization** — `RelaxPickerTheme` exposes colors, text/button styles, icons, labels, and full widget-slot builders
 - ⚡ **Lightweight** — no in-app library scanning; the OS returns only what the user picks
 
@@ -24,7 +24,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  relax_image_picker: ^2.0.0
+  relax_image_picker: ^2.1.0
 ```
 
 Then run:
@@ -32,6 +32,53 @@ Then run:
 ```sh
 flutter pub get
 ```
+
+## Gallery modes
+
+The picker offers two ways to browse photos/videos, selected with `galleryMode`:
+
+| Mode | UX | Permissions | Play policy |
+|---|---|---|---|
+| `RelaxGalleryMode.systemPicker` **(default)** | Opens the **OS photo picker** (Android Photo Picker / iOS `PHPickerViewController`) | **None** | Not subject to the *Photo & Video Permissions* policy |
+| `RelaxGalleryMode.inAppGrid` | Renders the **WhatsApp-style grid** inside the sheet (album selector, multi-select, "Selected photos" banner) | `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` (+ iOS photo-library string) | **Requires** a completed Play *Photo & Video Permissions* declaration |
+
+```dart
+// Permission-free (recommended for occasional attach):
+RelaxImagePicker.pick(context); // systemPicker is the default
+
+// In-app grid (browsing the whole library is a core feature):
+RelaxImagePicker.pick(context, galleryMode: RelaxGalleryMode.inAppGrid);
+```
+
+> **Choosing a mode.** Use `systemPicker` unless browsing the entire library is a
+> *core feature* of your app. `inAppGrid` reintroduces `READ_MEDIA_*`, so Google
+> Play will require you to justify it in the *Photo and Video Permissions*
+> declaration (and reject apps that only need occasional access).
+
+### Least-privilege in `inAppGrid` mode
+
+The grid requests `READ_MEDIA_*` **lazily — only when its gallery view actually
+loads**, never at app launch or when the picker first opens. That keeps the
+prompt tied to the user deliberately opening the gallery, which is exactly what
+Google Play looks for. The recommended flow for a messaging-style app:
+
+```text
+Open conversation        → no permission requested
+Tap 📎 (attach)          → sheet shows Camera · Documents · Gallery
+Tap "Gallery"            → READ_MEDIA_* requested here, then the grid loads
+```
+
+Because both modes ship in the package, you can also offer the **system picker**
+for quick one-off attachment and reserve the **in-app grid** for users who want
+to browse their whole library — honoring least-privilege either way. The grid
+also supports Android 14+/iOS "Selected photos" (partial) access via the
+built-in *Manage* banner, so users can grant a subset instead of the whole
+library.
+
+> **Before publishing,** re-read Google's current
+> [Photo and video permissions policy](https://support.google.com/googleplay/android-developer/answer/14115180)
+> and make sure your Play Console declaration matches how your app actually uses
+> the library.
 
 ### Platform setup
 
@@ -56,6 +103,20 @@ Storage Access Framework, so you **never** declare `READ_MEDIA_IMAGES`,
 
 > With `enableCamera: false`, the picker needs **zero** manifest permissions.
 > The package also never requests `MANAGE_EXTERNAL_STORAGE`.
+
+**Using `RelaxGalleryMode.inAppGrid`?** The in-app grid reads the library, so add
+the granular media permissions (and complete the Play declaration — see
+[Gallery modes](#gallery-modes)):
+
+```xml
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+<!-- Android 14+ partial ("Selected photos") access -->
+<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+<!-- Android 12 and below -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
+```
 
 > **Legacy `READ_EXTERNAL_STORAGE`.** The `camera` dependency declares
 > `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion="28"`), which makes Android's manifest
@@ -209,6 +270,7 @@ Opens the media picker with the given configuration and returns the selection.
 | `enablePreview` | `bool` | `true` | Enable the full-screen preview step |
 | `maxSelection` | `int` | `30` | Maximum number of items selectable |
 | `enableCompression` | `bool` | `false` | Compress images on selection |
+| `galleryMode` | `RelaxGalleryMode` | `systemPicker` | `systemPicker` (OS picker, no permission) or `inAppGrid` (in-app grid, needs `READ_MEDIA_*`) |
 | `acceptedDocumentTypes` | `List<String>?` | `null` | Allowed document extensions |
 | `accentColor` | `Color` | `0xFF25D366` | Accent color when no `theme` is given |
 | `theme` | `RelaxPickerTheme?` | `null` | Full UI customization |

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../models/relax_gallery_mode.dart';
 import '../models/relax_picker_result.dart';
 import '../models/relax_picker_theme.dart';
 import '../widgets/gallery_picker_sheet.dart';
+import '../widgets/in_app_gallery_sheet.dart';
 
 class GalleryService {
   Future<RelaxPickerResult> pickFromGallery(
@@ -14,6 +16,7 @@ class GalleryService {
     bool enablePreview = true,
     int maxSelection = 30,
     bool enableCompression = false,
+    RelaxGalleryMode galleryMode = RelaxGalleryMode.systemPicker,
     Color accentColor = const Color(0xFF25D366),
     required RelaxPickerTheme theme,
     required String title,
@@ -29,6 +32,27 @@ class GalleryService {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext innerContext) {
+        // The in-app grid and the OS-picker tray share the same constructor
+        // surface; only the browsing mechanism differs.
+        if (galleryMode == RelaxGalleryMode.inAppGrid) {
+          return InAppGalleryPickerSheet(
+            allowImages: allowImages,
+            allowVideos: allowVideos,
+            allowDocuments: allowDocuments,
+            enableCamera: enableCamera,
+            enablePreview: enablePreview,
+            maxSelection: maxSelection,
+            enableCompression: enableCompression,
+            theme: theme,
+            title: title,
+            confirmButtonText: confirmButtonText,
+            cancelButtonText: cancelButtonText,
+            validateButtonText: validateButtonText,
+            galleryTabText: galleryTabText,
+            cameraTabText: cameraTabText,
+            documentsTabText: documentsTabText,
+          );
+        }
         return GalleryPickerSheet(
           allowImages: allowImages,
           allowVideos: allowVideos,

@@ -25,6 +25,7 @@ class RelaxPickerTheme {
 
     // Text styles
     this.titleTextStyle,
+    this.albumTextStyle,
     this.tabTextStyle,
     this.counterTextStyle,
     this.fileNameTextStyle,
@@ -47,6 +48,7 @@ class RelaxPickerTheme {
     this.galleryTabIcon = Icons.photo_library_outlined,
     this.documentsTabIcon = Icons.insert_drive_file_outlined,
     this.addFromGalleryIcon = Icons.add_photo_alternate_outlined,
+    this.albumDropdownIcon = Icons.keyboard_arrow_down,
     this.sendIcon = Icons.send_rounded,
     this.previewIcon = Icons.visibility_outlined,
     this.selectedIcon = Icons.check_circle,
@@ -68,6 +70,9 @@ class RelaxPickerTheme {
     this.selectTooltip = 'Sélectionner',
     this.deselectTooltip = 'Désélectionner',
     this.addFromGalleryLabel = 'Galerie',
+    this.limitedAccessLabel =
+        'Vous n\'avez autorisé l\'accès qu\'à certaines photos',
+    this.manageAccessLabel = 'Gérer',
     this.maxSelectionLabelBuilder,
 
     // Widget-slot builders (full overrides; null → default widget)
@@ -77,6 +82,7 @@ class RelaxPickerTheme {
     this.browseButtonBuilder,
     this.tabBuilder,
     this.mediaTileBuilder,
+    this.assetTileBuilder,
     this.cameraTileBuilder,
     this.documentTileBuilder,
     this.emptyMediaBuilder,
@@ -99,6 +105,7 @@ class RelaxPickerTheme {
 
   // --- Text styles ---
   final TextStyle? titleTextStyle;
+  final TextStyle? albumTextStyle;
   final TextStyle? tabTextStyle;
   final TextStyle? counterTextStyle;
   final TextStyle? fileNameTextStyle;
@@ -123,6 +130,9 @@ class RelaxPickerTheme {
 
   /// Icon on the "add from gallery" tile that launches the OS photo picker.
   final IconData addFromGalleryIcon;
+
+  /// Dropdown chevron for the album selector (in-app grid mode).
+  final IconData albumDropdownIcon;
   final IconData sendIcon;
   final IconData previewIcon;
   final IconData selectedIcon;
@@ -147,6 +157,15 @@ class RelaxPickerTheme {
   /// Caption on the tile that launches the OS photo picker.
   final String addFromGalleryLabel;
 
+  /// Shown in the banner when the user granted access to only a subset of their
+  /// library (Android 14+ "Selected photos" / iOS limited access). In-app grid
+  /// mode only.
+  final String limitedAccessLabel;
+
+  /// Action label on the limited-access banner that re-opens the system picker
+  /// so the user can grant access to more items. In-app grid mode only.
+  final String manageAccessLabel;
+
   /// Builds the "maximum reached" message; defaults to `Maximum <n>`.
   final String Function(int maxSelection)? maxSelectionLabelBuilder;
 
@@ -157,6 +176,9 @@ class RelaxPickerTheme {
   final RelaxIconButtonBuilder? browseButtonBuilder;
   final RelaxTabBuilder? tabBuilder;
   final RelaxMediaTileBuilder? mediaTileBuilder;
+
+  /// Replaces a gallery-asset grid tile in **in-app grid** mode.
+  final RelaxAssetTileBuilder? assetTileBuilder;
   final RelaxCameraTileBuilder? cameraTileBuilder;
   final RelaxDocumentTileBuilder? documentTileBuilder;
   final RelaxEmptyStateBuilder? emptyMediaBuilder;
@@ -178,6 +200,7 @@ class RelaxPickerTheme {
     double? heightFactor,
     Color? dragHandleColor,
     TextStyle? titleTextStyle,
+    TextStyle? albumTextStyle,
     TextStyle? tabTextStyle,
     TextStyle? counterTextStyle,
     TextStyle? fileNameTextStyle,
@@ -196,6 +219,7 @@ class RelaxPickerTheme {
     IconData? galleryTabIcon,
     IconData? documentsTabIcon,
     IconData? addFromGalleryIcon,
+    IconData? albumDropdownIcon,
     IconData? sendIcon,
     IconData? previewIcon,
     IconData? selectedIcon,
@@ -215,6 +239,8 @@ class RelaxPickerTheme {
     String? selectTooltip,
     String? deselectTooltip,
     String? addFromGalleryLabel,
+    String? limitedAccessLabel,
+    String? manageAccessLabel,
     String Function(int maxSelection)? maxSelectionLabelBuilder,
     RelaxSendButtonBuilder? sendButtonBuilder,
     RelaxTextButtonBuilder? cancelButtonBuilder,
@@ -222,6 +248,7 @@ class RelaxPickerTheme {
     RelaxIconButtonBuilder? browseButtonBuilder,
     RelaxTabBuilder? tabBuilder,
     RelaxMediaTileBuilder? mediaTileBuilder,
+    RelaxAssetTileBuilder? assetTileBuilder,
     RelaxCameraTileBuilder? cameraTileBuilder,
     RelaxDocumentTileBuilder? documentTileBuilder,
     RelaxEmptyStateBuilder? emptyMediaBuilder,
@@ -237,6 +264,7 @@ class RelaxPickerTheme {
       heightFactor: heightFactor ?? this.heightFactor,
       dragHandleColor: dragHandleColor ?? this.dragHandleColor,
       titleTextStyle: titleTextStyle ?? this.titleTextStyle,
+      albumTextStyle: albumTextStyle ?? this.albumTextStyle,
       tabTextStyle: tabTextStyle ?? this.tabTextStyle,
       counterTextStyle: counterTextStyle ?? this.counterTextStyle,
       fileNameTextStyle: fileNameTextStyle ?? this.fileNameTextStyle,
@@ -259,6 +287,7 @@ class RelaxPickerTheme {
       galleryTabIcon: galleryTabIcon ?? this.galleryTabIcon,
       documentsTabIcon: documentsTabIcon ?? this.documentsTabIcon,
       addFromGalleryIcon: addFromGalleryIcon ?? this.addFromGalleryIcon,
+      albumDropdownIcon: albumDropdownIcon ?? this.albumDropdownIcon,
       sendIcon: sendIcon ?? this.sendIcon,
       previewIcon: previewIcon ?? this.previewIcon,
       selectedIcon: selectedIcon ?? this.selectedIcon,
@@ -278,6 +307,8 @@ class RelaxPickerTheme {
       selectTooltip: selectTooltip ?? this.selectTooltip,
       deselectTooltip: deselectTooltip ?? this.deselectTooltip,
       addFromGalleryLabel: addFromGalleryLabel ?? this.addFromGalleryLabel,
+      limitedAccessLabel: limitedAccessLabel ?? this.limitedAccessLabel,
+      manageAccessLabel: manageAccessLabel ?? this.manageAccessLabel,
       maxSelectionLabelBuilder:
           maxSelectionLabelBuilder ?? this.maxSelectionLabelBuilder,
       sendButtonBuilder: sendButtonBuilder ?? this.sendButtonBuilder,
@@ -286,6 +317,7 @@ class RelaxPickerTheme {
       browseButtonBuilder: browseButtonBuilder ?? this.browseButtonBuilder,
       tabBuilder: tabBuilder ?? this.tabBuilder,
       mediaTileBuilder: mediaTileBuilder ?? this.mediaTileBuilder,
+      assetTileBuilder: assetTileBuilder ?? this.assetTileBuilder,
       cameraTileBuilder: cameraTileBuilder ?? this.cameraTileBuilder,
       documentTileBuilder: documentTileBuilder ?? this.documentTileBuilder,
       emptyMediaBuilder: emptyMediaBuilder ?? this.emptyMediaBuilder,

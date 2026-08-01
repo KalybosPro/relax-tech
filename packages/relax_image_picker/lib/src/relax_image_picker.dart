@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'controllers/relax_picker_controller.dart';
+import 'models/relax_gallery_mode.dart';
 import 'models/relax_picker_result.dart';
 import 'models/relax_picker_theme.dart';
 
@@ -15,6 +16,14 @@ class RelaxImagePicker {
     bool enablePreview = true,
     int maxSelection = 30,
     bool enableCompression = false,
+
+    /// How the user browses their photos/videos.
+    ///
+    /// [RelaxGalleryMode.systemPicker] (default) uses the OS photo picker — no
+    /// permission required. [RelaxGalleryMode.inAppGrid] renders the WhatsApp-
+    /// style grid inside the sheet and requires `READ_MEDIA_*` (+ a Google Play
+    /// *Photo and Video Permissions* declaration).
+    RelaxGalleryMode galleryMode = RelaxGalleryMode.systemPicker,
     List<String>? acceptedDocumentTypes,
     Color accentColor = const Color(0xFF25D366),
 
@@ -40,6 +49,7 @@ class RelaxImagePicker {
       enablePreview: enablePreview,
       maxSelection: maxSelection,
       enableCompression: enableCompression,
+      galleryMode: galleryMode,
       acceptedDocumentTypes: acceptedDocumentTypes,
       accentColor: accentColor,
       theme: theme,

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 import 'relax_document_file.dart';
 import 'relax_media_file.dart';
@@ -52,6 +53,23 @@ typedef RelaxTabBuilder = Widget Function(
 typedef RelaxMediaTileBuilder = Widget Function(
   BuildContext context, {
   required RelaxMediaFile media,
+  required bool selected,
+  required int selectionIndex,
+  required bool isVideo,
+  required Duration videoDuration,
+  required Widget thumbnail,
+  required VoidCallback onTap,
+  required VoidCallback onLongPress,
+});
+
+/// A gallery-asset grid tile, used by the **in-app grid** gallery mode.
+///
+/// [asset] is the live `photo_manager` entry; [thumbnail] is the ready-made
+/// async thumbnail widget. [selectionIndex] is the 1-based selection order
+/// (meaningful only when [selected]).
+typedef RelaxAssetTileBuilder = Widget Function(
+  BuildContext context, {
+  required AssetEntity asset,
   required bool selected,
   required int selectionIndex,
   required bool isVideo,
