@@ -7,6 +7,7 @@
 /// - Queries with filters, sorting, pagination
 /// - Real-time streams
 /// - Sync engine setup
+/// - Seeding with generated seeders
 // ignore_for_file: avoid_print
 library;
 
@@ -31,13 +32,15 @@ Future<void> basicExample() async {
   final users = db.collection<User>();
 
   // -- Create --
-  await users.add(User(
-    id: '1',
-    name: 'Alice',
-    age: 30,
-    active: true,
-    createdAt: DateTime.now(),
-  ));
+  await users.add(
+    User(
+      id: '1',
+      name: 'Alice',
+      age: 30,
+      active: true,
+      createdAt: DateTime.now(),
+    ),
+  );
 
   // -- Read --
   final alice = await users.get('1');
@@ -47,22 +50,26 @@ Future<void> basicExample() async {
   print('Total users: ${allUsers.length}');
 
   // -- Update --
-  await users.update(User(
-    id: '1',
-    name: 'Alice Updated',
-    age: 31,
-    active: true,
-    createdAt: alice!.createdAt,
-  ));
+  await users.update(
+    User(
+      id: '1',
+      name: 'Alice Updated',
+      age: 31,
+      active: true,
+      createdAt: alice!.createdAt,
+    ),
+  );
 
   // -- Upsert (insert or update) --
-  await users.upsert(User(
-    id: '2',
-    name: 'Bob',
-    age: 25,
-    active: true,
-    createdAt: DateTime.now(),
-  ));
+  await users.upsert(
+    User(
+      id: '2',
+      name: 'Bob',
+      age: 25,
+      active: true,
+      createdAt: DateTime.now(),
+    ),
+  );
 
   // -- Delete --
   await users.delete('1');
@@ -83,10 +90,34 @@ Future<void> queryExample() async {
 
   // Seed data
   await users.addAll([
-    User(id: '1', name: 'Alice', age: 30, active: true, createdAt: DateTime(2024, 1, 1)),
-    User(id: '2', name: 'Bob', age: 17, active: true, createdAt: DateTime(2024, 2, 1)),
-    User(id: '3', name: 'Charlie', age: 25, active: false, createdAt: DateTime(2024, 3, 1)),
-    User(id: '4', name: 'Diana', age: 42, active: true, createdAt: DateTime(2024, 4, 1)),
+    User(
+      id: '1',
+      name: 'Alice',
+      age: 30,
+      active: true,
+      createdAt: DateTime(2024, 1, 1),
+    ),
+    User(
+      id: '2',
+      name: 'Bob',
+      age: 17,
+      active: true,
+      createdAt: DateTime(2024, 2, 1),
+    ),
+    User(
+      id: '3',
+      name: 'Charlie',
+      age: 25,
+      active: false,
+      createdAt: DateTime(2024, 3, 1),
+    ),
+    User(
+      id: '4',
+      name: 'Diana',
+      age: 42,
+      active: true,
+      createdAt: DateTime(2024, 4, 1),
+    ),
   ]);
 
   // Filter + sort + paginate
@@ -138,13 +169,70 @@ Future<void> streamExample() async {
   });
 
   // These writes trigger all the streams above.
-  await users.add(User(
-    id: '1', name: 'Alice', age: 30, active: true, createdAt: DateTime.now(),
-  ));
+  await users.add(
+    User(
+      id: '1',
+      name: 'Alice',
+      age: 30,
+      active: true,
+      createdAt: DateTime.now(),
+    ),
+  );
 
   await Future.delayed(Duration(milliseconds: 100));
   subscription.cancel();
   await db.close();
+}
+
+// =============================================================================
+// SEEDING
+// =============================================================================
+
+/// `UserSeeder` and `PostSeeder` are generated into `models.g.dart` by
+/// `dart run relax_orm --seed`.
+Future<void> seedExample() async {
+  final db = await RelaxDB.open(
+    name: 'seeded',
+    schemas: [userSchema, postSchema],
+  );
+
+  db.seeds.registerAll([
+    UserSeeder(), // 10 fake users
+    PostSeeder(count: 50), // 50 fake posts
+    DefaultAdminSeeder(), // a fixed row, hand-written below
+  ]);
+
+  // Safe to call on every app start: applied seeders are skipped.
+  final report = await db.seeds.run();
+  print(report);
+
+  // Development helpers.
+  // await db.seeds.fresh();                   // wipe the tables and re-seed
+  // await db.seeds.run(only: ['UserSeeder']); // just one
+
+  await db.close();
+}
+
+/// A hand-written seeder, for data the generator can't invent.
+class DefaultAdminSeeder extends Seeder {
+  @override
+  int get order => -1; // before the generated ones
+
+  @override
+  List<String> get tables => const ['users'];
+
+  @override
+  Future<void> run(RelaxDB db) async {
+    await db.collection<User>().upsertAll([
+      User(
+        id: 'admin',
+        name: 'Administrator',
+        age: 30,
+        active: true,
+        createdAt: DateTime(2024, 1, 1),
+      ),
+    ]);
+  }
 }
 
 // =============================================================================
@@ -189,12 +277,14 @@ Future<void> syncExample() async {
   final engine = await db.sync;
 
   // Register a collection for sync.
-  engine.register(SyncConfig<User>(
-    schema: userSchema,
-    adapter: UserSyncAdapter(),
-    conflictResolver: ConflictResolver.remoteWins(),
-    autoSyncInterval: Duration(minutes: 5),
-  ));
+  engine.register(
+    SyncConfig<User>(
+      schema: userSchema,
+      adapter: UserSyncAdapter(),
+      conflictResolver: ConflictResolver.remoteWins(),
+      autoSyncInterval: Duration(minutes: 5),
+    ),
+  );
 
   // Listen to sync status.
   engine.status.listen((status) {
@@ -203,9 +293,15 @@ Future<void> syncExample() async {
 
   // All CRUD operations are auto-queued for sync.
   final users = db.collection<User>();
-  await users.add(User(
-    id: '1', name: 'Alice', age: 30, active: true, createdAt: DateTime.now(),
-  ));
+  await users.add(
+    User(
+      id: '1',
+      name: 'Alice',
+      age: 30,
+      active: true,
+      createdAt: DateTime.now(),
+    ),
+  );
 
   // Manually trigger sync.
   await engine.syncAll();

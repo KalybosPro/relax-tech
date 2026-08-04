@@ -32,6 +32,40 @@ final userSchema = TableSchema<User>(
   },
 );
 
+/// Seeds the `users` table with fake User rows.
+///
+/// ```dart
+/// db.seeds.register(UserSeeder());
+/// await db.seeds.run();
+/// ```
+class UserSeeder extends TableSeeder<User> {
+  UserSeeder({
+    super.count,
+    super.records,
+    super.builder,
+    super.randomSeed,
+    super.order,
+  });
+
+  @override
+  String get tableName => 'users';
+
+  @override
+  int get defaultCount => 5;
+
+  @override
+  int get defaultOrder => 0;
+
+  @override
+  User buildOne(int index, SeedFaker faker) => User(
+    id: faker.uuid(),
+    name: faker.fullName(),
+    age: faker.integer(min: 18, max: 80),
+    active: faker.boolean(trueProbability: 0.8),
+    createdAt: faker.pastDateTime(),
+  );
+}
+
 // Schema for Post
 final postSchema = TableSchema<Post>(
   tableName: 'blog_posts',
@@ -60,3 +94,38 @@ final postSchema = TableSchema<Post>(
     'is_draft': entity.isDraft,
   },
 );
+
+/// Seeds the `blog_posts` table with fake Post rows.
+///
+/// ```dart
+/// db.seeds.register(PostSeeder());
+/// await db.seeds.run();
+/// ```
+class PostSeeder extends TableSeeder<Post> {
+  PostSeeder({
+    super.count,
+    super.records,
+    super.builder,
+    super.randomSeed,
+    super.order,
+  });
+
+  @override
+  String get tableName => 'blog_posts';
+
+  @override
+  int get defaultCount => 20;
+
+  @override
+  int get defaultOrder => 1;
+
+  @override
+  Post buildOne(int index, SeedFaker faker) => Post(
+    id: faker.uuid(),
+    title: faker.sentence(words: 4),
+    body: faker.paragraph(),
+    authorId: faker.uuid(),
+    publishedAt: faker.pastDateTime(),
+    isDraft: faker.boolean(trueProbability: 0.1),
+  );
+}

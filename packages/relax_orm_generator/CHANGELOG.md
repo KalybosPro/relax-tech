@@ -1,3 +1,32 @@
+## 1.0.0
+
+First stable release. The generated `TableSchema` output is unchanged from
+0.1.7 — the version bump commits to the current builder API and adds seeder
+generation.
+
+### Added
+
+- **Seeder generation.** When enabled, every `@RelaxTable` model also gets a
+  `TableSeeder` subclass — `User` → `UserSeeder` — whose `buildOne` fills each
+  column with a `SeedFaker` call. Off by default; enable it with
+  `dart run relax_orm --seed`, the `seed` builder option, or per model with
+  `@RelaxSeed()`.
+- `@RelaxSeed(count:, order:, enabled:)` support: `count` sets the generated
+  `defaultCount`, `order` the `defaultOrder`, and `enabled: false` opts a model
+  out even when seeding is on globally.
+- Builder options `seed` (bool, default `false`) and `seed_count` (int, default
+  `10`), readable from `build.yaml` or a `--define`.
+- Faker calls are picked from the column type **and** its name, so `email` gets
+  an address, `price` money-shaped numbers, `created_at` a past date. Nested
+  models and `List<T>` fields are walked recursively; nullable columns are
+  wrapped in `faker.maybe(...)`. Self-referencing non-nullable models are
+  reported as a generation error instead of recursing forever.
+
+### Changed
+
+- Requires `relax_orm >=1.1.0` — generated seeders reference `TableSeeder` and
+  `SeedFaker`, which that version introduces.
+
 ## 0.1.7
 
 ### Changed

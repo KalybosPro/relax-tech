@@ -7,6 +7,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import '../database/relax_database.dart';
 import '../logging/relax_logger.dart';
 import '../schema/table_schema.dart';
+import '../seed/seed_runner.dart';
 import '../sync/offline_queue.dart';
 import '../sync/sync_engine.dart';
 import 'collection.dart';
@@ -33,6 +34,7 @@ class RelaxDB {
   final Map<Type, TableSchema> _schemas;
   SyncEngine? _syncEngine;
   OfflineQueue? _offlineQueue;
+  SeedRunner? _seedRunner;
 
   /// Whether an encryption key was supplied when the database was opened.
   final bool _encryptionRequested;
@@ -46,8 +48,8 @@ class RelaxDB {
     this._schemas, {
     bool encryptionRequested = false,
     File? dbFile,
-  })  : _encryptionRequested = encryptionRequested,
-        _dbFile = dbFile;
+  }) : _encryptionRequested = encryptionRequested,
+       _dbFile = dbFile;
 
   /// The developer logger attached to this database (disabled by default).
   RelaxLogger get logger => _database.logger;
@@ -70,9 +72,7 @@ class RelaxDB {
     final log = logger ?? const RelaxLogger.disabled();
     final executor = driftDatabase(
       name: name,
-      native: DriftNativeOptions(
-        setup: _buildSetup(encryptionKey, log),
-      ),
+      native: DriftNativeOptions(setup: _buildSetup(encryptionKey, log)),
     );
 
     return _init(
@@ -139,6 +139,17 @@ class RelaxDB {
     return Collection<T>(_database, schema, syncEngine: _syncEngine);
   }
 
+  /// The [SeedRunner] attached to this database, created lazily.
+  ///
+  /// Register your seeders on it, then call `run()` — already-applied seeders
+  /// are skipped, so it is safe to call on every app start.
+  ///
+  /// ```dart
+  /// db.seeds.registerAll([UserSeeder(), PostSeeder(count: 50)]);
+  /// await db.seeds.run();
+  /// ```
+  SeedRunner get seeds => _seedRunner ??= SeedRunner(this, _database);
+
   /// Returns the [SyncEngine], creating it lazily if needed.
   ///
   /// Use this to register sync adapters and control the sync lifecycle.
@@ -194,9 +205,11 @@ class RelaxDB {
 
     final log = database.logger;
     if (log.isLoggable(RelaxLogCategory.database, RelaxLogLevel.info)) {
-      log.log(RelaxLogCategory.database,
-          'Database opened (${schemas.length} schema(s))',
-          level: RelaxLogLevel.info);
+      log.log(
+        RelaxLogCategory.database,
+        'Database opened (${schemas.length} schema(s))',
+        level: RelaxLogLevel.info,
+      );
     }
     if (log.isLoggable(RelaxLogCategory.encryption, RelaxLogLevel.info)) {
       final available = await db.isEncryptionAvailable();
@@ -245,8 +258,11 @@ class RelaxDB {
         );
       }
       rawDb.execute("PRAGMA key = '$encryptionKey'");
-      logger.log(RelaxLogCategory.encryption, 'PRAGMA key applied (cipher active)',
-          level: RelaxLogLevel.info);
+      logger.log(
+        RelaxLogCategory.encryption,
+        'PRAGMA key applied (cipher active)',
+        level: RelaxLogLevel.info,
+      );
     };
   }
 
@@ -275,30 +291,33 @@ class RelaxDB {
       logger.log(
         RelaxLogCategory.encryption,
         check.message,
-        level: check.isMisconfigured
-            ? RelaxLogLevel.error
-            : RelaxLogLevel.info,
+        level: check.isMisconfigured ? RelaxLogLevel.error : RelaxLogLevel.info,
         details: check,
       );
       return check;
     }
 
     if (target == null) {
-      return emit(EncryptionCheck(
-        isEncrypted: null,
-        keyRequested: _encryptionRequested,
-        headerHex: '',
-        message: 'No file to inspect — pass a File '
-            '(in-memory or drift_flutter-managed database).',
-      ));
+      return emit(
+        EncryptionCheck(
+          isEncrypted: null,
+          keyRequested: _encryptionRequested,
+          headerHex: '',
+          message:
+              'No file to inspect — pass a File '
+              '(in-memory or drift_flutter-managed database).',
+        ),
+      );
     }
     if (!await target.exists()) {
-      return emit(EncryptionCheck(
-        isEncrypted: null,
-        keyRequested: _encryptionRequested,
-        headerHex: '',
-        message: 'Database file does not exist: ${target.path}',
-      ));
+      return emit(
+        EncryptionCheck(
+          isEncrypted: null,
+          keyRequested: _encryptionRequested,
+          headerHex: '',
+          message: 'Database file does not exist: ${target.path}',
+        ),
+      );
     }
 
     final raf = await target.open();
@@ -309,34 +328,43 @@ class RelaxDB {
       await raf.close();
     }
 
-    final headerHex =
-        header.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ');
+    final headerHex = header
+        .map((b) => b.toRadixString(16).padLeft(2, '0'))
+        .join(' ');
 
     // The 16-byte magic string that prefixes every unencrypted SQLite file.
     final magic = 'SQLite format 3 '.codeUnits;
-    final isPlaintext = header.length >= magic.length &&
-        List.generate(magic.length, (i) => header[i] == magic[i])
-            .every((m) => m);
+    final isPlaintext =
+        header.length >= magic.length &&
+        List.generate(
+          magic.length,
+          (i) => header[i] == magic[i],
+        ).every((m) => m);
     final isEncrypted = !isPlaintext;
 
     final String message;
     if (isPlaintext && _encryptionRequested) {
-      message = 'Data is NOT encrypted: file is plaintext SQLite even though an '
+      message =
+          'Data is NOT encrypted: file is plaintext SQLite even though an '
           'encryption key was provided (misconfigured).';
     } else if (isPlaintext) {
-      message = 'Data is NOT encrypted: file is plaintext SQLite '
+      message =
+          'Data is NOT encrypted: file is plaintext SQLite '
           '(no encryption key was provided).';
     } else {
-      message = 'Data appears encrypted: file does not start with the plaintext '
+      message =
+          'Data appears encrypted: file does not start with the plaintext '
           'SQLite header.';
     }
 
-    return emit(EncryptionCheck(
-      isEncrypted: isEncrypted,
-      keyRequested: _encryptionRequested,
-      headerHex: headerHex,
-      message: message,
-    ));
+    return emit(
+      EncryptionCheck(
+        isEncrypted: isEncrypted,
+        keyRequested: _encryptionRequested,
+        headerHex: headerHex,
+        message: message,
+      ),
+    );
   }
 
   TableSchema<T> _findSchema<T>() {

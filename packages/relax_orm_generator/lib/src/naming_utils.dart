@@ -43,3 +43,10 @@ String classNameToSchemaVar(String className) {
   final rest = className.substring(1);
   return '$first${rest}Schema';
 }
+
+/// Derives a seeder class name from a model class name.
+///
+/// Examples:
+/// - `User` → `UserSeeder`
+/// - `BlogPost` → `BlogPostSeeder`
+String classNameToSeederClass(String className) => '${className}Seeder';

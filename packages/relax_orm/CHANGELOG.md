@@ -1,3 +1,36 @@
+## 1.1.0
+
+Adds a seeding engine and a `relax_orm` command. No breaking changes.
+
+### Added
+
+- **Seed engine.** `db.seeds` exposes a `SeedRunner` that runs registered
+  `Seeder`s exactly once each, recording them in a `_relax_seeds` ledger table —
+  so calling `run()` on every app start is a no-op after the first time. Each
+  seeder runs in its own transaction, so a failure leaves no partial rows and no
+  ledger entry.
+  - `run({only, force, continueOnError})`, `fresh()` (wipe the seeded tables and
+    re-seed), `forget()`, `appliedNames()`, `hasRun()`.
+  - Failures are reported in the returned `SeedReport` rather than thrown; call
+    `report.throwIfFailed()` to surface them.
+- `Seeder` — base class for hand-written seeds, with `order` (execution order)
+  and `tables` (what `fresh()` clears).
+- `TableSeeder<T>` — base class for the generated per-table seeders. Its
+  constructor takes `count`, `records`, `builder`, `randomSeed` and `order`, so
+  a generated seeder can be retuned without subclassing it.
+- `SeedFaker` — deterministic fake-data generator (names, emails, sentences,
+  UUIDs, dates, bytes, …). The same seed always produces the same values.
+- `@RelaxSeed(count:, order:, enabled:)` — opts a model into (or out of) seeder
+  generation. Requires `relax_orm_generator ^1.0.0`.
+- **`dart run relax_orm`** — a wrapper around `build_runner`:
+  `dart run relax_orm` generates schemas, `dart run relax_orm --seed` generates
+  schemas and seeders, plus `watch` / `clean` and `--seed-count=N`. Arguments
+  after `--` are forwarded to `build_runner`. `dart run build_runner build`
+  keeps working unchanged.
+- `Collection.upsertAll` — batch insert that overwrites rows conflicting on the
+  primary key. This is what makes re-running a seeder converge on the same rows
+  instead of failing on a duplicate key.
+
 ## 1.0.0
 
 First stable release. Addresses the findings of the 0.1.7 technical audit (sync

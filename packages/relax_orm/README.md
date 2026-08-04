@@ -13,6 +13,7 @@ Inspired by Firebase and PowerSync — but free, self-hosted, and with no SaaS d
 - **Encryption** — transparent AES database encryption via SQLite3MultipleCiphers
 - **Query builder** — fluent, type-safe filters, sorting, pagination
 - **Code generation** — annotate your models, schemas are generated automatically
+- **Seeding** — generated seeders fill your tables with realistic fake data
 - **Zero SaaS** — bring your own API, no vendor lock-in
 
 ## Quick Start
@@ -21,10 +22,10 @@ Inspired by Firebase and PowerSync — but free, self-hosted, and with no SaaS d
 
 ```yaml
 dependencies:
-  relax_orm: ^1.0.0
+  relax_orm: ^1.1.0
 
 dev_dependencies:
-  relax_orm_generator: ^0.1.6
+  relax_orm_generator: ^1.0.0
   build_runner: ^2.4.0
 ```
 
@@ -57,10 +58,18 @@ class User {
 ### 3. Generate the schema
 
 ```bash
-dart run build_runner build
+dart run relax_orm            # or: dart run build_runner build
 ```
 
 This generates `user.g.dart` containing a `userSchema` variable with all the column definitions, mappers, and type conversions.
+
+Add `--seed` to also generate a seeder per model:
+
+```bash
+dart run relax_orm --seed
+```
+
+See [Seeding](#seeding) below.
 
 ### 4. Open the database and use it
 
@@ -364,6 +373,166 @@ It inspects the file header: an unencrypted SQLite file always begins with
 resolves the path), pass the `File` explicitly: `debugCheckEncryption(file: ...)`.
 In-memory databases cannot be inspected and return `isEncrypted == null`.
 
+## Seeding
+
+Seeders fill your tables with data — fake data while you build the UI, or fixed
+reference rows (roles, categories, a default admin) an app needs on first run.
+
+### The `relax_orm` command
+
+`dart run relax_orm` is a thin wrapper around `build_runner`; the `--seed` flag
+is what turns seeder generation on.
+
+| Command | Effect |
+|---|---|
+| `dart run build_runner build` | Generates schemas |
+| `dart run relax_orm` | Generates schemas (same thing) |
+| `dart run relax_orm --seed` | Generates schemas **and** seeders |
+| `dart run relax_orm --seed --seed-count=25` | …with 25 rows per seeder instead of 10 |
+| `dart run relax_orm watch` | Same, in watch mode |
+| `dart run relax_orm clean` | Cleans generated outputs |
+
+Anything after `--` is forwarded to `build_runner` verbatim:
+`dart run relax_orm --seed -- --verbose`.
+
+### Generated seeders
+
+With `--seed`, every `@RelaxTable` model gets a `TableSeeder` next to its
+schema — `User` → `UserSeeder` — that generates one `SeedFaker` call per column:
+
+```dart
+// user.g.dart — generated
+class UserSeeder extends TableSeeder<User> {
+  @override
+  String get tableName => 'users';
+
+  @override
+  int get defaultCount => 10;
+
+  @override
+  User buildOne(int index, SeedFaker faker) => User(
+        id: faker.uuid(),
+        name: faker.fullName(),
+        age: faker.integer(min: 18, max: 80),
+        active: faker.boolean(trueProbability: 0.8),
+        createdAt: faker.pastDateTime(),
+      );
+}
+```
+
+The generator picks the faker call from the column type **and** its name, so
+`email` gets an address, `price` gets money-shaped numbers and `created_at` gets
+a past date. Nested models and `List<T>` fields are walked recursively; nullable
+columns are wrapped in `faker.maybe(...)` so seeded data exercises both branches.
+
+### Choosing which models get a seeder
+
+`--seed` covers every model. To be explicit instead, annotate the model — it
+then gets a seeder with or without the flag:
+
+```dart
+@RelaxTable()
+@RelaxSeed(count: 25, order: 1) // order: users before posts
+class User { ... }
+
+@RelaxTable()
+@RelaxSeed(enabled: false)      // never seeded, even with --seed
+class AuditLog { ... }
+```
+
+### Running seeders
+
+```dart
+final db = await RelaxDB.open(name: 'app', schemas: [userSchema, postSchema]);
+
+db.seeds.registerAll([
+  UserSeeder(),           // 10 fake users
+  PostSeeder(count: 50),  // 50 fake posts
+]);
+
+final report = await db.seeds.run();
+print(report); // Seed run — 2 applied, 0 skipped, 0 failed, 60 row(s) in 23ms
+```
+
+`run()` records every applied seeder in a `_relax_seeds` ledger table, so calling
+it again is a no-op — it is safe on every app start. Each seeder runs in its own
+transaction: a failing seeder leaves no partial rows and no ledger entry, so the
+next run retries it.
+
+```dart
+await db.seeds.run(only: ['UserSeeder']);   // subset
+await db.seeds.run(force: true);            // ignore the ledger
+await db.seeds.run(continueOnError: true);  // don't stop at the first failure
+
+await db.seeds.fresh();                     // wipe the seeded tables, re-seed
+await db.seeds.forget(['UserSeeder']);      // let it run again, keep its rows
+await db.seeds.appliedNames();              // what has run so far
+```
+
+Failures are reported, not thrown — inspect `report.failed`, or call
+`report.throwIfFailed()`.
+
+Generated data is deterministic (the faker is seeded from the seeder's name), and
+rows are written with an upsert, so re-running a seeder converges on the same
+rows instead of failing on a duplicate key.
+
+### Customizing a generated seeder
+
+The generated constructor forwards every knob, so you rarely need to subclass:
+
+```dart
+UserSeeder(count: 100)                       // more rows
+UserSeeder(randomSeed: 7)                    // different data, still reproducible
+UserSeeder(order: -1)                        // run earlier
+UserSeeder(records: [admin, guest])          // fixed rows, no randomness
+UserSeeder(builder: (i, faker) =>            // your own generator
+    User(id: 'user-$i', name: faker.fullName(), age: 30))
+```
+
+### Hand-written seeders
+
+For anything the generator can't express — cross-table fixtures, custom SQL,
+data pulled from an asset — extend `Seeder` directly:
+
+```dart
+class DefaultRolesSeeder extends Seeder {
+  @override
+  int get order => -1; // before everything else
+
+  @override
+  List<String> get tables => const ['roles']; // so fresh() can clear it
+
+  @override
+  Future<void> run(RelaxDB db) async {
+    await db.collection<Role>().upsertAll([
+      Role(id: 'admin', label: 'Administrator'),
+      Role(id: 'member', label: 'Member'),
+    ]);
+  }
+}
+```
+
+### SeedFaker
+
+`SeedFaker` is available on its own for tests and fixtures:
+
+```dart
+final faker = SeedFaker(seed: 42); // same seed → same values, always
+
+faker.uuid();        faker.token();       faker.word();
+faker.sentence();    faker.paragraph();   faker.slug();
+faker.fullName();    faker.email();       faker.username();  faker.phone();
+faker.city();        faker.country();     faker.url();       faker.color();
+faker.integer(min: 1, max: 10);           faker.decimal(min: 0, max: 5);
+faker.boolean(trueProbability: 0.8);      faker.bytes(length: 32);
+faker.pastDateTime();                     faker.futureDateTime();
+faker.birthDate(minAge: 18, maxAge: 65);
+faker.oneOf(['a', 'b']);                  faker.listOf(3, (i) => faker.word());
+faker.maybe('value');                     // null sometimes
+```
+
+Pass `now:` to make date generation reproducible too.
+
 ## Annotations Reference
 
 | Annotation | Usage |
@@ -374,6 +543,9 @@ In-memory databases cannot be inspected and return `isEncrypted == null`.
 | `@Column(name: 'col')` | Custom column name |
 | `@Column(nullable: true)` | Nullable column |
 | `@Ignore()` | Excludes a field from the schema |
+| `@RelaxSeed()` | Generates a seeder for this model |
+| `@RelaxSeed(count: 25, order: 1)` | Rows to generate, and run order |
+| `@RelaxSeed(enabled: false)` | Never generate a seeder, even with `--seed` |
 
 ### Supported types
 
@@ -411,6 +583,9 @@ await db.close();
 +--------------------------------------------------+
 |   SyncEngine       OfflineQueue      Conflict     |
 |   (push/pull)      (persisted)       Resolver     |
++--------------------------------------------------+
+|   SeedRunner       Seeder            SeedFaker    |
+|   (ledger)         (generated)       (fake data)  |
 +--------------------------------------------------+
 |   Drift (SQLite)   SQLite3MultipleCiphers         |
 |   (hidden)         (encryption)                   |
