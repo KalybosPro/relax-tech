@@ -8,6 +8,8 @@ import 'package:source_gen/source_gen.dart';
 
 import 'package:relax_orm/relax_orm_annotations.dart';
 import 'naming_utils.dart';
+import 'options.dart';
+import 'seed_value_mapper.dart';
 import 'type_mapper.dart';
 
 /// Generates `TableSchema<T>` instances from classes annotated with `@RelaxTable()`.
@@ -29,7 +31,15 @@ import 'type_mapper.dart';
 /// ```dart
 /// final userSchema = TableSchema<User>( ... );
 /// ```
+///
+/// When seeding is enabled — `dart run relax_orm --seed`, or a `@RelaxSeed()`
+/// annotation on the model — a `UserSeeder` is emitted alongside the schema.
 class RelaxTableGenerator extends GeneratorForAnnotation<RelaxTable> {
+  RelaxTableGenerator({this.options = const RelaxOrmOptions()});
+
+  /// Build-time configuration (seeder generation and its defaults).
+  final RelaxOrmOptions options;
+
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -98,7 +108,184 @@ class RelaxTableGenerator extends GeneratorForAnnotation<RelaxTable> {
     buffer.writeln('  },');
     buffer.writeln(');');
 
+    final seed = _resolveSeedConfig(classElement);
+    if (seed != null) {
+      buffer.writeln();
+      _writeSeeder(
+        buffer,
+        className: className,
+        tableName: tableName,
+        fields: fields,
+        config: seed,
+      );
+    }
+
     return buffer.toString();
+  }
+
+  // -- Seeder generation --
+
+  /// Resolves whether (and how) a seeder should be generated for [classElement].
+  ///
+  /// `@RelaxSeed` on the model always wins — it can force generation without
+  /// the `--seed` flag, and opt out with `enabled: false` despite it.
+  _SeedConfig? _resolveSeedConfig(ClassElement classElement) {
+    final annotation = _getClassAnnotation(classElement, 'RelaxSeed');
+    if (annotation == null) {
+      return options.seed ? _SeedConfig(count: options.seedCount) : null;
+    }
+
+    final enabled = annotation.peek('enabled')?.boolValue ?? true;
+    if (!enabled) return null;
+
+    return _SeedConfig(
+      count: annotation.peek('count')?.intValue ?? options.seedCount,
+      order: annotation.peek('order')?.intValue ?? 0,
+    );
+  }
+
+  void _writeSeeder(
+    StringBuffer buffer, {
+    required String className,
+    required String tableName,
+    required List<_FieldInfo> fields,
+    required _SeedConfig config,
+  }) {
+    final seederClass = classNameToSeederClass(className);
+
+    buffer.writeln(
+      '/// Seeds the `$tableName` table with fake $className rows.',
+    );
+    buffer.writeln('///');
+    buffer.writeln('/// ```dart');
+    buffer.writeln('/// db.seeds.register($seederClass());');
+    buffer.writeln('/// await db.seeds.run();');
+    buffer.writeln('/// ```');
+    buffer.writeln('class $seederClass extends TableSeeder<$className> {');
+    buffer.writeln('  $seederClass({');
+    buffer.writeln('    super.count,');
+    buffer.writeln('    super.records,');
+    buffer.writeln('    super.builder,');
+    buffer.writeln('    super.randomSeed,');
+    buffer.writeln('    super.order,');
+    buffer.writeln('  });');
+    buffer.writeln();
+    buffer.writeln('  @override');
+    buffer.writeln("  String get tableName => '$tableName';");
+    buffer.writeln();
+    buffer.writeln('  @override');
+    buffer.writeln('  int get defaultCount => ${config.count};');
+    buffer.writeln();
+    buffer.writeln('  @override');
+    buffer.writeln('  int get defaultOrder => ${config.order};');
+    buffer.writeln();
+    buffer.writeln('  @override');
+    buffer.writeln(
+      '  $className buildOne(int index, SeedFaker faker) => $className(',
+    );
+    for (final field in fields) {
+      final value = _buildSeedExpression(field);
+      buffer.writeln('    ${field.fieldName}: $value,');
+    }
+    buffer.writeln('  );');
+    buffer.writeln('}');
+  }
+
+  String _buildSeedExpression(_FieldInfo field) {
+    return _seedValueForType(
+      field.type,
+      hint: field.columnName,
+      isPrimaryKey: field.isPrimaryKey,
+      visiting: <String>{},
+    );
+  }
+
+  /// Builds a `faker.…` expression producing a value of [type].
+  ///
+  /// [hint] is the column/field name, used to pick a realistic generator
+  /// (`email` → `faker.email()`). [visiting] guards against self-referencing
+  /// models, which would otherwise recurse forever.
+  String _seedValueForType(
+    DartType type, {
+    required String hint,
+    required Set<String> visiting,
+    bool isPrimaryKey = false,
+  }) {
+    final isNullable = type.nullabilitySuffix == NullabilitySuffix.question;
+    final baseType = _withoutNullability(type);
+    final typeName = baseType.getDisplayString();
+
+    final mapping = getTypeMapping(typeName);
+    if (mapping != null) {
+      final value = fakerCallFor(
+        columnName: hint,
+        columnConstructor: mapping.columnConstructor,
+        isPrimaryKey: isPrimaryKey,
+      );
+      // Primary keys always get a value — a null id would break the insert.
+      return isNullable && !isPrimaryKey ? 'faker.maybe($value)' : value;
+    }
+
+    if (baseType is InterfaceType &&
+        baseType.element.name == 'List' &&
+        baseType.typeArguments.length == 1) {
+      final item = _seedValueForType(
+        baseType.typeArguments.first,
+        hint: hint,
+        visiting: visiting,
+      );
+      final list = 'faker.listOf(2, (_) => $item)';
+      return isNullable ? 'faker.maybe($list)' : list;
+    }
+
+    if (baseType is InterfaceType) {
+      final classElement = baseType.element;
+      if (classElement is! ClassElement) {
+        throw InvalidGenerationSourceError(
+          'Cannot generate seed data for type "$typeName".',
+        );
+      }
+
+      if (visiting.contains(typeName)) {
+        if (isNullable) return 'null';
+        throw InvalidGenerationSourceError(
+          'Cannot generate seed data for "$typeName": it references itself '
+          'through a non-nullable field. Make the field nullable, or opt the '
+          'model out of seeding with @RelaxSeed(enabled: false).',
+          element: classElement,
+        );
+      }
+
+      final nestedFields = _collectSerializableObjectFields(classElement);
+      _validateObjectConstructor(classElement, nestedFields);
+
+      final nested = {...visiting, typeName};
+      final entries = nestedFields
+          .map((nestedField) {
+            final value = _seedValueForType(
+              nestedField.type,
+              hint: toSnakeCase(nestedField.name!),
+              visiting: nested,
+            );
+            return '${nestedField.name}: $value';
+          })
+          .join(', ');
+      final construction = '${classElement.name}($entries)';
+      return isNullable ? 'faker.maybe($construction)' : construction;
+    }
+
+    throw InvalidGenerationSourceError(
+      'Cannot generate seed data for type "$typeName".',
+    );
+  }
+
+  ConstantReader? _getClassAnnotation(ClassElement element, String name) {
+    for (final meta in element.metadata.annotations) {
+      final value = meta.computeConstantValue();
+      if (value == null) continue;
+      if (value.type?.getDisplayString() == name) return ConstantReader(value);
+    }
+    return null;
   }
 
   /// Collects all annotated/eligible fields from the class.
@@ -145,6 +332,7 @@ class RelaxTableGenerator extends GeneratorForAnnotation<RelaxTable> {
           fieldName: field.name!,
           columnName: columnName,
           columnConstructor: mapping?.columnConstructor ?? 'text',
+          type: dartType,
           isPrimaryKey: isPrimaryKey,
           isNullable: isNullable,
           defaultValue: defaultValue,
@@ -231,8 +419,9 @@ class RelaxTableGenerator extends GeneratorForAnnotation<RelaxTable> {
   String _buildFromMapExpression(DartType type, String columnName) {
     final mapping = getTypeMapping(type.getDisplayString());
     if (mapping != null) {
-      final nullable =
-          type.nullabilitySuffix == NullabilitySuffix.question ? '?' : '';
+      final nullable = type.nullabilitySuffix == NullabilitySuffix.question
+          ? '?'
+          : '';
       return "map['$columnName'] as ${mapping.dartCastType}$nullable";
     }
     return _buildDecodedValueExpression(
@@ -432,11 +621,23 @@ class RelaxTableGenerator extends GeneratorForAnnotation<RelaxTable> {
   }
 }
 
+/// Resolved seeding settings for one model.
+class _SeedConfig {
+  final int count;
+  final int order;
+
+  const _SeedConfig({required this.count, this.order = 0});
+}
+
 /// Internal representation of a field to generate code for.
 class _FieldInfo {
   final String fieldName;
   final String columnName;
   final String columnConstructor;
+
+  /// The declared Dart type — kept so the seeder generator can walk nested
+  /// models and lists the same way the JSON mapping does.
+  final DartType type;
   final bool isPrimaryKey;
   final bool isNullable;
   final String? defaultValue;
@@ -447,6 +648,7 @@ class _FieldInfo {
     required this.fieldName,
     required this.columnName,
     required this.columnConstructor,
+    required this.type,
     required this.isPrimaryKey,
     required this.isNullable,
     this.defaultValue,

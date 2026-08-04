@@ -2,7 +2,10 @@ import 'package:relax_orm/relax_orm.dart';
 
 part 'models.g.dart';
 
+// @RelaxSeed opts this model into seeder generation without needing the
+// `dart run relax_orm --seed` flag.
 @RelaxTable()
+@RelaxSeed(count: 5)
 class User {
   @PrimaryKey()
   final String id;
@@ -20,7 +23,9 @@ class User {
   });
 }
 
+// order: 1 → posts are seeded after users.
 @RelaxTable(name: 'blog_posts')
+@RelaxSeed(count: 20, order: 1)
 class Post {
   @PrimaryKey()
   final String id;

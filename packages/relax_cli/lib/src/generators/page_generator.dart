@@ -105,7 +105,7 @@ class PageGenerator {
 
     // GetX is flat: register a top-level GetPage carrying the feature binding.
     if (architecture == Architecture.getx) {
-      final file = File('${projectDir.path}/lib/app/router/app_pages.dart');
+      final file = File('${projectDir.path}/lib/core/routing/app_pages.dart');
       if (!file.existsSync()) return RouteWiring.routerMissing;
       return _map(
         SourcePatcher.insertBeforeAnchor(
@@ -123,7 +123,7 @@ class PageGenerator {
     }
 
     // go_router: nest the page under the feature's `routes:` list.
-    final file = File('${projectDir.path}/lib/app/router/app_router.dart');
+    final file = File('${projectDir.path}/lib/core/routing/app_router.dart');
     if (!file.existsSync()) return RouteWiring.routerMissing;
 
     final anchor = '// relax:routes-$parentRouteName';

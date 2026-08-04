@@ -54,8 +54,8 @@ class RouterGenerator {
   }) async {
     final isGetx = architecture == Architecture.getx;
     final routerRelPath = isGetx
-        ? 'lib/app/router/app_pages.dart'
-        : 'lib/app/router/app_router.dart';
+        ? 'lib/core/routing/app_pages.dart'
+        : 'lib/core/routing/app_router.dart';
     final routerFile = File('${projectDir.path}/$routerRelPath');
 
     if (routerFile.existsSync()) {
@@ -77,8 +77,16 @@ class RouterGenerator {
     // 2. Ensure the aggregate features barrel exists (the router imports it).
     _ensureFeaturesBarrel(projectDir);
 
-    // 3. Write the router file.
+    // 3. Write the router file (+ its `routes.dart` sibling for go_router).
     routerFile.parent.createSync(recursive: true);
+    if (!isGetx) {
+      final routesFile = File(
+        '${projectDir.path}/lib/core/routing/routes.dart',
+      );
+      if (!routesFile.existsSync()) {
+        routesFile.writeAsStringSync(SharedTemplate.routes);
+      }
+    }
     routerFile.writeAsStringSync(
       isGetx ? SharedTemplate.appPagesGetx : SharedTemplate.appRouter,
     );
@@ -135,11 +143,11 @@ class RouterGenerator {
 
   bool _wireHomePage(Directory projectDir, List<String> warnings) {
     final homePage = File(
-      '${projectDir.path}/lib/features/home/view/home_page.dart',
+      '${projectDir.path}/lib/features/home/presentation/pages/home_page.dart',
     );
     if (!homePage.existsSync()) {
       warnings.add(
-        'lib/features/home/view/home_page.dart not found — add '
+        'lib/features/home/presentation/pages/home_page.dart not found — add '
         "`static const routeName` / `routePath` to your home page manually.",
       );
       return false;
@@ -183,13 +191,13 @@ class RouterGenerator {
     }
 
     final importSnippet = isGetx
-        ? "import '../router/app_pages.dart';"
-        : "import '../router/app_router.dart';";
+        ? "import '../../core/routing/app_pages.dart';"
+        : "import '../../core/routing/app_router.dart';";
     SourcePatcher.insertAfterAnchor(
       appView,
       anchor: "import '../../core/core.dart';",
       snippet: importSnippet,
-      guard: isGetx ? 'router/app_pages.dart' : 'router/app_router.dart',
+      guard: isGetx ? 'routing/app_pages.dart' : 'routing/app_router.dart',
     );
 
     if (isGetx) {

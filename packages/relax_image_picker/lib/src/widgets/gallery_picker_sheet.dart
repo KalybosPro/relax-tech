@@ -1,14 +1,15 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:photo_manager/photo_manager.dart';
 
 import '../models/preview_item.dart';
 import '../models/relax_document_file.dart';
 import '../models/relax_image_file.dart';
+import '../models/relax_media_file.dart';
 import '../models/relax_picker_result.dart';
 import '../models/relax_picker_theme.dart';
 import '../models/relax_video_file.dart';
@@ -20,8 +21,14 @@ import 'media_preview_screen.dart';
 /// camera together in a single grid, and exposes documents as a separate view.
 enum PickerView { media, documents }
 
-/// WhatsApp-like bottom sheet that merges the gallery (photos + videos), an
-/// inline camera tile and an optional documents view.
+/// WhatsApp-like bottom sheet that gathers media (photos + videos) via the OS
+/// photo picker, an inline camera and an optional documents view.
+///
+/// Gallery browsing is delegated to the platform photo picker
+/// ([ImagePicker.pickMultipleMedia] / [ImagePicker.pickMultiImage]), so the
+/// package needs **no** `READ_MEDIA_*` runtime permission. Picked items land in
+/// an in-sheet selection tray and share the same preview / send pipeline as
+/// camera captures and documents.
 class GalleryPickerSheet extends StatefulWidget {
   const GalleryPickerSheet({
     super.key,
@@ -62,30 +69,18 @@ class GalleryPickerSheet extends StatefulWidget {
   State<GalleryPickerSheet> createState() => _GalleryPickerSheetState();
 }
 
-class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
-  static const int _pageSize = 84;
+class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
+  final ImagePicker _picker = ImagePicker();
 
-  List<AssetPathEntity> _albums = [];
-  AssetPathEntity? _currentAlbum;
-  final List<AssetEntity> _assets = [];
-
-  /// Selection preserves insertion order so we can show 1-based badges.
-  final Map<String, AssetEntity> _selectedAssets = {};
-  final List<RelaxImageFile> _capturedImages = [];
-  final List<RelaxVideoFile> _capturedVideos = [];
+  /// Every selected media item (gallery-picked or camera-captured), in
+  /// insertion order so we can show 1-based badges.
+  final List<RelaxMediaFile> _media = [];
   final List<RelaxDocumentFile> _selectedDocuments = [];
 
-  bool _isLoading = true;
-  bool _isLoadingNext = false;
-
-  /// True when the OS only granted access to a user-picked subset of the
-  /// library (Android 14+ "Selected photos" / iOS limited access). In that case
-  /// we surface a banner letting the user grant access to more items.
-  bool _isLimited = false;
+  /// True while the OS photo picker is open (disables the tile / shows a
+  /// spinner).
+  bool _isPicking = false;
   bool _isProcessing = false;
-  int _currentPage = 0;
-  bool _hasMore = true;
 
   PickerView _view = PickerView.media;
 
@@ -93,148 +88,159 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
 
   RelaxPickerTheme get _t => widget.theme;
 
-  int get _totalSelected =>
-      _selectedAssets.length +
-      _capturedImages.length +
-      _capturedVideos.length +
-      _selectedDocuments.length;
+  int get _totalSelected => _media.length + _selectedDocuments.length;
 
   @override
   void initState() {
     super.initState();
     _view = _showMedia ? PickerView.media : PickerView.documents;
-    if (_showMedia) {
-      _initializeGallery();
-    } else {
-      _isLoading = false;
-    }
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
   }
 
   // ---------------------------------------------------------------------------
-  // Gallery loading
+  // Gallery — OS photo picker
   // ---------------------------------------------------------------------------
 
-  RequestType get _requestType => widget.allowImages && widget.allowVideos
-      ? RequestType.common
-      : widget.allowImages
-          ? RequestType.image
-          : RequestType.video;
-
-  Future<void> _initializeGallery() async {
-    setState(() => _isLoading = true);
-
-    // Permission was already requested by the controller; here we only read the
-    // resolved state so we know whether to show the "limited access" banner.
-    final permissionState = await PhotoManager.requestPermissionExtend();
-    _isLimited = permissionState.isLimited;
-
-    final filterOption = FilterOptionGroup(
-      imageOption: const FilterOption(),
-      videoOption: const FilterOption(),
-      orders: [const OrderOption(type: OrderOptionType.createDate, asc: false)],
-    );
-
-    final albums = await PhotoManager.getAssetPathList(
-      type: _requestType,
-      filterOption: filterOption,
-      hasAll: true,
-    );
-
-    if (albums.isNotEmpty) {
-      _albums = albums;
-      _currentAlbum = albums.first;
-      await _loadPage(reset: true);
-    } else {
-      _albums = [];
-      _currentAlbum = null;
-      _assets.clear();
+  /// Launches the platform photo picker and appends the selection to the tray.
+  Future<void> _addFromGallery() async {
+    if (_isPicking) return;
+    final remaining = widget.maxSelection - _totalSelected;
+    if (remaining <= 0) {
+      _showMaxReached();
+      return;
     }
 
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  /// Re-opens the system "selected photos" picker so the user can widen the
-  /// granted subset, then reloads the grid with the new selection. No-op on
-  /// platforms/OS versions without limited access.
-  Future<void> _manageLimitedAccess() async {
-    await PhotoManager.presentLimited(type: _requestType);
-    // The plugin caches the asset list; clear it so the newly granted items
-    // show up instead of the stale subset.
-    await PhotoManager.clearFileCache();
-    if (mounted) await _initializeGallery();
-  }
-
-  Future<void> _loadPage({bool reset = false}) async {
-    if (_currentAlbum == null || _isLoadingNext) return;
-    _isLoadingNext = true;
-
-    if (reset) {
-      _currentPage = 0;
-      _hasMore = true;
-      _assets.clear();
-    }
-
-    final nextAssets = await _currentAlbum!.getAssetListPaged(
-      page: _currentPage,
-      size: _pageSize,
-    );
-
-    _assets.addAll(nextAssets);
-    _currentPage += 1;
-    _hasMore = nextAssets.length == _pageSize;
-    _isLoadingNext = false;
-
-    if (mounted) setState(() {});
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients || _isLoadingNext || !_hasMore) return;
-    final threshold = _scrollController.position.maxScrollExtent - 400;
-    if (_scrollController.position.pixels >= threshold) {
-      _loadPage();
-    }
-  }
-
-  void _onAlbumChanged(AssetPathEntity? album) {
-    if (album == null || album == _currentAlbum) return;
-    setState(() {
-      _currentAlbum = album;
-      _isLoading = true;
-    });
-    _loadPage(reset: true).then((_) {
-      if (mounted) setState(() => _isLoading = false);
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Selection
-  // ---------------------------------------------------------------------------
-
-  void _toggleSelection(AssetEntity asset) {
-    setState(() {
-      if (_selectedAssets.containsKey(asset.id)) {
-        _selectedAssets.remove(asset.id);
-      } else if (_totalSelected < widget.maxSelection) {
-        _selectedAssets[asset.id] = asset;
-      } else {
-        _showMaxReached();
+    setState(() => _isPicking = true);
+    try {
+      final picked = await _launchPicker(remaining);
+      for (final x in picked) {
+        if (_totalSelected >= widget.maxSelection) break;
+        // Skip duplicates (same file picked twice).
+        if (_media.any((e) => e.path == x.path)) continue;
+        final media = await _toMediaFile(x);
+        if (media != null) _media.add(media);
       }
-    });
+    } catch (e) {
+      debugPrint('Gallery pick failed: $e');
+    } finally {
+      if (mounted) setState(() => _isPicking = false);
+    }
   }
 
-  void _showMaxReached() {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text(_t.maxSelectionLabel(widget.maxSelection))),
+  /// Picks the right OS-picker call for the enabled media types. [limit] must be
+  /// > 1 for the multi-pick APIs, so a single remaining slot uses the single
+  /// pickers.
+  Future<List<XFile>> _launchPicker(int remaining) async {
+    final imagesOnly = widget.allowImages && !widget.allowVideos;
+    final videosOnly = widget.allowVideos && !widget.allowImages;
+
+    if (imagesOnly) {
+      if (remaining == 1) {
+        final x = await _picker.pickImage(source: ImageSource.gallery);
+        return x == null ? const [] : [x];
+      }
+      return _picker.pickMultiImage(limit: remaining);
+    }
+
+    // Images + videos, or videos only: pickMultipleMedia is the only multi-pick
+    // API that returns videos. image_picker has no video-only multi-pick, so for
+    // the videos-only case we filter the result (best effort).
+    final List<XFile> media;
+    if (remaining == 1) {
+      final x = await _picker.pickMedia();
+      media = x == null ? const [] : [x];
+    } else {
+      media = await _picker.pickMultipleMedia(limit: remaining);
+    }
+    return videosOnly ? media.where(_isVideoFile).toList() : media;
+  }
+
+  /// Converts an [XFile] to the package's file model, deriving best-effort
+  /// metadata (image dimensions; videos carry no metadata from the OS picker).
+  Future<RelaxMediaFile?> _toMediaFile(XFile x) async {
+    final path = x.path;
+    if (path.isEmpty) return null;
+
+    final isVideo = _isVideoFile(x);
+    if (isVideo) {
+      return RelaxVideoFile(
+        id: path,
+        path: path,
+        mimeType: x.mimeType ?? _inferMimeType(path, isVideo: true),
+        size: await _fileSize(path),
+        duration: Duration.zero,
+      );
+    }
+
+    var finalPath = path;
+    if (widget.enableCompression) {
+      finalPath = await _compressImage(path);
+    }
+    final (width, height) = await _imageDimensions(finalPath);
+    return RelaxImageFile(
+      id: path,
+      path: finalPath,
+      mimeType: x.mimeType ?? _inferMimeType(finalPath, isVideo: false),
+      size: await _fileSize(finalPath),
+      width: width,
+      height: height,
     );
   }
+
+  bool _isVideoFile(XFile x) {
+    final mime = x.mimeType;
+    if (mime != null && mime.isNotEmpty) return mime.startsWith('video/');
+    return _videoExtensions.contains(_extension(x.path));
+  }
+
+  static const _videoExtensions = {
+    'mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v', 'flv', 'wmv', 'mpeg', 'mpg',
+  };
+
+  static const _mimeByExtension = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'heic': 'image/heic',
+    'heif': 'image/heif',
+    'bmp': 'image/bmp',
+    'mp4': 'video/mp4',
+    'mov': 'video/quicktime',
+    'mkv': 'video/x-matroska',
+    'webm': 'video/webm',
+    '3gp': 'video/3gpp',
+    'm4v': 'video/x-m4v',
+  };
+
+  String _extension(String path) {
+    final i = path.lastIndexOf('.');
+    return i < 0 ? '' : path.substring(i + 1).toLowerCase();
+  }
+
+  String _inferMimeType(String path, {required bool isVideo}) =>
+      _mimeByExtension[_extension(path)] ?? (isVideo ? 'video/*' : 'image/*');
+
+  /// Decodes just enough of the image to read its pixel dimensions; returns
+  /// (0, 0) on failure.
+  Future<(int, int)> _imageDimensions(String path) async {
+    try {
+      final bytes = await File(path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final size = (image.width, image.height);
+      image.dispose();
+      codec.dispose();
+      return size;
+    } catch (_) {
+      return (0, 0);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Camera
+  // ---------------------------------------------------------------------------
 
   Future<void> _openCamera() async {
     if (_totalSelected >= widget.maxSelection) {
@@ -251,89 +257,89 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
         ),
       ),
     );
-    if (!mounted || media == null) return;
-    setState(() {
-      if (media is RelaxImageFile) {
-        _capturedImages.add(media);
-      } else if (media is RelaxVideoFile) {
-        _capturedVideos.add(media);
-      }
-    });
+    if (!mounted || media is! RelaxMediaFile) return;
+    setState(() => _media.add(media));
   }
 
-  /// All currently selected items, in a stable order (gallery, captures,
-  /// documents), surfaced to the shared preview.
+  // ---------------------------------------------------------------------------
+  // Selection
+  // ---------------------------------------------------------------------------
+
+  void _removeMedia(RelaxMediaFile media) {
+    setState(() => _media.removeWhere((e) => e.id == media.id));
+  }
+
+  void _showMaxReached() {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(_t.maxSelectionLabel(widget.maxSelection))),
+    );
+  }
+
+  /// All currently selected items, in a stable order (media then documents),
+  /// surfaced to the shared preview.
   List<PreviewItem> _selectedPreviewItems() => [
-        for (final a in _selectedAssets.values) AssetPreviewItem(a),
-        for (final img in _capturedImages) CapturedImagePreviewItem(img),
-        for (final vid in _capturedVideos) CapturedVideoPreviewItem(vid),
+        for (final m in _media) _mediaPreviewItem(m),
         for (final doc in _selectedDocuments) DocumentPreviewItem(doc),
       ];
 
+  PreviewItem _mediaPreviewItem(RelaxMediaFile m) => m is RelaxVideoFile
+      ? VideoPreviewItem(m)
+      : ImagePreviewItem(m as RelaxImageFile);
+
   bool _isItemSelected(PreviewItem item) {
     switch (item) {
-      case AssetPreviewItem(:final asset):
-        return _selectedAssets.containsKey(asset.id);
-      case CapturedImagePreviewItem(:final file):
-        return _capturedImages.any((e) => e.id == file.id);
-      case CapturedVideoPreviewItem(:final file):
-        return _capturedVideos.any((e) => e.id == file.id);
+      case ImagePreviewItem(:final file):
+        return _media.any((e) => e.id == file.id);
+      case VideoPreviewItem(:final file):
+        return _media.any((e) => e.id == file.id);
       case DocumentPreviewItem(:final document):
         return _selectedDocuments.any((e) => e.path == document.path);
+      // The system-picker tray never surfaces live gallery assets.
+      case AssetPreviewItem():
+        return false;
     }
   }
 
   void _toggleItem(PreviewItem item) {
     setState(() {
       switch (item) {
-        case AssetPreviewItem(:final asset):
-          if (_selectedAssets.containsKey(asset.id)) {
-            _selectedAssets.remove(asset.id);
-          } else if (_totalSelected < widget.maxSelection) {
-            _selectedAssets[asset.id] = asset;
-          }
-        case CapturedImagePreviewItem(:final file):
-          if (_capturedImages.any((e) => e.id == file.id)) {
-            _capturedImages.removeWhere((e) => e.id == file.id);
-          } else if (_totalSelected < widget.maxSelection) {
-            _capturedImages.add(file);
-          }
-        case CapturedVideoPreviewItem(:final file):
-          if (_capturedVideos.any((e) => e.id == file.id)) {
-            _capturedVideos.removeWhere((e) => e.id == file.id);
-          } else if (_totalSelected < widget.maxSelection) {
-            _capturedVideos.add(file);
-          }
+        case ImagePreviewItem(:final file):
+          _media.any((e) => e.id == file.id)
+              ? _media.removeWhere((e) => e.id == file.id)
+              : _addBackIfRoom(file);
+        case VideoPreviewItem(:final file):
+          _media.any((e) => e.id == file.id)
+              ? _media.removeWhere((e) => e.id == file.id)
+              : _addBackIfRoom(file);
         case DocumentPreviewItem(:final document):
           if (_selectedDocuments.any((e) => e.path == document.path)) {
             _selectedDocuments.removeWhere((e) => e.path == document.path);
           } else if (_totalSelected < widget.maxSelection) {
             _selectedDocuments.add(document);
           }
+        case AssetPreviewItem():
+          break; // Not used by the system-picker tray.
       }
     });
   }
 
-  Future<void> _openPreview({AssetEntity? startAsset}) async {
+  void _addBackIfRoom(RelaxMediaFile media) {
+    if (_totalSelected < widget.maxSelection) _media.add(media);
+  }
+
+  Future<void> _openPreview({RelaxMediaFile? startMedia}) async {
     if (!widget.enablePreview) return;
 
-    final selected = _selectedPreviewItems();
-    final List<PreviewItem> items;
-    int startIndex = 0;
-
-    if (selected.isEmpty && startAsset != null) {
-      // Long-press on an unselected tile: preview just that asset.
-      items = [AssetPreviewItem(startAsset)];
-    } else {
-      items = selected;
-      if (startAsset != null) {
-        final i = items.indexWhere(
-          (e) => e is AssetPreviewItem && e.asset.id == startAsset.id,
-        );
-        if (i >= 0) startIndex = i;
-      }
-    }
+    final items = _selectedPreviewItems();
     if (items.isEmpty) return;
+
+    var startIndex = 0;
+    if (startMedia != null) {
+      final i = items.indexWhere((e) =>
+          (e is ImagePreviewItem && e.file.id == startMedia.id) ||
+          (e is VideoPreviewItem && e.file.id == startMedia.id));
+      if (i >= 0) startIndex = i;
+    }
 
     final shouldSend = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -399,62 +405,14 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
     }
   }
 
-  Future<void> _onDone() async {
+  void _onDone() {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
 
-    final images = <RelaxImageFile>[];
-    final videos = <RelaxVideoFile>[];
+    final images = _media.whereType<RelaxImageFile>().toList();
+    final videos = _media.whereType<RelaxVideoFile>().toList();
+    final files = <RelaxMediaFile>[...images, ...videos, ..._selectedDocuments];
 
-    try {
-      for (final asset in _selectedAssets.values) {
-        final file = await asset.file;
-        final path = file?.path ?? '';
-        final mimeType = asset.mimeType ?? 'application/octet-stream';
-
-        if (asset.type == AssetType.video) {
-          videos.add(
-            RelaxVideoFile(
-              id: asset.id,
-              path: path,
-              mimeType: mimeType,
-              size: await _fileSize(path),
-              duration: asset.videoDuration,
-              width: asset.width,
-              height: asset.height,
-              creationDate: asset.createDateTime,
-              albumId: _currentAlbum?.id,
-            ),
-          );
-        } else {
-          var finalPath = path;
-          if (widget.enableCompression && path.isNotEmpty && asset.width > 1920) {
-            finalPath = await _compressImage(path);
-          }
-          images.add(
-            RelaxImageFile(
-              id: asset.id,
-              path: finalPath,
-              mimeType: mimeType,
-              size: await _fileSize(finalPath),
-              width: asset.width,
-              height: asset.height,
-              creationDate: asset.createDateTime,
-              albumId: _currentAlbum?.id,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Error processing selected assets: $e');
-    }
-
-    images.addAll(_capturedImages);
-    videos.addAll(_capturedVideos);
-
-    final files = <dynamic>[...images, ...videos, ..._selectedDocuments];
-
-    if (!mounted) return;
     Navigator.of(context).pop(
       RelaxPickerResult(
         files: List.unmodifiable(files),
@@ -471,11 +429,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final maxHeight =
-        MediaQuery.of(context).size.height * _t.heightFactor;
+    final maxHeight = MediaQuery.of(context).size.height * _t.heightFactor;
 
     return Container(
       height: maxHeight,
@@ -540,17 +496,15 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
 
   Widget _buildHeader(ThemeData theme, ColorScheme cs) {
     return Padding(
-      padding: const .symmetric(horizontal: 16.0,vertical: 4),
+      padding: const .symmetric(horizontal: 16.0, vertical: 4),
       child: Row(
         children: [
           Expanded(
-            child: _view == PickerView.media && _albums.isNotEmpty
-                ? _buildAlbumSelector(cs)
-                : Text(
-                    widget.title,
-                    style: _t.titleTextStyle ?? theme.textTheme.titleMedium,
-                    overflow: .ellipsis,
-                  ),
+            child: Text(
+              widget.title,
+              style: _t.titleTextStyle ?? theme.textTheme.titleMedium,
+              overflow: .ellipsis,
+            ),
           ),
           if (_totalSelected > 0)
             Padding(
@@ -564,33 +518,6 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAlbumSelector(ColorScheme cs) {
-    return DropdownButtonHideUnderline(
-      child: DropdownButton<AssetPathEntity>(
-        value: _currentAlbum,
-        isDense: true,
-        borderRadius: .circular(12),
-        icon: Icon(_t.albumDropdownIcon, color: cs.onSurface),
-        style: _t.albumTextStyle ??
-            TextStyle(
-              color: cs.onSurface,
-              fontWeight: .w600,
-              fontSize: 16,
-            ),
-        dropdownColor: cs.surface,
-        items: _albums
-            .map(
-              (album) => DropdownMenuItem(
-                value: album,
-                child: Text(album.name, overflow: .ellipsis),
-              ),
-            )
-            .toList(),
-        onChanged: _onAlbumChanged,
       ),
     );
   }
@@ -659,91 +586,21 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
   }
 
   Widget _buildMediaGrid(ColorScheme cs) {
-    if (_isLoading) {
-      return Center(child: CircularProgressIndicator(color: widget.theme.accentColor));
-    }
+    final tiles = <Widget>[
+      if (widget.enableCamera) _buildCameraTile(cs),
+      _buildAddFromGalleryTile(cs),
+      for (final m in _media) _buildMediaTile(m, cs),
+    ];
 
-    final hasCameraTile = widget.enableCamera;
-    final itemCount = _assets.length + (hasCameraTile ? 1 : 0);
-
-    final Widget grid;
-    if (itemCount == 0) {
-      grid = _t.emptyMediaBuilder?.call(context) ??
-          Center(
-            child: Text(
-              _t.noMediaLabel,
-              style: _t.emptyStateTitleStyle ??
-                  TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
-            ),
-          );
-    } else {
-      grid = _buildAssetGrid(cs, itemCount, hasCameraTile);
-    }
-
-    // When access is limited, the grid alone can look empty or partial; the
-    // banner explains why and lets the user grant access to more items.
-    if (!_isLimited) return grid;
-    return Column(
-      children: [
-        _buildLimitedAccessBanner(cs),
-        Expanded(child: grid),
-      ],
-    );
-  }
-
-  Widget _buildLimitedAccessBanner(ColorScheme cs) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(8, 0, 8, 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: widget.theme.accentColor.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, size: 18, color: widget.theme.accentColor),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _t.limitedAccessLabel,
-              style: _t.fileSizeTextStyle ??
-                  TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurface.withValues(alpha: 0.8),
-                  ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: _manageLimitedAccess,
-            style: TextButton.styleFrom(
-              foregroundColor: widget.theme.accentColor,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(_t.manageAccessLabel),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAssetGrid(ColorScheme cs, int itemCount, bool hasCameraTile) {
     return GridView.builder(
-      controller: _scrollController,
       padding: const .symmetric(horizontal: 2),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 2,
         mainAxisSpacing: 2,
       ),
-      itemCount: itemCount,
-      itemBuilder: (context, index) {
-        if (hasCameraTile && index == 0) return _buildCameraTile(cs);
-        final asset = _assets[index - (hasCameraTile ? 1 : 0)];
-        return _buildAssetTile(asset, cs);
-      },
+      itemCount: tiles.length,
+      itemBuilder: (context, index) => tiles[index],
     );
   }
 
@@ -751,78 +608,71 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
     if (_t.cameraTileBuilder != null) {
       return _t.cameraTileBuilder!(context, onTap: _openCamera);
     }
-    return GestureDetector(
+    return _EntryTile(
+      icon: _t.cameraTileIcon,
+      label: widget.cameraTabText,
+      accentColor: widget.theme.accentColor,
+      textStyle: _t.tabTextStyle,
       onTap: _openCamera,
-      child: Container(
-        color: cs.onSurface.withValues(alpha: 0.06),
-        child: Column(
-          mainAxisAlignment: .center,
-          children: [
-            Icon(_t.cameraTileIcon,
-                color: widget.theme.accentColor, size: 32),
-            const SizedBox(height: 6),
-            Text(
-              widget.cameraTabText,
-              style: _t.tabTextStyle ??
-                  TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildAssetTile(AssetEntity asset, ColorScheme cs) {
-    final isSelected = _selectedAssets.containsKey(asset.id);
-    final selectionIndex =
-        _selectedAssets.keys.toList().indexOf(asset.id) + 1;
+  Widget _buildAddFromGalleryTile(ColorScheme cs) {
+    return _EntryTile(
+      icon: _t.addFromGalleryIcon,
+      label: _t.addFromGalleryLabel,
+      accentColor: widget.theme.accentColor,
+      textStyle: _t.tabTextStyle,
+      busy: _isPicking,
+      onTap: _isPicking ? null : _addFromGallery,
+    );
+  }
+
+  Widget _buildMediaTile(RelaxMediaFile media, ColorScheme cs) {
+    final isVideo = media is RelaxVideoFile;
+    final selectionIndex = _media.indexWhere((e) => e.id == media.id) + 1;
+    final thumbnail = _mediaThumbnail(media, cs);
 
     if (_t.mediaTileBuilder != null) {
       return _t.mediaTileBuilder!(
         context,
-        asset: asset,
-        selected: isSelected,
+        media: media,
+        selected: true,
         selectionIndex: selectionIndex,
-        isVideo: asset.type == AssetType.video,
-        videoDuration: asset.videoDuration,
-        thumbnail: _AssetThumbnail(key: ValueKey(asset.id), asset: asset),
-        onTap: () => _toggleSelection(asset),
-        onLongPress: () => _openPreview(startAsset: asset),
+        isVideo: isVideo,
+        videoDuration: isVideo ? media.duration : Duration.zero,
+        thumbnail: thumbnail,
+        onTap: () => _removeMedia(media),
+        onLongPress: () => _openPreview(startMedia: media),
       );
     }
 
     return GestureDetector(
-      onTap: () => _toggleSelection(asset),
-      onLongPress: () => _openPreview(startAsset: asset),
+      onTap: () => _removeMedia(media),
+      onLongPress: () => _openPreview(startMedia: media),
       child: Stack(
         fit: .expand,
         children: [
-          AnimatedPadding(
-            duration: const Duration(milliseconds: 150),
-            padding: .all(isSelected ? 10 : 0),
-            child: _AssetThumbnail(key: ValueKey(asset.id), asset: asset),
+          Padding(
+            padding: const .all(10),
+            child: thumbnail,
           ),
-          if (asset.type == AssetType.video)
+          if (isVideo && media.duration > Duration.zero)
             Positioned(
               left: 6,
               bottom: 6,
               child: Container(
-                padding:
-                    const .symmetric(horizontal: 6, vertical: 2),
+                padding: const .symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: .circular(12),
                 ),
                 child: Row(
                   children: [
-                    Icon(_t.videoBadgeIcon,
-                        color: Colors.white, size: 12),
+                    Icon(_t.videoBadgeIcon, color: Colors.white, size: 12),
                     const SizedBox(width: 3),
                     Text(
-                      _formatDuration(asset.videoDuration),
+                      _formatDuration(media.duration),
                       style: _t.durationTextStyle ??
                           const TextStyle(color: Colors.white, fontSize: 11),
                     ),
@@ -830,14 +680,14 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
                 ),
               ),
             ),
-          if (isSelected)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Container(
-                  color: widget.theme.accentColor.withValues(alpha: 0.15),
-                ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                margin: const .all(10),
+                color: widget.theme.accentColor.withValues(alpha: 0.15),
               ),
             ),
+          ),
           Positioned(
             top: 6,
             right: 6,
@@ -846,24 +696,43 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
               height: 22,
               decoration: BoxDecoration(
                 shape: .circle,
-                color: isSelected ? widget.theme.accentColor : Colors.black26,
+                color: widget.theme.accentColor,
                 border: .all(color: Colors.white, width: 1.5),
               ),
               alignment: .center,
-              child: isSelected
-                  ? Text(
-                      '$selectionIndex',
-                      style: _t.selectionBadgeTextStyle ??
-                          const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    )
-                  : null,
+              child: Text(
+                '$selectionIndex',
+                style: _t.selectionBadgeTextStyle ??
+                    const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Video files have no still frame from the OS picker, so they show a themed
+  /// placeholder; images render straight from disk.
+  Widget _mediaThumbnail(RelaxMediaFile media, ColorScheme cs) {
+    if (media is RelaxVideoFile) {
+      return Container(
+        color: Colors.black87,
+        alignment: .center,
+        child: Icon(_t.playIcon, color: Colors.white70, size: 28),
+      );
+    }
+    return Image.file(
+      File(media.path),
+      fit: .cover,
+      gaplessPlayback: true,
+      errorBuilder: (context, error, stack) => Container(
+        color: cs.onSurface.withValues(alpha: 0.05),
+        child: Icon(_t.brokenImageIcon, color: Colors.grey),
       ),
     );
   }
@@ -997,98 +866,58 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> with AutomaticK
     final seconds = duration.inSeconds % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
-  
-  @override
-  bool get wantKeepAlive => true;
 }
 
-/// Lightweight thumbnail tile with a process-wide LRU cache.
-///
-/// Loading happens off the build phase (in [initState]), which avoids the
-/// `setState` during build storms of the previous implementation.
-class _AssetThumbnail extends StatefulWidget {
-  const _AssetThumbnail({super.key, required this.asset});
+/// A square entry tile (camera / add-from-gallery) shown at the head of the
+/// media grid.
+class _EntryTile extends StatelessWidget {
+  const _EntryTile({
+    required this.icon,
+    required this.label,
+    required this.accentColor,
+    required this.onTap,
+    this.textStyle,
+    this.busy = false,
+  });
 
-  final AssetEntity asset;
-
-  @override
-  State<_AssetThumbnail> createState() => _AssetThumbnailState();
-}
-
-class _AssetThumbnailState extends State<_AssetThumbnail> with AutomaticKeepAliveClientMixin {
-  static final Map<String, Uint8List> _cache = {};
-  static final List<String> _order = [];
-  static const int _maxCache = 300;
-
-  Uint8List? _data;
-  bool _failed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(covariant _AssetThumbnail oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.asset.id != widget.asset.id) {
-      _data = null;
-      _failed = false;
-      _load();
-    }
-  }
-
-  static void _put(String id, Uint8List data) {
-    if (!_cache.containsKey(id)) _order.add(id);
-    _cache[id] = data;
-    while (_order.length > _maxCache) {
-      _cache.remove(_order.removeAt(0));
-    }
-  }
-
-  Future<void> _load() async {
-    final id = widget.asset.id;
-    final cached = _cache[id];
-    if (cached != null) {
-      setState(() => _data = cached);
-      return;
-    }
-    try {
-      final data = await widget.asset
-          .thumbnailDataWithSize(const ThumbnailSize.square(250));
-      if (!mounted) return;
-      if (data != null) {
-        _put(id, data);
-        setState(() => _data = data);
-      } else {
-        setState(() => _failed = true);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
-    }
-  }
+  final IconData icon;
+  final String label;
+  final Color accentColor;
+  final VoidCallback? onTap;
+  final TextStyle? textStyle;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    final placeholder = Container(
-      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-    );
-    if (_failed) {
-      return Container(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-        child: const Icon(Icons.broken_image, color: Colors.grey),
-      );
-    }
-    if (_data == null) return placeholder;
-    return Image.memory(
-      _data!,
-      fit: .cover,
-      gaplessPlayback: true,
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        color: cs.onSurface.withValues(alpha: 0.06),
+        child: Column(
+          mainAxisAlignment: .center,
+          children: [
+            if (busy)
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: accentColor),
+              )
+            else
+              Icon(icon, color: accentColor, size: 32),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: textStyle ??
+                  TextStyle(
+                    color: cs.onSurface.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
-  
-  @override
-  bool get wantKeepAlive => true;
 }

@@ -1,4 +1,5 @@
 export 'preview_item.dart';
+export 'relax_gallery_mode.dart';
 export 'relax_picker_builders.dart';
 export 'relax_picker_theme.dart';
 export 'relax_document_file.dart';

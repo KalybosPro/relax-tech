@@ -140,7 +140,7 @@ void main() {
       );
 
       // Verify PascalCase substitution worked
-      if (file.path.contains('bloc')) {
+      if (file.path.contains('cubit')) {
         expect(content, contains('UserSettings'));
       }
     }

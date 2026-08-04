@@ -47,6 +47,7 @@ class RelaxPickerTheme {
     this.cameraTileIcon = Icons.photo_camera,
     this.galleryTabIcon = Icons.photo_library_outlined,
     this.documentsTabIcon = Icons.insert_drive_file_outlined,
+    this.addFromGalleryIcon = Icons.add_photo_alternate_outlined,
     this.albumDropdownIcon = Icons.keyboard_arrow_down,
     this.sendIcon = Icons.send_rounded,
     this.previewIcon = Icons.visibility_outlined,
@@ -68,6 +69,7 @@ class RelaxPickerTheme {
     this.videoLabel = 'Vidéo',
     this.selectTooltip = 'Sélectionner',
     this.deselectTooltip = 'Désélectionner',
+    this.addFromGalleryLabel = 'Galerie',
     this.limitedAccessLabel =
         'Vous n\'avez autorisé l\'accès qu\'à certaines photos',
     this.manageAccessLabel = 'Gérer',
@@ -80,6 +82,7 @@ class RelaxPickerTheme {
     this.browseButtonBuilder,
     this.tabBuilder,
     this.mediaTileBuilder,
+    this.assetTileBuilder,
     this.cameraTileBuilder,
     this.documentTileBuilder,
     this.emptyMediaBuilder,
@@ -124,6 +127,11 @@ class RelaxPickerTheme {
   final IconData cameraTileIcon;
   final IconData galleryTabIcon;
   final IconData documentsTabIcon;
+
+  /// Icon on the "add from gallery" tile that launches the OS photo picker.
+  final IconData addFromGalleryIcon;
+
+  /// Dropdown chevron for the album selector (in-app grid mode).
   final IconData albumDropdownIcon;
   final IconData sendIcon;
   final IconData previewIcon;
@@ -146,12 +154,16 @@ class RelaxPickerTheme {
   final String selectTooltip;
   final String deselectTooltip;
 
+  /// Caption on the tile that launches the OS photo picker.
+  final String addFromGalleryLabel;
+
   /// Shown in the banner when the user granted access to only a subset of their
-  /// library (Android 14+ "Selected photos" / iOS limited access).
+  /// library (Android 14+ "Selected photos" / iOS limited access). In-app grid
+  /// mode only.
   final String limitedAccessLabel;
 
   /// Action label on the limited-access banner that re-opens the system picker
-  /// so the user can grant access to more items.
+  /// so the user can grant access to more items. In-app grid mode only.
   final String manageAccessLabel;
 
   /// Builds the "maximum reached" message; defaults to `Maximum <n>`.
@@ -164,6 +176,9 @@ class RelaxPickerTheme {
   final RelaxIconButtonBuilder? browseButtonBuilder;
   final RelaxTabBuilder? tabBuilder;
   final RelaxMediaTileBuilder? mediaTileBuilder;
+
+  /// Replaces a gallery-asset grid tile in **in-app grid** mode.
+  final RelaxAssetTileBuilder? assetTileBuilder;
   final RelaxCameraTileBuilder? cameraTileBuilder;
   final RelaxDocumentTileBuilder? documentTileBuilder;
   final RelaxEmptyStateBuilder? emptyMediaBuilder;
@@ -203,6 +218,7 @@ class RelaxPickerTheme {
     IconData? cameraTileIcon,
     IconData? galleryTabIcon,
     IconData? documentsTabIcon,
+    IconData? addFromGalleryIcon,
     IconData? albumDropdownIcon,
     IconData? sendIcon,
     IconData? previewIcon,
@@ -222,6 +238,7 @@ class RelaxPickerTheme {
     String? videoLabel,
     String? selectTooltip,
     String? deselectTooltip,
+    String? addFromGalleryLabel,
     String? limitedAccessLabel,
     String? manageAccessLabel,
     String Function(int maxSelection)? maxSelectionLabelBuilder,
@@ -231,6 +248,7 @@ class RelaxPickerTheme {
     RelaxIconButtonBuilder? browseButtonBuilder,
     RelaxTabBuilder? tabBuilder,
     RelaxMediaTileBuilder? mediaTileBuilder,
+    RelaxAssetTileBuilder? assetTileBuilder,
     RelaxCameraTileBuilder? cameraTileBuilder,
     RelaxDocumentTileBuilder? documentTileBuilder,
     RelaxEmptyStateBuilder? emptyMediaBuilder,
@@ -268,6 +286,7 @@ class RelaxPickerTheme {
       cameraTileIcon: cameraTileIcon ?? this.cameraTileIcon,
       galleryTabIcon: galleryTabIcon ?? this.galleryTabIcon,
       documentsTabIcon: documentsTabIcon ?? this.documentsTabIcon,
+      addFromGalleryIcon: addFromGalleryIcon ?? this.addFromGalleryIcon,
       albumDropdownIcon: albumDropdownIcon ?? this.albumDropdownIcon,
       sendIcon: sendIcon ?? this.sendIcon,
       previewIcon: previewIcon ?? this.previewIcon,
@@ -287,6 +306,7 @@ class RelaxPickerTheme {
       videoLabel: videoLabel ?? this.videoLabel,
       selectTooltip: selectTooltip ?? this.selectTooltip,
       deselectTooltip: deselectTooltip ?? this.deselectTooltip,
+      addFromGalleryLabel: addFromGalleryLabel ?? this.addFromGalleryLabel,
       limitedAccessLabel: limitedAccessLabel ?? this.limitedAccessLabel,
       manageAccessLabel: manageAccessLabel ?? this.manageAccessLabel,
       maxSelectionLabelBuilder:
@@ -297,6 +317,7 @@ class RelaxPickerTheme {
       browseButtonBuilder: browseButtonBuilder ?? this.browseButtonBuilder,
       tabBuilder: tabBuilder ?? this.tabBuilder,
       mediaTileBuilder: mediaTileBuilder ?? this.mediaTileBuilder,
+      assetTileBuilder: assetTileBuilder ?? this.assetTileBuilder,
       cameraTileBuilder: cameraTileBuilder ?? this.cameraTileBuilder,
       documentTileBuilder: documentTileBuilder ?? this.documentTileBuilder,
       emptyMediaBuilder: emptyMediaBuilder ?? this.emptyMediaBuilder,

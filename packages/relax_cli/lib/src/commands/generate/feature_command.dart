@@ -23,7 +23,7 @@ class FeatureCommand extends Command<int> {
     argParser.addFlag(
       'route',
       defaultsTo: true,
-      help: 'Register the feature in the app router (lib/app/router).',
+      help: 'Register the feature in the app router (lib/core/routing).',
     );
   }
 
@@ -148,12 +148,12 @@ class FeatureCommand extends Command<int> {
   void _reportRouteWiring(RouteWiring wiring) {
     switch (wiring) {
       case RouteWiring.wired:
-        _logger.info('Route registered in lib/app/router/app_router.dart.');
+        _logger.info('Route registered in lib/core/routing/app_router.dart.');
       case RouteWiring.alreadyPresent:
         _logger.info('Route already registered — router left unchanged.');
       case RouteWiring.routerMissing:
         _logger.warn(
-          'No app router found (lib/app/router/app_router.dart). '
+          'No app router found (lib/core/routing/app_router.dart). '
           'Route not registered.',
         );
       case RouteWiring.anchorMissing:

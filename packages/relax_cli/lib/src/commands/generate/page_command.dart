@@ -97,7 +97,9 @@ class PageCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final pageFile = File('${featureDir.path}/view/${pageName}_page.dart');
+    final pageFile = File(
+      '${featureDir.path}/presentation/pages/${pageName}_page.dart',
+    );
     if (pageFile.existsSync()) {
       _logger.err('Page "$pageName" already exists in feature "$folderName".');
       return ExitCode.usage.code;
@@ -135,11 +137,12 @@ class PageCommand extends Command<int> {
 
       // Auto-export the new page from the feature barrel.
       final barrel = File('${featureDir.path}/$featureName.dart');
-      final exportLine = "export 'view/${pageName}_page.dart';";
+      final exportLine =
+          "export 'presentation/pages/${pageName}_page.dart';";
       final export = SourcePatcher.ensureLine(
         barrel,
         line: exportLine,
-        guard: 'view/${pageName}_page.dart',
+        guard: 'presentation/pages/${pageName}_page.dart',
       );
       if (export.status == PatchStatus.inserted) {
         _logger.info(

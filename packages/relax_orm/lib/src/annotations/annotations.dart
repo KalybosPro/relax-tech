@@ -45,7 +45,41 @@ class Ignore {
   const Ignore();
 }
 
+/// Opts a `@RelaxTable` model into seeder generation.
+///
+/// Run `dart run relax_orm --seed` (or `dart run build_runner build` with the
+/// `seed` builder option) and the generator emits a `TableSeeder` subclass next
+/// to the schema — `User` → `UserSeeder` — that fills the table with
+/// deterministic fake data.
+///
+/// ```dart
+/// @RelaxTable()
+/// @RelaxSeed(count: 25, order: 1)
+/// class User { ... }
+/// ```
+///
+/// Without this annotation, `--seed` still generates a seeder for every
+/// `@RelaxTable` model. Use `@RelaxSeed(enabled: false)` to opt a single model
+/// out.
+class RelaxSeed {
+  /// How many rows the generated seeder inserts by default.
+  final int count;
+
+  /// Execution order of the generated seeder (ascending). Lower runs first —
+  /// use it when one table's rows reference another's.
+  final int order;
+
+  /// Whether to generate a seeder for this model.
+  ///
+  /// `true` forces generation even without the `--seed` flag; `false` opts the
+  /// model out even with it.
+  final bool enabled;
+
+  const RelaxSeed({this.count = 10, this.order = 0, this.enabled = true});
+}
+
 // Shorthand constants for cleaner annotation syntax.
 const relaxTable = RelaxTable();
 const primaryKey = PrimaryKey();
 const ignore = Ignore();
+const relaxSeed = RelaxSeed();

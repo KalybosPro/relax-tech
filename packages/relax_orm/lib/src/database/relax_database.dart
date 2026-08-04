@@ -22,31 +22,46 @@ class RelaxDatabase extends GeneratedDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          // Table creation is handled by RelaxDB.open() via raw SQL,
-          // so we don't use Drift's migration system.
-        },
-      );
+    onCreate: (m) async {
+      // Table creation is handled by RelaxDB.open() via raw SQL,
+      // so we don't use Drift's migration system.
+    },
+  );
 
   /// Executes a raw CREATE TABLE statement.
   Future<void> createTable(String sql) async {
     await customStatement(sql);
-    logger.log(RelaxLogCategory.database, 'createTable',
-        level: RelaxLogLevel.info, details: sql);
+    logger.log(
+      RelaxLogCategory.database,
+      'createTable',
+      level: RelaxLogLevel.info,
+      details: sql,
+    );
   }
 
   /// Inserts a row and returns the number of affected rows.
-  Future<int> rawInsert(String table, Map<String, Object?> values) async {
+  ///
+  /// With [replace], a row conflicting on the primary key is overwritten
+  /// instead of raising a constraint error.
+  Future<int> rawInsert(
+    String table,
+    Map<String, Object?> values, {
+    bool replace = false,
+  }) async {
     final columns = values.keys.join(', ');
     final placeholders = values.keys.map((_) => '?').join(', ');
-    final sql = 'INSERT INTO $table ($columns) VALUES ($placeholders)';
+    final verb = replace ? 'INSERT OR REPLACE INTO' : 'INSERT INTO';
+    final sql = '$verb $table ($columns) VALUES ($placeholders)';
     final affected = await customInsert(
       sql,
       variables: _toVariables(values.values),
       updates: {tableRef(table)},
     );
-    logger.log(RelaxLogCategory.crud, 'INSERT $table ($affected row(s))',
-        details: sql);
+    logger.log(
+      RelaxLogCategory.crud,
+      'INSERT $table ($affected row(s))',
+      details: sql,
+    );
     return affected;
   }
 
@@ -65,8 +80,11 @@ class RelaxDatabase extends GeneratedDatabase {
       variables: _toVariables(allArgs),
       updates: {tableRef(table)},
     );
-    logger.log(RelaxLogCategory.crud, 'UPDATE $table ($affected row(s))',
-        details: sql);
+    logger.log(
+      RelaxLogCategory.crud,
+      'UPDATE $table ($affected row(s))',
+      details: sql,
+    );
     return affected;
   }
 
@@ -82,8 +100,11 @@ class RelaxDatabase extends GeneratedDatabase {
       variables: _toVariables(whereArgs),
       updates: {tableRef(table)},
     );
-    logger.log(RelaxLogCategory.crud, 'DELETE $table ($affected row(s))',
-        details: sql);
+    logger.log(
+      RelaxLogCategory.crud,
+      'DELETE $table ($affected row(s))',
+      details: sql,
+    );
     return affected;
   }
 
@@ -103,8 +124,11 @@ class RelaxDatabase extends GeneratedDatabase {
       variables: _toVariables(whereArgs ?? []),
     ).get();
 
-    logger.log(RelaxLogCategory.crud, 'SELECT $table (${results.length} row(s))',
-        details: buffer.toString());
+    logger.log(
+      RelaxLogCategory.crud,
+      'SELECT $table (${results.length} row(s))',
+      details: buffer.toString(),
+    );
     return results.map((row) => row.data).toList();
   }
 
@@ -120,9 +144,11 @@ class RelaxDatabase extends GeneratedDatabase {
       variables: _toVariables(whereArgs),
     ).get();
 
-    logger.log(RelaxLogCategory.crud,
-        'SELECT $table LIMIT 1 (${results.isEmpty ? 0 : 1} row(s))',
-        details: sql);
+    logger.log(
+      RelaxLogCategory.crud,
+      'SELECT $table LIMIT 1 (${results.isEmpty ? 0 : 1} row(s))',
+      details: sql,
+    );
     if (results.isEmpty) return null;
     return results.first.data;
   }
@@ -159,6 +185,10 @@ class RelaxDatabase extends GeneratedDatabase {
 
   /// Inserts multiple rows in a single batch.
   ///
+  /// With [replace], rows conflicting on the primary key are overwritten
+  /// (`INSERT OR REPLACE`) instead of raising a constraint error — that's what
+  /// backs `Collection.upsertAll` and makes re-running a seeder converge.
+  ///
   /// Raw `customStatement`s inside a [batch] don't tell Drift which table was
   /// written, so active `watch()` streams wouldn't be notified on their own.
   /// We therefore emit an explicit [TableUpdate] for [table] after the batch so
@@ -166,20 +196,24 @@ class RelaxDatabase extends GeneratedDatabase {
   /// `Collection.addAll` import).
   Future<void> rawBatchInsert(
     String table,
-    List<Map<String, Object?>> rows,
-  ) async {
+    List<Map<String, Object?>> rows, {
+    bool replace = false,
+  }) async {
     if (rows.isEmpty) return;
+    final verb = replace ? 'INSERT OR REPLACE INTO' : 'INSERT INTO';
     await batch((b) {
       for (final row in rows) {
         final columns = row.keys.join(', ');
         final placeholders = row.keys.map((_) => '?').join(', ');
-        final sql = 'INSERT INTO $table ($columns) VALUES ($placeholders)';
+        final sql = '$verb $table ($columns) VALUES ($placeholders)';
         b.customStatement(sql, [...row.values]);
       }
     });
     notifyUpdates({TableUpdate(table, kind: UpdateKind.insert)});
-    logger.log(RelaxLogCategory.crud,
-        'BATCH INSERT $table (${rows.length} row(s))');
+    logger.log(
+      RelaxLogCategory.crud,
+      'BATCH INSERT $table (${rows.length} row(s))',
+    );
   }
 
   /// Returns the number of rows in a table.
@@ -227,7 +261,8 @@ class _RawTableReference extends ResultSetImplementation<Table, dynamic> {
       throw UnsupportedError('Not needed for stream tracking');
 
   @override
-  Table get asDslTable => throw UnsupportedError('Not needed for stream tracking');
+  Table get asDslTable =>
+      throw UnsupportedError('Not needed for stream tracking');
 
   @override
   ResultSetImplementation<Table, dynamic> createAlias(String alias) => this;

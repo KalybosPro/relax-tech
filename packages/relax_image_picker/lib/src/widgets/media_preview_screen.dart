@@ -12,10 +12,9 @@ import 'document_thumbnail.dart';
 ///
 /// Mirrors WhatsApp's review step: swipe between items, toggle selection with
 /// the corner check, and confirm with the send button. Selection changes are
-/// reported live through [onToggle] so the underlying grid stays in sync.
+/// reported live through [onToggle] so the underlying tray stays in sync.
 ///
-/// Items can be gallery assets, in-session captures or documents — see
-/// [PreviewItem].
+/// Items can be images, videos or documents — see [PreviewItem].
 class MediaPreviewScreen extends StatefulWidget {
   const MediaPreviewScreen({
     super.key,
@@ -137,10 +136,12 @@ class _MediaPreviewScreenState extends State<MediaPreviewScreen> {
         return asset.type == AssetType.video
             ? '${t.videoLabel} · ${_formatDuration(asset.videoDuration)}'
             : t.photoLabel;
-      case CapturedImagePreviewItem():
+      case ImagePreviewItem():
         return t.photoLabel;
-      case CapturedVideoPreviewItem(:final file):
-        return '${t.videoLabel} · ${_formatDuration(file.duration)}';
+      case VideoPreviewItem(:final file):
+        return file.duration > Duration.zero
+            ? '${t.videoLabel} · ${_formatDuration(file.duration)}'
+            : t.videoLabel;
       case DocumentPreviewItem(:final document):
         return document.fileName;
     }
@@ -164,9 +165,9 @@ class _PreviewPage extends StatelessWidget {
     switch (item) {
       case AssetPreviewItem(:final asset):
         return _AssetPage(asset: asset, theme: theme);
-      case CapturedImagePreviewItem(:final file):
+      case ImagePreviewItem(:final file):
         return _FileImagePage(path: file.path, theme: theme);
-      case CapturedVideoPreviewItem(:final file):
+      case VideoPreviewItem(:final file):
         return _VideoPlaceholderPage(
           label: _basename(file.path),
           theme: theme,
@@ -184,7 +185,8 @@ class _PreviewPage extends StatelessWidget {
       path.isEmpty ? '' : path.split(RegExp(r'[/\\]')).last;
 }
 
-/// Gallery asset: a fast thumbnail first, then the full-resolution file.
+/// Gallery asset (in-app grid mode): a fast thumbnail first, then the
+/// full-resolution file.
 class _AssetPage extends StatefulWidget {
   const _AssetPage({required this.asset, required this.theme});
 
@@ -243,7 +245,7 @@ class _AssetPageState extends State<_AssetPage> {
   }
 }
 
-/// In-session captured image (already a file on disk).
+/// A picked image (already a file on disk).
 class _FileImagePage extends StatelessWidget {
   const _FileImagePage({required this.path, required this.theme});
 

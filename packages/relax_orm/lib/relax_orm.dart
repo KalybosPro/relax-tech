@@ -28,6 +28,12 @@ export 'src/core/collection.dart';
 export 'src/core/query_builder.dart';
 export 'src/core/relax_orm_json.dart';
 
+// Seeding
+export 'src/seed/seed_faker.dart';
+export 'src/seed/seed_report.dart';
+export 'src/seed/seed_runner.dart';
+export 'src/seed/seeder.dart';
+
 // Logging
 export 'src/logging/relax_logger.dart';
 

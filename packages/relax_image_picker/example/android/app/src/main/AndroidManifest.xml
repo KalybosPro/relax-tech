@@ -1,17 +1,21 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Camera capture + microphone for video recording -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Camera capture + microphone for video recording (in-app camera only) -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
-    <!-- Gallery access on Android 13+ (API 33+) -->
+    <!-- This example uses RelaxGalleryMode.inAppGrid (the in-app WhatsApp-style
+         grid), which reads the device library and therefore needs the granular
+         media permissions below. Apps using the default systemPicker mode can
+         omit ALL of these. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <!-- Android 14 (API 34) partial / "selected photos" access -->
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
-
     <!-- Gallery access on Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32"/>
+        android:maxSdkVersion="32"
+        tools:node="replace"/>
 
     <application
         android:label="relax_image_picker_example"

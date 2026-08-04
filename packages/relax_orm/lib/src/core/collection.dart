@@ -49,6 +49,19 @@ class Collection<T> {
     return rows.map(_schema.rowToEntity).toList();
   }
 
+  /// Inserts multiple entities, overwriting any row that already exists with
+  /// the same primary key, and returns the stored versions.
+  ///
+  /// Single batch, so it stays fast on large imports. Unlike calling [upsert]
+  /// in a loop it doesn't read the table first — the database resolves the
+  /// conflict — which is what makes re-running a [TableSeeder] converge instead
+  /// of failing on a duplicate key.
+  Future<List<T>> upsertAll(List<T> entities) async {
+    final rows = entities.map(_schema.entityToRow).toList();
+    await _db.rawBatchInsert(_schema.tableName, rows, replace: true);
+    return rows.map(_schema.rowToEntity).toList();
+  }
+
   /// Updates an existing entity (matched by primary key).
   ///
   /// Returns `true` if a row was updated, `false` if no matching row was found.
