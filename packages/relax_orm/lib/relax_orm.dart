@@ -22,6 +22,9 @@ export 'src/annotations/annotations.dart';
 export 'src/schema/column_def.dart';
 export 'src/schema/table_schema.dart';
 
+// Migrations
+export 'src/migration/migrator.dart';
+
 // Public API
 export 'src/core/relax_db.dart';
 export 'src/core/collection.dart';

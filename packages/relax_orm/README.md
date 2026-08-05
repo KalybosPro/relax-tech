@@ -14,6 +14,7 @@ Inspired by Firebase and PowerSync — but free, self-hosted, and with no SaaS d
 - **Query builder** — fluent, type-safe filters, sorting, pagination
 - **Code generation** — annotate your models, schemas are generated automatically
 - **Seeding** — generated seeders fill your tables with realistic fake data
+- **Migrations** — a new column needs no migration at all; the rest is declared
 - **Zero SaaS** — bring your own API, no vendor lock-in
 
 ## Quick Start
@@ -372,6 +373,83 @@ It inspects the file header: an unencrypted SQLite file always begins with
 `SQLite format 3`. For databases opened with `open()` (where drift_flutter
 resolves the path), pass the `File` explicitly: `debugCheckEncryption(file: ...)`.
 In-memory databases cannot be inspected and return `isEncrypted == null`.
+
+## Migrations
+
+A database on someone's phone was created by an older build of your app. When a
+model gains a column, that database doesn't have it — and SQLite won't tell you:
+`CREATE TABLE IF NOT EXISTS` compares names, never shapes, so the table is left
+as it was. Reads keep working (a `SELECT *` just returns rows without the
+column), and the first write fails with `table … has no column named …`, long
+after the change that caused it.
+
+RelaxORM handles the common half of this on its own.
+
+### Adding a column: nothing to do
+
+Every open compares each schema against its table and appends what's missing:
+
+```dart
+class Note {
+  // ...
+  final String? title;   // new
+}
+```
+
+Regenerate, ship. The column is added to existing databases on first open, and
+the rows already there hold `NULL`.
+
+A `NOT NULL` column needs a `defaultValue` — SQLite has to write *something*
+into the existing rows:
+
+```dart
+ColumnDef.integer('reads', defaultValue: '0')
+```
+
+Without one, the open throws and tells you so. It is not skipped: a column
+silently left out comes back as a failed write much later.
+
+### Everything else: declare it
+
+Renames, type changes and dropped columns can't be inferred — a renamed column
+and a dropped-then-added one look identical from two schemas, and only you know
+whether the rows should follow. Raise `version` and describe the step:
+
+```dart
+final db = await RelaxDB.open(
+  name: 'my_app',
+  schemas: [noteSchema],
+  version: 2,
+  onUpgrade: (m, from, to) async {
+    if (from < 2) await m.renameColumn('notes', from: 'body', to: 'text');
+  },
+);
+```
+
+`onUpgrade` runs only when the stored version is behind, before the additive
+pass — so a rename happens while the old column is still there.
+
+`Migrator` offers `addColumn`, `renameColumn`, `rebuildTable`, and
+`execute` / `select` / `columnsOf` for the rest. `rebuildTable` is the way
+through for what SQLite cannot alter in place; it creates the table anew, copies
+the rows, drops the old one and renames, in a single transaction:
+
+```dart
+// Drop a column, and derive a new one from the old rows.
+await m.rebuildTable(noteSchema, from: {'length': 'LENGTH(body)'});
+```
+
+`from` maps a **new** column name to any SQL expression over the **old** table.
+Columns not mentioned are carried over by name.
+
+### What the version means
+
+It is your number, stored in a `_relax_schema` table. A database created by
+1.1.1 or earlier has none and reports `from: 0` — unknown, assume the oldest;
+its missing columns are still added, so an app that only ever appended columns
+needs no migration code to catch up. Opening a database recorded as *newer* than
+the running build throws rather than reading rows with a schema that no longer
+describes them.
 
 ## Seeding
 

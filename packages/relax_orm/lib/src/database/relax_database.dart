@@ -231,6 +231,20 @@ class RelaxDatabase extends GeneratedDatabase {
     return _RawTableReference(tableName);
   }
 
+  /// Wraps raw values as Drift variables, for the callers that build their own
+  /// SQL — the migrator, notably.
+  List<Variable<Object>> variablesOf(Iterable<Object?> values) =>
+      _toVariables(values);
+
+  /// Tells Drift that [tables] changed, so `watch()` streams reading them
+  /// refresh.
+  ///
+  /// Raw statements are opaque to Drift's change tracking: it knows what the
+  /// queries it builds itself touch, and nothing of what a hand-written one
+  /// does. Callers running raw SQL name the tables they wrote.
+  void notifyTables(Set<String> tables) =>
+      notifyUpdates({for (final table in tables) TableUpdate(table)});
+
   List<Variable<Object>> _toVariables(Iterable<Object?> values) {
     return values.map((v) => Variable(v)).toList();
   }

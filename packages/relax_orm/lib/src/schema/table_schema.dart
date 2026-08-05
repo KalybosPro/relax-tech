@@ -85,20 +85,15 @@ class TableSchema<T> {
   }
 
   /// Generates the CREATE TABLE SQL statement for this schema.
-  String toCreateTableSql() {
-    final columnsSql = columns
-        .map((col) {
-          final parts = <String>[col.name, col.sqlType];
-          if (col.isPrimaryKey) parts.add('PRIMARY KEY');
-          if (!col.isNullable && !col.isPrimaryKey) parts.add('NOT NULL');
-          if (col.defaultValue != null) {
-            parts.add('DEFAULT ${col.defaultValue}');
-          }
-          return parts.join(' ');
-        })
-        .join(', ');
+  ///
+  /// [as] builds the same table under a different name, and [ifNotExists]
+  /// drops the guard — both are for the table rebuild a migration performs,
+  /// which needs a scratch table it knows to be empty. See `Migrator`.
+  String toCreateTableSql({String? as, bool ifNotExists = true}) {
+    final columnsSql = columns.map((col) => col.definition).join(', ');
+    final guard = ifNotExists ? 'IF NOT EXISTS ' : '';
 
-    return 'CREATE TABLE IF NOT EXISTS $tableName ($columnsSql)';
+    return 'CREATE TABLE $guard${as ?? tableName} ($columnsSql)';
   }
 
   /// Converts an entity to a SQL-ready map (Dart values → SQL values).

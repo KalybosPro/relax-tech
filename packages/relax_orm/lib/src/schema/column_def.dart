@@ -68,6 +68,26 @@ class ColumnDef {
     this.defaultValue,
   }) : type = ColumnType.blob;
 
+  /// This column's definition as it appears inside `CREATE TABLE`.
+  ///
+  /// Shared with `ALTER TABLE … ADD COLUMN`, so a column added to a database
+  /// that predates it ends up defined exactly as it would have been on a fresh
+  /// one. Two spellings of the same column is how schemas quietly drift apart.
+  String get definition {
+    final parts = <String>[name, sqlType];
+    if (isPrimaryKey) parts.add('PRIMARY KEY');
+    if (!isNullable && !isPrimaryKey) parts.add('NOT NULL');
+    if (defaultValue != null) parts.add('DEFAULT $defaultValue');
+    return parts.join(' ');
+  }
+
+  /// Whether SQLite can append this column to an existing table.
+  ///
+  /// `ALTER TABLE … ADD COLUMN` refuses a `PRIMARY KEY`, and refuses `NOT NULL`
+  /// without a default — it has no value to write into the rows already there.
+  /// Everything else is fair game.
+  bool get isAddable => !isPrimaryKey && (isNullable || defaultValue != null);
+
   /// Returns the SQL type string for this column.
   String get sqlType {
     switch (type) {

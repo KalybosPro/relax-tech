@@ -6,6 +6,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import '../database/relax_database.dart';
 import '../logging/relax_logger.dart';
+import '../migration/migrator.dart';
 import '../schema/table_schema.dart';
 import '../seed/seed_runner.dart';
 import '../sync/offline_queue.dart';
@@ -63,11 +64,18 @@ class RelaxDB {
   /// - [schemas]: List of table schemas to create.
   /// - [encryptionKey]: Optional encryption key (enables SQLite3MultipleCiphers).
   /// - [logger]: Optional opt-in developer logger. When omitted, logging is off.
+  /// - [version]: The schema version this build expects. Raise it whenever a
+  ///   change to [schemas] cannot be applied by appending a column, and
+  ///   describe the change in [onUpgrade].
+  /// - [onUpgrade]: Runs when the stored version is behind [version]. Adding a
+  ///   nullable column needs neither — see [Migrator].
   static Future<RelaxDB> open({
     required String name,
     required List<TableSchema> schemas,
     String? encryptionKey,
     RelaxLogger? logger,
+    int version = 1,
+    RelaxMigration? onUpgrade,
   }) async {
     final log = logger ?? const RelaxLogger.disabled();
     final executor = driftDatabase(
@@ -79,6 +87,8 @@ class RelaxDB {
       RelaxDatabase(executor, logger: log),
       schemas,
       encryptionRequested: encryptionKey != null,
+      version: version,
+      onUpgrade: onUpgrade,
     );
   }
 
@@ -95,6 +105,8 @@ class RelaxDB {
     required List<TableSchema> schemas,
     String? encryptionKey,
     RelaxLogger? logger,
+    int version = 1,
+    RelaxMigration? onUpgrade,
   }) async {
     final log = logger ?? const RelaxLogger.disabled();
     final nativeDb = NativeDatabase(
@@ -107,6 +119,8 @@ class RelaxDB {
       schemas,
       encryptionRequested: encryptionKey != null,
       dbFile: file,
+      version: version,
+      onUpgrade: onUpgrade,
     );
   }
 
@@ -121,10 +135,15 @@ class RelaxDB {
   static Future<RelaxDB> openInMemory({
     required List<TableSchema> schemas,
     RelaxLogger? logger,
+    int version = 1,
   }) async {
     final log = logger ?? const RelaxLogger.disabled();
     final nativeDb = NativeDatabase.memory();
-    return _init(RelaxDatabase(nativeDb, logger: log), schemas);
+    return _init(
+      RelaxDatabase(nativeDb, logger: log),
+      schemas,
+      version: version,
+    );
   }
 
   /// Returns a typed [Collection] for the given entity type.
@@ -184,9 +203,17 @@ class RelaxDB {
     List<TableSchema> schemas, {
     bool encryptionRequested = false,
     File? dbFile,
+    int version = 1,
+    RelaxMigration? onUpgrade,
   }) async {
-    for (final schema in schemas) {
-      await database.createTable(schema.toCreateTableSql());
+    try {
+      await _upgrade(database, schemas, version: version, onUpgrade: onUpgrade);
+    } catch (_) {
+      // An open that fails must not keep the file: the caller is handed an
+      // error and never a database, so it has nothing to close, and the file
+      // would stay locked for the rest of the process.
+      await database.close();
+      rethrow;
     }
 
     final schemaMap = <Type, TableSchema>{};
@@ -222,6 +249,164 @@ class RelaxDB {
     }
 
     return db;
+  }
+
+  /// Brings the database's tables up to the shape [schemas] describe.
+  ///
+  /// Three passes, in this order, and the order is the whole design:
+  ///
+  /// 1. **Create.** `CREATE TABLE IF NOT EXISTS` per schema. A table that is
+  ///    already there is left exactly as it is — SQLite compares names, never
+  ///    shapes.
+  /// 2. **Upgrade.** When the stored version is behind [version], [onUpgrade]
+  ///    runs. This is where renames, type changes and drops are described; see
+  ///    [Migrator]. It runs *before* the next pass so that a rename happens
+  ///    while the old column is still there.
+  /// 3. **Reconcile.** Any column a schema declares and the table lacks is
+  ///    appended. This is what makes adding a nullable column need no
+  ///    migration at all, and it catches the schema that changed without the
+  ///    version being bumped.
+  ///
+  /// A database that predates versioning reports version 0, which is also what
+  /// [onUpgrade] receives as `from` — "unknown, assume the oldest".
+  static Future<void> _upgrade(
+    RelaxDatabase database,
+    List<TableSchema> schemas, {
+    required int version,
+    RelaxMigration? onUpgrade,
+  }) async {
+    // Read before creating anything: afterwards every table exists, and a
+    // first launch becomes indistinguishable from an upgrade.
+    final known = await _existingTables(database, schemas);
+    final recorded = await _storedVersion(database);
+
+    // No record means one of two things, and the tables tell them apart: no
+    // tables at all is a first launch, already at [version]; tables without a
+    // record is a database from before versioning, whose schema is anyone's
+    // guess — hence 0, the oldest.
+    final stored = recorded ?? (known.isEmpty ? version : 0);
+
+    for (final schema in schemas) {
+      await database.createTable(schema.toCreateTableSql());
+    }
+
+    if (stored > version) {
+      throw StateError(
+        'Database is at version $stored, but this build opens it at '
+        '$version. Opening a database written by a newer build would read '
+        'its rows with a schema that no longer describes them.',
+      );
+    }
+
+    final migrator = Migrator(database);
+
+    // A database created just now is already at [version] — there is nothing
+    // to upgrade, and running migrations over empty tables would at best waste
+    // work and at worst fail on columns their old shape never had.
+    if (known.isNotEmpty && stored < version && onUpgrade != null) {
+      await onUpgrade(migrator, stored, version);
+    }
+
+    for (final schema in schemas) {
+      await _reconcile(migrator, schema);
+    }
+
+    if (recorded != version) await _setStoredVersion(database, version);
+  }
+
+  /// Appends the columns [schema] declares and its table does not have.
+  static Future<void> _reconcile(Migrator migrator, TableSchema schema) async {
+    final present = await migrator.columnsOf(schema.tableName);
+
+    for (final column in schema.columns) {
+      if (present.contains(column.name)) continue;
+
+      // Loud rather than skipped: a column silently left out comes back as a
+      // failed INSERT much later, far from the change that caused it.
+      await migrator.addColumn(schema.tableName, column);
+    }
+  }
+
+  /// Which of [schemas]' tables the database already holds.
+  static Future<Set<String>> _existingTables(
+    RelaxDatabase database,
+    List<TableSchema> schemas,
+  ) async {
+    final rows = await database
+        .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .get();
+    final present = {for (final row in rows) row.data['name'] as String};
+
+    return {
+      for (final schema in schemas)
+        if (present.contains(schema.tableName)) schema.tableName,
+    };
+  }
+
+  /// The table holding the schema version, alongside `_relax_sync_queue` and
+  /// `_relax_seeds`.
+  ///
+  /// Not `PRAGMA user_version`, tempting as the SQLite header is: Drift already
+  /// keeps *its* `schemaVersion` there. Writing our number into it makes Drift
+  /// read a version it never wrote, conclude the schema was bumped without a
+  /// migration strategy, and refuse to open the database — and it overwrites
+  /// the value on its own besides. The header is taken; we bring our own table.
+  static const _versionTable = '_relax_schema';
+
+  /// The schema version recorded in the database, or null if never recorded —
+  /// which is both a brand-new database and one from before versioning. The
+  /// tables tell those apart; see [_upgrade].
+  static Future<int?> _storedVersion(RelaxDatabase database) async {
+    // The CHECK is what keeps this a single-row table: one database, one
+    // version, and no way to end up with two answers.
+    await database.createTable(
+      'CREATE TABLE IF NOT EXISTS $_versionTable ('
+      'id INTEGER PRIMARY KEY CHECK (id = 1), '
+      'version INTEGER NOT NULL)',
+    );
+
+    final rows = await database
+        .customSelect('SELECT version FROM $_versionTable WHERE id = 1')
+        .get();
+
+    return rows.isEmpty ? null : rows.first.data['version'] as int?;
+  }
+
+  static Future<void> _setStoredVersion(
+    RelaxDatabase database,
+    int version,
+  ) async {
+    await database.customStatement(
+      'INSERT OR REPLACE INTO $_versionTable (id, version) VALUES (1, ?)',
+      [version],
+    );
+  }
+
+  /// Runs a raw SQL statement that returns no rows.
+  ///
+  /// The escape hatch for what the typed API does not cover — a migration run
+  /// by hand, an index, a `VACUUM`. Name the tables it writes in [updates], or
+  /// active `watch()` streams will not learn of the change: Drift tracks the
+  /// queries it builds itself, and cannot see inside raw SQL.
+  Future<void> execute(
+    String sql, [
+    List<Object?> arguments = const [],
+    Set<String> updates = const {},
+  ]) async {
+    await _database.customStatement(sql, arguments);
+    if (updates.isNotEmpty) _database.notifyTables(updates);
+  }
+
+  /// Runs a raw SQL query and returns its rows.
+  Future<List<Map<String, Object?>>> select(
+    String sql, [
+    List<Object?> arguments = const [],
+  ]) async {
+    final rows = await _database
+        .customSelect(sql, variables: _database.variablesOf(arguments))
+        .get();
+
+    return rows.map((row) => row.data).toList();
   }
 
   /// Returns `true` if the SQLite library supports encryption

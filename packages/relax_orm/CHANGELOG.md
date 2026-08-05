@@ -1,3 +1,59 @@
+## 1.2.0
+
+Adds schema migrations. Until now a table that already existed was left exactly
+as it was: `RelaxDB.open` emitted `CREATE TABLE IF NOT EXISTS`, which SQLite
+answers by comparing names and never shapes. A column added to a model was
+therefore missing from every database created before it — silently, because
+reads still worked (`SELECT *` simply returned rows without it) and only the
+first `INSERT` failed, with `table … has no column named …`, far from the change
+that caused it. No breaking changes.
+
+### Added
+
+- **Additive reconciliation, on every open.** Any column a schema declares and
+  its table lacks is appended with `ALTER TABLE … ADD COLUMN`. Adding a nullable
+  column — or a `NOT NULL` one with a `defaultValue` — now needs no migration
+  and no version bump at all. A `NOT NULL` column without a default throws with
+  an explanation instead of being skipped: SQLite has nothing to write into the
+  rows already there, and skipping it is what made the original bug invisible.
+- **`version` and `onUpgrade` on `open`, `openFile` and `openInMemory`.** Raise
+  `version` when a change cannot be applied by appending a column, and describe
+  it in `onUpgrade(migrator, from, to)`. Both default to the previous
+  behaviour, so existing call sites are unaffected.
+- **`Migrator`** — `addColumn`, `renameColumn`, `rebuildTable`, plus `execute` /
+  `select` / `columnsOf` for anything else. `rebuildTable` performs the
+  create-copy-drop-rename procedure the SQLite documentation prescribes, in one
+  transaction, and is the way through for what SQLite cannot alter in place: a
+  column that changes type, loses `NOT NULL`, or goes away. Its `from` argument
+  maps a new column to any SQL expression over the old table, which is how a
+  rename keeps its rows.
+- **`RelaxDB.execute` and `RelaxDB.select`** — raw SQL, for what the typed API
+  does not cover. `execute` takes the tables it writes so that active `watch()`
+  streams still refresh; Drift cannot see inside a hand-written statement.
+- `ColumnDef.definition` — the column's `CREATE TABLE` fragment, now shared with
+  `ADD COLUMN` so the two can no longer spell the same column differently.
+- `ColumnDef.isAddable` — whether SQLite can append this column at all.
+- `TableSchema.toCreateTableSql` takes `as` and `ifNotExists`, for the scratch
+  table a rebuild needs.
+
+### Fixed
+
+- An open that failed no longer leaks the database file. The caller was handed
+  an error and never a handle, so it had nothing to close and the file stayed
+  locked for the rest of the process.
+
+### Notes
+
+- The version is kept in a `_relax_schema` table, not in `PRAGMA user_version`:
+  Drift already stores its own `schemaVersion` in the SQLite header, and writing
+  another number there makes it refuse to open the database.
+- A database created by 1.1.1 or earlier has no recorded version and reports
+  `from: 0` to `onUpgrade` — "unknown, assume the oldest". Its additive drift is
+  repaired regardless, so apps that only ever added columns need no migration
+  code to catch up.
+- Opening a database whose recorded version is *newer* than the build now throws
+  rather than reading rows with a schema that no longer describes them.
+
 ## 1.1.1
 
 ### Changed
