@@ -507,11 +507,28 @@ class RelaxTableGenerator extends GeneratorForAnnotation<RelaxTable> {
     final isNullable = type.nullabilitySuffix == NullabilitySuffix.question;
     final baseType = _withoutNullability(type);
 
-    final encoded = _buildNonNullableEncodedValueExpression(baseType, source);
     if (isNullable) {
+      // The `else` branch must not rely on type promotion: `source` is usually a
+      // property access (`entity.field`), which Dart never promotes, so the
+      // non-nullable expression has to assert non-nullity itself.
+      final asserted = _assertNonNull(source);
+      final encoded = _buildNonNullableEncodedValueExpression(
+        baseType,
+        asserted,
+      );
+      // Passthrough types encode `null` as `null`, so they need no guard.
+      if (encoded == asserted) return source;
       return '$source == null ? null : $encoded';
     }
-    return encoded;
+    return _buildNonNullableEncodedValueExpression(baseType, source);
+  }
+
+  /// Appends `!` to [source] unless it is a plain identifier (a local, such as
+  /// the `item` lambda parameter used for lists), which Dart does promote — a
+  /// redundant `!` there would trigger `unnecessary_non_null_assertion`.
+  String _assertNonNull(String source) {
+    if (RegExp(r'^[a-zA-Z_$][a-zA-Z0-9_$]*$').hasMatch(source)) return source;
+    return '$source!';
   }
 
   String _buildNonNullableEncodedValueExpression(DartType type, String source) {

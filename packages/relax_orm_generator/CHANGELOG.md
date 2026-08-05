@@ -1,3 +1,22 @@
+## 1.0.1
+
+### Fixed
+
+- **Nullable JSON-backed fields no longer generate uncompilable `toMap` code.**
+  The null guard emitted for a nullable JSON column reused the field expression
+  verbatim in its `else` branch — `entity.replyToStory == null ? null :
+  {'author': entity.replyToStory.author}`. Dart does not promote a property
+  access to non-nullable, so the generated file failed to compile with
+  *"The property 'author' can't be unconditionally accessed because the receiver
+  can be 'null'"* (and the equivalent error on `.map` for `List<T>?` fields).
+  The non-null branch now asserts non-nullity (`entity.replyToStory!.author`).
+  Non-nullable JSON fields and the decoding side were unaffected.
+
+### Changed
+
+- Nullable columns whose encoding is a passthrough (`String?`, `int?`, …) no
+  longer emit a redundant `x == null ? null : x` guard.
+
 ## 1.0.0
 
 First stable release. The generated `TableSchema` output is unchanged from
