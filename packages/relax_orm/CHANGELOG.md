@@ -1,3 +1,11 @@
+## 1.1.1
+
+### Changed
+
+- Requires `relax_orm_generator ^1.0.1`, which fixes the `toMap` code generated
+  for nullable JSON-backed fields (nested models and `List<T>?`) — the previous
+  output did not compile. Run `dart run build_runner build` to regenerate.
+
 ## 1.1.0
 
 Adds a seeding engine and a `relax_orm` command. No breaking changes.
