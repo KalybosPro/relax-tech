@@ -16,6 +16,7 @@ class GalleryService {
     bool enablePreview = true,
     int maxSelection = 30,
     bool enableCompression = false,
+    bool cameraFirst = false,
     RelaxGalleryMode galleryMode = RelaxGalleryMode.systemPicker,
     Color accentColor = const Color(0xFF25D366),
     required RelaxPickerTheme theme,
@@ -27,10 +28,19 @@ class GalleryService {
     required String cameraTabText,
     required String documentsTabText,
   }) async {
+    // Camera-first fills the screen and owns its own vertical drag (the
+    // draggable gallery panel), so the sheet's own drag-to-dismiss is off.
+    final isCameraFirst =
+        cameraFirst &&
+        enableCamera &&
+        galleryMode == RelaxGalleryMode.inAppGrid &&
+        (allowImages || allowVideos);
+
     final result = await showModalBottomSheet<RelaxPickerResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      enableDrag: !isCameraFirst,
       builder: (BuildContext innerContext) {
         // The in-app grid and the OS-picker tray share the same constructor
         // surface; only the browsing mechanism differs.
@@ -43,6 +53,7 @@ class GalleryService {
             enablePreview: enablePreview,
             maxSelection: maxSelection,
             enableCompression: enableCompression,
+            cameraFirst: cameraFirst,
             theme: theme,
             title: title,
             confirmButtonText: confirmButtonText,
@@ -73,6 +84,7 @@ class GalleryService {
       },
     );
 
-    return result ?? RelaxPickerResult(files: [], images: [], videos: [], documents: []);
+    return result ??
+        RelaxPickerResult(files: [], images: [], videos: [], documents: []);
   }
 }

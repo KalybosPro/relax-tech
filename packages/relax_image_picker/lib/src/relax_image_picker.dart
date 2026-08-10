@@ -17,6 +17,14 @@ class RelaxImagePicker {
     int maxSelection = 30,
     bool enableCompression = false,
 
+    /// Opens straight on the live camera, with the gallery collapsed into a
+    /// horizontal strip of square thumbnails at the bottom that the user drags
+    /// up to reveal the usual grid (camera tile, albums, …).
+    ///
+    /// Requires [RelaxGalleryMode.inAppGrid] and [enableCamera]; ignored
+    /// otherwise. Defaults to false — the picker opens on the grid.
+    bool cameraFirst = false,
+
     /// How the user browses their photos/videos.
     ///
     /// [RelaxGalleryMode.systemPicker] (default) uses the OS photo picker — no
@@ -49,6 +57,7 @@ class RelaxImagePicker {
       enablePreview: enablePreview,
       maxSelection: maxSelection,
       enableCompression: enableCompression,
+      cameraFirst: cameraFirst,
       galleryMode: galleryMode,
       acceptedDocumentTypes: acceptedDocumentTypes,
       accentColor: accentColor,

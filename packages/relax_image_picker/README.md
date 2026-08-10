@@ -5,6 +5,8 @@
 - 📱 **WhatsApp-style UX** — bottom-sheet interface with smooth animations
 - 🖼️ **Two gallery modes** — the permission-free **OS photo picker** (default) or a WhatsApp-style **in-app grid** rendered right in the sheet
 - 📷 **Camera integration** — capture photos and videos without leaving the picker
+- 🎬 **Camera + gallery together** — the camera page keeps a thumbnail strip you drag up to reveal the full grid; `cameraFirst: true` opens straight on it
+- 👆 **Gallery-like gestures** — tap previews, a long press starts multi-selection (bubbles stay hidden until then)
 - 📄 **Document selection** — pick files from device storage, with recent-documents recall between sessions
 - 👁️ **Full-screen preview** — review images, videos, and documents before confirming
 - 🗜️ **Optional compression** — shrink images on the fly
@@ -24,7 +26,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  relax_image_picker: ^2.1.0
+  relax_image_picker: ^3.0.0
 ```
 
 Then run:
@@ -54,6 +56,59 @@ RelaxImagePicker.pick(context, galleryMode: RelaxGalleryMode.inAppGrid);
 > *core feature* of your app. `inAppGrid` reintroduces `READ_MEDIA_*`, so Google
 > Play will require you to justify it in the *Photo and Video Permissions*
 > declaration (and reject apps that only need occasional access).
+
+## Selection gestures
+
+The grid opens as a plain gallery: **no selection bubbles are drawn**. Selection
+starts on a **long press**, which turns the bubbles on for every tile — from then
+on a tap toggles selection, and a long press opens the preview. Deselecting the
+last item hides the bubbles again.
+
+| Gesture | Bubbles hidden (default) | Bubbles shown (selection mode) |
+|---|---|---|
+| Tap | Full-screen preview of that item | Select / deselect it |
+| Long press | Selects it → **turns the bubbles on** | Full-screen preview |
+
+With `enablePreview: false` there is nothing to preview, so a tap selects
+directly (and reveals the bubbles).
+
+Writing your own tile with `assetTileBuilder`? It receives `selectionMode` —
+draw the bubble only when it is `true`.
+
+## The camera page
+
+Whatever `cameraFirst` is set to, the camera is never a bare viewfinder: the
+gallery follows it as a horizontal strip of small squares pinned at the bottom,
+so the user can keep picking photos while shooting. Dragging the strip up (or
+tapping its handle) grows it into the very same grid the default layout shows —
+camera tile, album selector, limited-access banner and all. Dragging back down,
+tapping the camera tile inside the grid, or the back gesture returns to the
+camera.
+
+`cameraFirst` only decides **where the picker starts**:
+
+```dart
+RelaxImagePicker.pick(
+  context,
+  galleryMode: RelaxGalleryMode.inAppGrid, // required
+  cameraFirst: true,                       // defaults to false
+);
+```
+
+- `false` (default) — the picker opens on the grid sheet; tapping the camera
+  tile opens the camera page above it, and closing the camera comes back to the
+  sheet.
+- `true` — the picker opens directly on the camera page; closing it closes the
+  picker.
+
+Notes:
+
+- `cameraFirst` needs `galleryMode: RelaxGalleryMode.inAppGrid` **and**
+  `enableCamera: true`; it is ignored otherwise.
+- Captures are appended to the current selection instead of closing the picker,
+  and lead both the strip and the grid so a fresh shot is always visible.
+- The documents view is not part of the camera page — use the sheet's Documents
+  tab for those.
 
 ### Least-privilege in `inAppGrid` mode
 
@@ -205,6 +260,7 @@ final result = await RelaxImagePicker.pick(
   enablePreview: true,
   maxSelection: 30,
   enableCompression: false,
+  cameraFirst: false,
   acceptedDocumentTypes: ['pdf', 'doc', 'docx'],
   accentColor: const Color(0xFF25D366),
   title: 'Select media',
@@ -270,6 +326,7 @@ Opens the media picker with the given configuration and returns the selection.
 | `enablePreview` | `bool` | `true` | Enable the full-screen preview step |
 | `maxSelection` | `int` | `30` | Maximum number of items selectable |
 | `enableCompression` | `bool` | `false` | Compress images on selection |
+| `cameraFirst` | `bool` | `false` | Open on the live camera with a draggable gallery strip (needs `inAppGrid` + `enableCamera`) |
 | `galleryMode` | `RelaxGalleryMode` | `systemPicker` | `systemPicker` (OS picker, no permission) or `inAppGrid` (in-app grid, needs `READ_MEDIA_*`) |
 | `acceptedDocumentTypes` | `List<String>?` | `null` | Allowed document extensions |
 | `accentColor` | `Color` | `0xFF25D366` | Accent color when no `theme` is given |

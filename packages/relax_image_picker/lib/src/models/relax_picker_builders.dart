@@ -67,10 +67,15 @@ typedef RelaxMediaTileBuilder = Widget Function(
 /// [asset] is the live `photo_manager` entry; [thumbnail] is the ready-made
 /// async thumbnail widget. [selectionIndex] is the 1-based selection order
 /// (meaningful only when [selected]).
+///
+/// [selectionMode] is false until the user long-presses a tile: selection
+/// bubbles must stay hidden while it is false, and [onTap] then previews the
+/// asset instead of selecting it.
 typedef RelaxAssetTileBuilder = Widget Function(
   BuildContext context, {
   required AssetEntity asset,
   required bool selected,
+  required bool selectionMode,
   required int selectionIndex,
   required bool isVideo,
   required Duration videoDuration,

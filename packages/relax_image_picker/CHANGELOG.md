@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-08-10
+
+### Added
+- **The camera page now carries the gallery.** In the in-app grid mode the
+  camera is no longer a bare viewfinder: a horizontal strip of square
+  thumbnails (fresh captures first, then the device gallery) sits at the bottom,
+  and dragging it up grows it into the regular grid — camera tile, album
+  selector, limited-access banner — while dragging back down returns to the
+  camera. Captures are appended to the selection instead of closing the picker,
+  and now show up in the grid too.
+- **`cameraFirst` — open on the live camera.** `RelaxImagePicker.pick(...,
+  galleryMode: RelaxGalleryMode.inAppGrid, cameraFirst: true)` starts the picker
+  on that camera page instead of the grid sheet; closing the camera then closes
+  the picker.
+  - Defaults to `false`: the picker opens on the usual grid sheet, and the
+    camera tile opens the camera page above it.
+  - Ignored unless `galleryMode: inAppGrid` **and** `enableCamera: true`.
+  - The documents view is not part of the camera page.
+- `CameraCaptureView`, the camera preview + capture controls extracted from
+  `CameraPickerSheet` and shared with the camera page.
+
+### Changed — BREAKING
+- **Selection bubbles are hidden by default in the in-app grid.** The grid now
+  behaves like a system gallery: a **tap previews** an item and a **long press
+  starts the selection**, which is what reveals the bubbles on every tile. While
+  selection mode is on, taps toggle and long presses preview; deselecting the
+  last item hides the bubbles again. (Previously every tile always showed a
+  bubble and a tap selected.) With `enablePreview: false`, a tap selects
+  directly.
+- `RelaxAssetTileBuilder` gains a required `selectionMode` named parameter, so
+  custom asset tiles can hide their bubble until selection starts. Existing
+  builders must add it to their signature.
+
+### Notes
+- The system-picker (`systemPicker`) sheet is unchanged — its tray only ever
+  holds already-selected items.
+
 ## [2.1.0] - 2026-08-01
 
 ### Added

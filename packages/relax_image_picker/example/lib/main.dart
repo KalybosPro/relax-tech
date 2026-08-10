@@ -43,6 +43,19 @@ class _HomePageState extends State<HomePage> {
     _store(result);
   }
 
+  /// Opens on the live camera, gallery collapsed into a bottom strip that can
+  /// be dragged up to reveal the same grid as [_pickDefault].
+  Future<void> _pickCameraFirst() async {
+    final result = await RelaxImagePicker.pick(
+      context,
+      maxSelection: 10,
+      galleryMode: RelaxGalleryMode.inAppGrid,
+      cameraFirst: true,
+      accentColor: const Color(0xFF25D366),
+    );
+    _store(result);
+  }
+
   /// Fully customized: theme styling + several widget-slot builders. Uses the
   /// default permission-free `systemPicker` gallery mode.
   Future<void> _pickCustom() async {
@@ -269,6 +282,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _pickCameraFirst,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text('Caméra d\'abord'),
+              ),
             ),
             const SizedBox(height: 24),
             if (_result != null) ...[
