@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-08-10
+
+### Fixed
+- **`thumbnailPath` is finally populated for library videos.** The field existed
+  on every media model since 1.0.0 but was never set by anything. Videos picked
+  from the device library (`galleryMode: inAppGrid`) now carry a JPEG still
+  exported from the library thumbnail, so callers can render a preview without
+  decoding the movie file. Documented what stays null and why: images (their
+  `path` is already the picture), camera captures and OS-picker results (no
+  library thumbnail exists, and the package doesn't decode video frames).
+
+### Changed
+- README: documented the camera page and `cameraFirst`, the long-press
+  selection gestures, in-preview video playback, pause/resume recording and
+  the `thumbnailPath` contract.
+
 ## [3.0.1] - 2026-08-10
 
 ### Changed

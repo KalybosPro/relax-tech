@@ -26,7 +26,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  relax_image_picker: ^3.0.1
+  relax_image_picker: ^3.1.0
 ```
 
 Then run:
@@ -56,6 +56,31 @@ RelaxImagePicker.pick(context, galleryMode: RelaxGalleryMode.inAppGrid);
 > *core feature* of your app. `inAppGrid` reintroduces `READ_MEDIA_*`, so Google
 > Play will require you to justify it in the *Photo and Video Permissions*
 > declaration (and reject apps that only need occasional access).
+
+### Least-privilege in `inAppGrid` mode
+
+The grid requests `READ_MEDIA_*` **lazily — only when its gallery view actually
+loads**, never at app launch or when the picker first opens. That keeps the
+prompt tied to the user deliberately opening the gallery, which is exactly what
+Google Play looks for. The recommended flow for a messaging-style app:
+
+```text
+Open conversation        → no permission requested
+Tap 📎 (attach)          → sheet shows Camera · Documents · Gallery
+Tap "Gallery"            → READ_MEDIA_* requested here, then the grid loads
+```
+
+Because both modes ship in the package, you can also offer the **system picker**
+for quick one-off attachment and reserve the **in-app grid** for users who want
+to browse their whole library — honoring least-privilege either way. The grid
+also supports Android 14+/iOS "Selected photos" (partial) access via the
+built-in *Manage* banner, so users can grant a subset instead of the whole
+library.
+
+> **Before publishing,** re-read Google's current
+> [Photo and video permissions policy](https://support.google.com/googleplay/android-developer/answer/14115180)
+> and make sure your Play Console declaration matches how your app actually uses
+> the library.
 
 ## Selection gestures
 
@@ -114,32 +139,22 @@ Notes:
 - The documents view is not part of the camera page — use the sheet's Documents
   tab for those.
 
-### Least-privilege in `inAppGrid` mode
+## The preview step
 
-The grid requests `READ_MEDIA_*` **lazily — only when its gallery view actually
-loads**, never at app launch or when the picker first opens. That keeps the
-prompt tied to the user deliberately opening the gallery, which is exactly what
-Google Play looks for. The recommended flow for a messaging-style app:
+Unless `enablePreview: false`, items open full screen for review: swipe between
+them, toggle the selection from the corner check, and confirm with the send
+button. Selection changes are reported live, so the sheet underneath stays in
+sync whatever the user does here.
 
-```text
-Open conversation        → no permission requested
-Tap 📎 (attach)          → sheet shows Camera · Documents · Gallery
-Tap "Gallery"            → READ_MEDIA_* requested here, then the grid loads
-```
+**Videos play inline** — camera captures and library picks alike. Tap anywhere
+to play or pause, scrub with the progress bar, and tap again once it ends to
+replay from the start. Only the page on screen ever plays: swiping to the next
+item pauses the previous one instead of leaving audio running off-screen.
 
-Because both modes ship in the package, you can also offer the **system picker**
-for quick one-off attachment and reserve the **in-app grid** for users who want
-to browse their whole library — honoring least-privilege either way. The grid
-also supports Android 14+/iOS "Selected photos" (partial) access via the
-built-in *Manage* banner, so users can grant a subset instead of the whole
-library.
+Images support pinch-to-zoom, and documents render their thumbnail (first PDF
+page, image preview, or a type icon).
 
-> **Before publishing,** re-read Google's current
-> [Photo and video permissions policy](https://support.google.com/googleplay/android-developer/answer/14115180)
-> and make sure your Play Console declaration matches how your app actually uses
-> the library.
-
-### Platform setup
+## Platform setup
 
 > **The gallery needs no media-storage permission.** Browsing is delegated to
 > the OS photo picker and documents to the Storage Access Framework, so the only
@@ -277,6 +292,9 @@ Pass a `RelaxPickerTheme` to override colors, text and button styles, icons, and
 labels. Every style field is nullable and falls back to a sensible default, so an
 empty `RelaxPickerTheme()` reproduces the default look.
 
+Labels are French by default (`noMediaLabel`, `browseLabel`, `pauseRecordingLabel`,
+…) — override them to localize the picker.
+
 ```dart
 final result = await RelaxImagePicker.pick(
   context,
@@ -292,10 +310,20 @@ final result = await RelaxImagePicker.pick(
 
 ### Widget-slot builders
 
-For full control, `RelaxPickerTheme` exposes builders that let you replace
-individual widgets entirely (send button, tabs, media/document tiles, empty
-states, the bottom bar, the capture button, and more). Any builder left null
-falls back to the default themed widget.
+For full control, `RelaxPickerTheme` exposes builders that replace individual
+widgets entirely. Any builder left null falls back to the default themed widget.
+
+| Builder | Replaces |
+|---|---|
+| `sendButtonBuilder` · `cancelButtonBuilder` · `confirmButtonBuilder` · `browseButtonBuilder` | The action buttons |
+| `bottomBarBuilder` | The whole bottom action bar |
+| `tabBuilder` | A gallery/documents tab |
+| `assetTileBuilder` | A grid tile in `inAppGrid` mode — receives `selectionMode`, so hide your bubble while it is `false` |
+| `mediaTileBuilder` · `documentTileBuilder` | A tray tile / a document tile |
+| `cameraTileBuilder` | The camera tile at the head of the grid |
+| `captureButtonBuilder` | The photo / video capture buttons |
+| `pauseButtonBuilder` | The hold/resume control shown while recording |
+| `emptyMediaBuilder` · `emptyDocumentsBuilder` | The empty-state placeholders |
 
 ```dart
 RelaxPickerTheme(
@@ -362,10 +390,17 @@ All selected media organized by type.
 - **`RelaxVideoFile`** adds `duration`, `width`, `height`, `isMuted`, `albumId?`
 - **`RelaxDocumentFile`** adds `fileName`, `extension`, `canPreview` (plus `toJson` / `fromJson` for caching)
 
-> **Metadata note.** The OS photo picker returns files, not library metadata.
-> Image `width`/`height` are derived on the fly; gallery-picked **videos** carry
-> no `duration`/dimensions (they default to `Duration.zero` / `0`). `albumId` is
-> always `null` for gallery picks.
+> **Metadata note.** The OS photo picker returns files, not library metadata, so
+> in `systemPicker` mode image `width`/`height` are derived on the fly, picked
+> **videos** carry no `duration`/dimensions (they default to `Duration.zero` /
+> `0`), and `albumId` is always `null`.
+
+> **`thumbnailPath`.** Set for **videos picked from the library** in `inAppGrid`
+> mode: a JPEG still exported to the cache directory, so you can render a
+> preview without decoding the movie file. It stays `null` for images (their
+> `path` already is the picture) and for camera captures / OS-picker results —
+> there is no library thumbnail to export, and the package doesn't decode video
+> frames itself.
 
 ## Platform support
 

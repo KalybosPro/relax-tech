@@ -505,6 +505,31 @@ class _InAppGalleryPickerSheetState extends State<InAppGalleryPickerSheet>
     }
   }
 
+  /// Exports the library's own thumbnail for [asset] to a JPEG in the cache and
+  /// returns its path.
+  ///
+  /// Videos need this: their `path` is a movie file, so a caller has no way to
+  /// render a still without decoding it. Images don't — their `path` already is
+  /// the picture.
+  Future<String?> _exportThumbnail(AssetEntity asset) async {
+    try {
+      final data = await asset.thumbnailDataWithSize(
+        const ThumbnailSize(400, 400),
+      );
+      if (data == null) return null;
+
+      final tempDir = await getTemporaryDirectory();
+      // Asset ids are paths on iOS, so they can't go in a filename as-is.
+      final safeId = asset.id.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+      final file = File('${tempDir.path}/relax_thumb_$safeId.jpg');
+      await file.writeAsBytes(data);
+      return file.path;
+    } catch (e) {
+      debugPrint('Thumbnail export failed: $e');
+      return null;
+    }
+  }
+
   Future<void> _onDone() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
@@ -528,6 +553,7 @@ class _InAppGalleryPickerSheetState extends State<InAppGalleryPickerSheet>
               duration: asset.videoDuration,
               width: asset.width,
               height: asset.height,
+              thumbnailPath: await _exportThumbnail(asset),
               creationDate: asset.createDateTime,
               albumId: _currentAlbum?.id,
             ),

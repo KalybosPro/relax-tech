@@ -2,7 +2,7 @@ name: relax_image_picker
 description: >-
   A WhatsApp-like media picker for Flutter: OS photo picker or in-app gallery
   grid, camera with video capture and playback, documents, preview and theming.
-version: 3.0.1
+version: 3.1.0
 resolution: workspace
 
 repository: https://github.com/KalybosPro/relax-tech/tree/main/packages/relax_image_picker
