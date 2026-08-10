@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/preview_item.dart';
 import '../models/relax_picker_theme.dart';
@@ -93,7 +94,8 @@ class _MediaPreviewScreenState extends State<MediaPreviewScreen> {
         controller: _controller,
         itemCount: items.length,
         onPageChanged: (i) => setState(() => _index = i),
-        itemBuilder: (context, i) => _PreviewPage(item: items[i], theme: t),
+        itemBuilder: (context, i) =>
+            _PreviewPage(item: items[i], theme: t, isActive: i == _index),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -103,14 +105,16 @@ class _MediaPreviewScreenState extends State<MediaPreviewScreen> {
               Expanded(
                 child: Text(
                   _label(current),
-                  style: t.previewLabelTextStyle ??
+                  style:
+                      t.previewLabelTextStyle ??
                       const TextStyle(color: Colors.white70),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               ElevatedButton.icon(
-                style: t.confirmButtonStyle ??
+                style:
+                    t.confirmButtonStyle ??
                     ElevatedButton.styleFrom(
                       backgroundColor: t.resolvedSendButtonColor,
                       foregroundColor: Colors.white,
@@ -155,23 +159,34 @@ class _MediaPreviewScreenState extends State<MediaPreviewScreen> {
 }
 
 class _PreviewPage extends StatelessWidget {
-  const _PreviewPage({required this.item, required this.theme});
+  const _PreviewPage({
+    required this.item,
+    required this.theme,
+    required this.isActive,
+  });
 
   final PreviewItem item;
   final RelaxPickerTheme theme;
+
+  /// Whether this is the page currently on screen — only it may play.
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     switch (item) {
       case AssetPreviewItem(:final asset):
+        if (asset.type == AssetType.video) {
+          return _VideoPage(
+            theme: theme,
+            isActive: isActive,
+            fileLoader: () => asset.file,
+          );
+        }
         return _AssetPage(asset: asset, theme: theme);
       case ImagePreviewItem(:final file):
         return _FileImagePage(path: file.path, theme: theme);
       case VideoPreviewItem(:final file):
-        return _VideoPlaceholderPage(
-          label: _basename(file.path),
-          theme: theme,
-        );
+        return _VideoPage(theme: theme, isActive: isActive, path: file.path);
       case DocumentPreviewItem(:final document):
         return _DocumentPage(
           path: document.path,
@@ -180,13 +195,10 @@ class _PreviewPage extends StatelessWidget {
         );
     }
   }
-
-  String _basename(String path) =>
-      path.isEmpty ? '' : path.split(RegExp(r'[/\\]')).last;
 }
 
-/// Gallery asset (in-app grid mode): a fast thumbnail first, then the
-/// full-resolution file.
+/// Gallery *image* (in-app grid mode): a fast thumbnail first, then the
+/// full-resolution file. Video assets go to [_VideoPage] instead.
 class _AssetPage extends StatefulWidget {
   const _AssetPage({required this.asset, required this.theme});
 
@@ -210,8 +222,9 @@ class _AssetPageState extends State<_AssetPage> {
 
   Future<void> _load() async {
     try {
-      final thumb = await widget.asset
-          .thumbnailDataWithSize(const ThumbnailSize.square(600));
+      final thumb = await widget.asset.thumbnailDataWithSize(
+        const ThumbnailSize.square(600),
+      );
       if (mounted && thumb != null) setState(() => _thumb = thumb);
 
       final file = await widget.asset.file;
@@ -223,25 +236,22 @@ class _AssetPageState extends State<_AssetPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isVideo = widget.asset.type == AssetType.video;
-
     Widget image;
-    if (_file != null && !isVideo) {
+    if (_file != null) {
       image = Image.file(_file!, fit: BoxFit.contain);
     } else if (_thumb != null) {
       image = Image.memory(_thumb!, fit: BoxFit.contain);
     } else if (_failed) {
-      image = Icon(widget.theme.brokenImageIcon,
-          color: Colors.white54, size: 64);
+      image = Icon(
+        widget.theme.brokenImageIcon,
+        color: Colors.white54,
+        size: 64,
+      );
     } else {
       image = const CircularProgressIndicator(color: Colors.white);
     }
 
-    return _Centered(
-      showPlay: isVideo,
-      playIcon: widget.theme.playIcon,
-      child: image,
-    );
+    return _Centered(child: image);
   }
 }
 
@@ -255,8 +265,7 @@ class _FileImagePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final exists = path.isNotEmpty && File(path).existsSync();
-    final broken =
-        Icon(theme.brokenImageIcon, color: Colors.white54, size: 64);
+    final broken = Icon(theme.brokenImageIcon, color: Colors.white54, size: 64);
     return _Centered(
       child: exists
           ? Image.file(
@@ -269,33 +278,161 @@ class _FileImagePage extends StatelessWidget {
   }
 }
 
-/// Captured video — no inline playback, just a clear placeholder.
-class _VideoPlaceholderPage extends StatelessWidget {
-  const _VideoPlaceholderPage({required this.label, required this.theme});
+/// Plays a video file: captures come with their path, gallery assets resolve
+/// theirs first ([fileLoader]).
+///
+/// Playback is tied to [isActive] — the page the user is actually looking at —
+/// so swiping to the next item pauses this one instead of leaving a soundtrack
+/// running off-screen.
+class _VideoPage extends StatefulWidget {
+  const _VideoPage({
+    required this.theme,
+    required this.isActive,
+    this.path,
+    this.fileLoader,
+  });
 
-  final String label;
   final RelaxPickerTheme theme;
+  final bool isActive;
+
+  /// Direct path, for file-backed items.
+  final String? path;
+
+  /// Resolves the file lazily, for gallery assets.
+  final Future<File?> Function()? fileLoader;
+
+  @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage> {
+  VideoPlayerController? _controller;
+  bool _failed = false;
+  bool _showControls = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VideoPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isActive && oldWidget.isActive) _controller?.pause();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final path = widget.path ?? (await widget.fileLoader?.call())?.path;
+      if (path == null || path.isEmpty) {
+        if (mounted) setState(() => _failed = true);
+        return;
+      }
+
+      final controller = VideoPlayerController.file(File(path));
+      await controller.initialize();
+      await controller.setLooping(false);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() => _controller = controller);
+    } catch (e) {
+      debugPrint('Video preview failed: $e');
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  void _togglePlay() {
+    final controller = _controller;
+    if (controller == null) return;
+    setState(() {
+      if (controller.value.isPlaying) {
+        controller.pause();
+        _showControls = true;
+      } else {
+        // Replay from the start once the clip has run to the end.
+        if (controller.value.position >= controller.value.duration) {
+          controller.seekTo(Duration.zero);
+        }
+        controller.play();
+        _showControls = false;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    if (_failed) {
+      return Center(
+        child: Icon(
+          widget.theme.brokenImageIcon,
+          color: Colors.white54,
+          size: 64,
+        ),
+      );
+    }
+
+    final controller = _controller;
+    if (controller == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    return GestureDetector(
+      onTap: _togglePlay,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Icon(theme.playIcon, color: Colors.white70, size: 80),
-          if (label.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+          Center(
+            child: AspectRatio(
+              aspectRatio: controller.value.aspectRatio,
+              child: VideoPlayer(controller),
+            ),
+          ),
+          // Tapping anywhere plays/pauses; the button is the affordance for it.
+          ValueListenableBuilder<VideoPlayerValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              final showPlay = !value.isPlaying || _showControls;
+              return IgnorePointer(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: showPlay ? 1 : 0,
+                  child: Icon(
+                    value.isPlaying
+                        ? widget.theme.pauseRecordingIcon
+                        : widget.theme.playIcon,
+                    color: Colors.white70,
+                    size: 72,
+                  ),
+                ),
+              );
+            },
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: VideoProgressIndicator(
+              controller,
+              allowScrubbing: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              colors: VideoProgressColors(
+                playedColor: widget.theme.accentColor,
+                bufferedColor: Colors.white24,
+                backgroundColor: Colors.white12,
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -348,29 +485,12 @@ class _DocumentPage extends StatelessWidget {
 }
 
 class _Centered extends StatelessWidget {
-  const _Centered({
-    required this.child,
-    this.showPlay = false,
-    this.playIcon = Icons.play_circle_fill,
-  });
+  const _Centered({required this.child});
 
   final Widget child;
-  final bool showPlay;
-  final IconData playIcon;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          InteractiveViewer(maxScale: 4, child: child),
-          if (showPlay)
-            IgnorePointer(
-              child: Icon(playIcon, color: Colors.white70, size: 72),
-            ),
-        ],
-      ),
-    );
+    return Center(child: InteractiveViewer(maxScale: 4, child: child));
   }
 }

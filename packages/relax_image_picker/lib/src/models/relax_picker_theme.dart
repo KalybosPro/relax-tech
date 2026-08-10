@@ -59,6 +59,8 @@ class RelaxPickerTheme {
     this.videoBadgeIcon = Icons.videocam,
     this.playIcon = Icons.play_circle_fill,
     this.brokenImageIcon = Icons.broken_image,
+    this.pauseRecordingIcon = Icons.pause,
+    this.resumeRecordingIcon = Icons.play_arrow,
 
     // Labels (newly customizable; French defaults)
     this.noMediaLabel = 'Aucun média',
@@ -69,6 +71,8 @@ class RelaxPickerTheme {
     this.videoLabel = 'Vidéo',
     this.selectTooltip = 'Sélectionner',
     this.deselectTooltip = 'Désélectionner',
+    this.pauseRecordingLabel = 'Pause',
+    this.resumeRecordingLabel = 'Reprendre',
     this.addFromGalleryLabel = 'Galerie',
     this.limitedAccessLabel =
         'Vous n\'avez autorisé l\'accès qu\'à certaines photos',
@@ -89,6 +93,7 @@ class RelaxPickerTheme {
     this.emptyDocumentsBuilder,
     this.bottomBarBuilder,
     this.captureButtonBuilder,
+    this.pauseButtonBuilder,
   });
 
   /// Primary accent used for selection highlights, the send button, etc.
@@ -144,6 +149,10 @@ class RelaxPickerTheme {
   final IconData playIcon;
   final IconData brokenImageIcon;
 
+  /// Hold / resume controls shown while a video is being recorded.
+  final IconData pauseRecordingIcon;
+  final IconData resumeRecordingIcon;
+
   // --- Labels ---
   final String noMediaLabel;
   final String noDocumentsLabel;
@@ -153,6 +162,10 @@ class RelaxPickerTheme {
   final String videoLabel;
   final String selectTooltip;
   final String deselectTooltip;
+
+  /// Tooltips on the hold / resume control during a video recording.
+  final String pauseRecordingLabel;
+  final String resumeRecordingLabel;
 
   /// Caption on the tile that launches the OS photo picker.
   final String addFromGalleryLabel;
@@ -185,6 +198,9 @@ class RelaxPickerTheme {
   final RelaxEmptyStateBuilder? emptyDocumentsBuilder;
   final RelaxBottomBarBuilder? bottomBarBuilder;
   final RelaxCaptureButtonBuilder? captureButtonBuilder;
+
+  /// Replaces the hold/resume control shown while recording a video.
+  final RelaxPauseButtonBuilder? pauseButtonBuilder;
 
   /// Resolved color used for the send button background.
   Color get resolvedSendButtonColor => sendButtonColor ?? accentColor;
@@ -230,6 +246,8 @@ class RelaxPickerTheme {
     IconData? videoBadgeIcon,
     IconData? playIcon,
     IconData? brokenImageIcon,
+    IconData? pauseRecordingIcon,
+    IconData? resumeRecordingIcon,
     String? noMediaLabel,
     String? noDocumentsLabel,
     String? noDocumentsHintLabel,
@@ -238,6 +256,8 @@ class RelaxPickerTheme {
     String? videoLabel,
     String? selectTooltip,
     String? deselectTooltip,
+    String? pauseRecordingLabel,
+    String? resumeRecordingLabel,
     String? addFromGalleryLabel,
     String? limitedAccessLabel,
     String? manageAccessLabel,
@@ -255,6 +275,7 @@ class RelaxPickerTheme {
     RelaxEmptyStateBuilder? emptyDocumentsBuilder,
     RelaxBottomBarBuilder? bottomBarBuilder,
     RelaxCaptureButtonBuilder? captureButtonBuilder,
+    RelaxPauseButtonBuilder? pauseButtonBuilder,
   }) {
     return RelaxPickerTheme(
       accentColor: accentColor ?? this.accentColor,
@@ -298,6 +319,8 @@ class RelaxPickerTheme {
       videoBadgeIcon: videoBadgeIcon ?? this.videoBadgeIcon,
       playIcon: playIcon ?? this.playIcon,
       brokenImageIcon: brokenImageIcon ?? this.brokenImageIcon,
+      pauseRecordingIcon: pauseRecordingIcon ?? this.pauseRecordingIcon,
+      resumeRecordingIcon: resumeRecordingIcon ?? this.resumeRecordingIcon,
       noMediaLabel: noMediaLabel ?? this.noMediaLabel,
       noDocumentsLabel: noDocumentsLabel ?? this.noDocumentsLabel,
       noDocumentsHintLabel: noDocumentsHintLabel ?? this.noDocumentsHintLabel,
@@ -306,6 +329,8 @@ class RelaxPickerTheme {
       videoLabel: videoLabel ?? this.videoLabel,
       selectTooltip: selectTooltip ?? this.selectTooltip,
       deselectTooltip: deselectTooltip ?? this.deselectTooltip,
+      pauseRecordingLabel: pauseRecordingLabel ?? this.pauseRecordingLabel,
+      resumeRecordingLabel: resumeRecordingLabel ?? this.resumeRecordingLabel,
       addFromGalleryLabel: addFromGalleryLabel ?? this.addFromGalleryLabel,
       limitedAccessLabel: limitedAccessLabel ?? this.limitedAccessLabel,
       manageAccessLabel: manageAccessLabel ?? this.manageAccessLabel,
@@ -325,6 +350,7 @@ class RelaxPickerTheme {
           emptyDocumentsBuilder ?? this.emptyDocumentsBuilder,
       bottomBarBuilder: bottomBarBuilder ?? this.bottomBarBuilder,
       captureButtonBuilder: captureButtonBuilder ?? this.captureButtonBuilder,
+      pauseButtonBuilder: pauseButtonBuilder ?? this.pauseButtonBuilder,
     );
   }
 }

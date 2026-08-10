@@ -8,7 +8,7 @@
 - 🎬 **Camera + gallery together** — the camera page keeps a thumbnail strip you drag up to reveal the full grid; `cameraFirst: true` opens straight on it
 - 👆 **Gallery-like gestures** — tap previews, a long press starts multi-selection (bubbles stay hidden until then)
 - 📄 **Document selection** — pick files from device storage, with recent-documents recall between sessions
-- 👁️ **Full-screen preview** — review images, videos, and documents before confirming
+- 👁️ **Full-screen preview** — review images and documents, and **play videos** (captured or picked) before confirming
 - 🗜️ **Optional compression** — shrink images on the fly
 - 🔒 **Permission-free by default** — the OS-picker mode needs no `READ_MEDIA_*` and no Google Play *Photo & Video Permissions* review (the grid mode is opt-in)
 - 🎨 **Deep customization** — `RelaxPickerTheme` exposes colors, text/button styles, icons, labels, and full widget-slot builders
@@ -107,6 +107,10 @@ Notes:
   `enableCamera: true`; it is ignored otherwise.
 - Captures are appended to the current selection instead of closing the picker,
   and lead both the strip and the grid so a fresh shot is always visible.
+- A video recording can be **held and resumed** — the control sits next to the
+  capture button while recording, both halves land in the same file, and the
+  counter only runs while frames do. Devices that don't support it keep
+  recording (the failure is logged, not surfaced).
 - The documents view is not part of the camera page — use the sheet's Documents
   tab for those.
 

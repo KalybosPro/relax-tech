@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0] - 2026-08-10
 
 ### Added
+- **Videos play in the preview.** Tapping a video in the full-screen review step
+  now plays it — camera captures and gallery picks alike — with a scrubbable
+  progress bar and tap-to-play/pause. Swiping to another item pauses it instead
+  of leaving audio running off-screen. Adds a `video_player` dependency.
 - **The camera page now carries the gallery.** In the in-app grid mode the
   camera is no longer a bare viewfinder: a horizontal strip of square
   thumbnails (fresh captures first, then the device gallery) sits at the bottom,
@@ -23,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     camera tile opens the camera page above it.
   - Ignored unless `galleryMode: inAppGrid` **and** `enableCamera: true`.
   - The documents view is not part of the camera page.
+- **Pause / resume while recording a video.** A hold control appears next to the
+  capture button during a recording: both halves land in the same file (the
+  paused stretch is simply cut out), the elapsed counter stops while held, and
+  the recording badge switches to a paused style. Devices whose camera doesn't
+  support it keep recording. Themable through `pauseRecordingIcon`,
+  `resumeRecordingIcon`, `pauseRecordingLabel`, `resumeRecordingLabel` and the
+  new `pauseButtonBuilder` slot.
 - `CameraCaptureView`, the camera preview + capture controls extracted from
   `CameraPickerSheet` and shared with the camera page.
 

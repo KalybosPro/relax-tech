@@ -51,11 +51,17 @@ class _CameraCaptureViewState extends State<CameraCaptureView> {
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isRecording = false;
+
+  /// Recording is held: the clip keeps its frames, the timer stops counting and
+  /// the next resume appends to the same file.
+  bool _isPaused = false;
   int _cameraIndex = 0;
   FlashMode _flashMode = FlashMode.off;
 
   Timer? _recordTimer;
   Duration _recordElapsed = Duration.zero;
+
+  RelaxPickerTheme get _t => widget.theme;
 
   @override
   void initState() {
@@ -139,7 +145,12 @@ class _CameraCaptureViewState extends State<CameraCaptureView> {
         final file = await controller.stopVideoRecording();
         _recordTimer?.cancel();
         final elapsed = _recordElapsed;
-        if (mounted) setState(() => _isRecording = false);
+        if (mounted) {
+          setState(() {
+            _isRecording = false;
+            _isPaused = false;
+          });
+        }
         widget.onCaptured(
           RelaxVideoFile(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -153,16 +164,45 @@ class _CameraCaptureViewState extends State<CameraCaptureView> {
       } else {
         await controller.startVideoRecording();
         _recordElapsed = Duration.zero;
-        _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-          if (mounted) {
-            setState(() => _recordElapsed += const Duration(seconds: 1));
-          }
+        _startRecordTimer();
+        setState(() {
+          _isRecording = true;
+          _isPaused = false;
         });
-        setState(() => _isRecording = true);
       }
     } catch (e) {
       debugPrint('Error recording video: $e');
     }
+  }
+
+  /// Holds / resumes the current clip. Both halves land in the same file, so
+  /// the result is one video with the paused stretches cut out.
+  Future<void> _togglePauseRecording() async {
+    final controller = _controller;
+    if (controller == null || !_isRecording) return;
+    try {
+      if (_isPaused) {
+        await controller.resumeVideoRecording();
+        _startRecordTimer();
+      } else {
+        await controller.pauseVideoRecording();
+        _recordTimer?.cancel();
+      }
+      if (mounted) setState(() => _isPaused = !_isPaused);
+    } catch (e) {
+      // Pause/resume is unsupported on some devices; the clip keeps running.
+      debugPrint('Error pausing video recording: $e');
+    }
+  }
+
+  /// The counter tracks recorded time, so it only runs while frames do.
+  void _startRecordTimer() {
+    _recordTimer?.cancel();
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() => _recordElapsed += const Duration(seconds: 1));
+      }
+    });
   }
 
   Future<int> _safeLength(String path) async {
@@ -224,14 +264,16 @@ class _CameraCaptureViewState extends State<CameraCaptureView> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: _isPaused ? Colors.black54 : Colors.red,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.fiber_manual_record,
+                    Icon(
+                      _isPaused
+                          ? _t.pauseRecordingIcon
+                          : Icons.fiber_manual_record,
                       color: Colors.white,
                       size: 14,
                     ),
@@ -280,11 +322,28 @@ class _CameraCaptureViewState extends State<CameraCaptureView> {
     return _CaptureButton(color: color, icon: icon, onTap: onTap);
   }
 
+  /// Sits where the photo button lives while idle: only meaningful mid-clip.
+  Widget _buildPauseButton() {
+    final builder = widget.theme.pauseButtonBuilder;
+    if (builder != null) {
+      return builder(context, paused: _isPaused, onTap: _togglePauseRecording);
+    }
+    return IconButton(
+      tooltip: _isPaused ? _t.resumeRecordingLabel : _t.pauseRecordingLabel,
+      onPressed: _togglePauseRecording,
+      iconSize: 34,
+      icon: Icon(
+        _isPaused ? _t.resumeRecordingIcon : _t.pauseRecordingIcon,
+        color: Colors.white,
+      ),
+    );
+  }
+
   Widget _buildControls() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const SizedBox(width: 48),
+        SizedBox(width: 48, child: _isRecording ? _buildPauseButton() : null),
         if (widget.allowImages && !_isRecording)
           _buildCaptureButton(
             isVideo: false,
