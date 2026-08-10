@@ -193,7 +193,17 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
   }
 
   static const _videoExtensions = {
-    'mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v', 'flv', 'wmv', 'mpeg', 'mpg',
+    'mp4',
+    'mov',
+    'avi',
+    'mkv',
+    'webm',
+    '3gp',
+    'm4v',
+    'flv',
+    'wmv',
+    'mpeg',
+    'mpg',
   };
 
   static const _mimeByExtension = {
@@ -278,9 +288,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
   /// All currently selected items, in a stable order (media then documents),
   /// surfaced to the shared preview.
   List<PreviewItem> _selectedPreviewItems() => [
-        for (final m in _media) _mediaPreviewItem(m),
-        for (final doc in _selectedDocuments) DocumentPreviewItem(doc),
-      ];
+    for (final m in _media) _mediaPreviewItem(m),
+    for (final doc in _selectedDocuments) DocumentPreviewItem(doc),
+  ];
 
   PreviewItem _mediaPreviewItem(RelaxMediaFile m) => m is RelaxVideoFile
       ? VideoPreviewItem(m)
@@ -335,9 +345,11 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
 
     var startIndex = 0;
     if (startMedia != null) {
-      final i = items.indexWhere((e) =>
-          (e is ImagePreviewItem && e.file.id == startMedia.id) ||
-          (e is VideoPreviewItem && e.file.id == startMedia.id));
+      final i = items.indexWhere(
+        (e) =>
+            (e is ImagePreviewItem && e.file.id == startMedia.id) ||
+            (e is VideoPreviewItem && e.file.id == startMedia.id),
+      );
       if (i >= 0) startIndex = i;
     }
 
@@ -452,8 +464,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: _t.dragHandleColor ??
-                      cs.onSurface.withValues(alpha: 0.2),
+                  color:
+                      _t.dragHandleColor ?? cs.onSurface.withValues(alpha: 0.2),
                   borderRadius: .circular(4),
                 ),
               ),
@@ -478,10 +490,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
     if (!_showMedia) return _buildDocumentView();
     return IndexedStack(
       index: _view == PickerView.media ? 0 : 1,
-      children: [
-        _buildMediaGrid(cs),
-        _buildDocumentView(),
-      ],
+      children: [_buildMediaGrid(cs), _buildDocumentView()],
     );
   }
 
@@ -511,7 +520,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
               padding: const .only(left: 8),
               child: Text(
                 '$_totalSelected/${widget.maxSelection}',
-                style: _t.counterTextStyle ??
+                style:
+                    _t.counterTextStyle ??
                     theme.textTheme.bodyMedium?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.7),
                     ),
@@ -578,8 +588,11 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
       child: Row(
         children: [
           pill(widget.galleryTabText, _t.galleryTabIcon, PickerView.media),
-          pill(widget.documentsTabText, _t.documentsTabIcon,
-              PickerView.documents),
+          pill(
+            widget.documentsTabText,
+            _t.documentsTabIcon,
+            PickerView.documents,
+          ),
         ],
       ),
     );
@@ -653,10 +666,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
       child: Stack(
         fit: .expand,
         children: [
-          Padding(
-            padding: const .all(10),
-            child: thumbnail,
-          ),
+          Padding(padding: const .all(10), child: thumbnail),
           if (isVideo && media.duration > Duration.zero)
             Positioned(
               left: 6,
@@ -673,7 +683,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
                     const SizedBox(width: 3),
                     Text(
                       _formatDuration(media.duration),
-                      style: _t.durationTextStyle ??
+                      style:
+                          _t.durationTextStyle ??
                           const TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ],
@@ -702,7 +713,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
               alignment: .center,
               child: Text(
                 '$selectionIndex',
-                style: _t.selectionBadgeTextStyle ??
+                style:
+                    _t.selectionBadgeTextStyle ??
                     const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -741,8 +753,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
     final canSend = _totalSelected > 0;
 
     void onCancel() => Navigator.of(context).pop<RelaxPickerResult>(null);
-    final onPreview =
-        (canSend && widget.enablePreview) ? () => _openPreview() : null;
+    final onPreview = (canSend && widget.enablePreview)
+        ? () => _openPreview()
+        : null;
     final onSend = (canSend && !_isProcessing) ? _onDone : null;
 
     if (_t.bottomBarBuilder != null) {
@@ -826,7 +839,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
                   ? const Padding(
                       padding: EdgeInsets.all(16),
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : Icon(_t.sendIcon, color: Colors.white),
             ),
@@ -846,7 +861,8 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
               alignment: .center,
               child: Text(
                 '$_totalSelected',
-                style: _t.selectionBadgeTextStyle?.copyWith(
+                style:
+                    _t.selectionBadgeTextStyle?.copyWith(
                       color: widget.theme.accentColor,
                     ) ??
                     TextStyle(
@@ -902,14 +918,17 @@ class _EntryTile extends StatelessWidget {
                 width: 28,
                 height: 28,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: accentColor),
+                  strokeWidth: 2,
+                  color: accentColor,
+                ),
               )
             else
               Icon(icon, color: accentColor, size: 32),
             const SizedBox(height: 6),
             Text(
               label,
-              style: textStyle ??
+              style:
+                  textStyle ??
                   TextStyle(
                     color: cs.onSurface.withValues(alpha: 0.7),
                     fontSize: 12,

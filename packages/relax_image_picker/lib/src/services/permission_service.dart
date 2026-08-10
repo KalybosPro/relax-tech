@@ -27,10 +27,7 @@ class PermissionService {
 
     if (!enableCamera) return true;
 
-    final statuses = await [
-      Permission.camera,
-      Permission.microphone,
-    ].request();
+    final statuses = await [Permission.camera, Permission.microphone].request();
 
     return statuses[Permission.camera] == PermissionStatus.granted &&
         statuses[Permission.microphone] == PermissionStatus.granted;

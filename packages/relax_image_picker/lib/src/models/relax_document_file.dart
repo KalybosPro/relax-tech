@@ -21,16 +21,16 @@ class RelaxDocumentFile extends RelaxMediaFile {
   /// (see `RecentDocumentsStore`). The underlying file is *not* embedded; only
   /// its path and descriptors are stored.
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'path': path,
-        'mimeType': mimeType,
-        'size': size,
-        'fileName': fileName,
-        'extension': extension,
-        'canPreview': canPreview,
-        'thumbnailPath': thumbnailPath,
-        'creationDate': creationDate?.toIso8601String(),
-      };
+    'id': id,
+    'path': path,
+    'mimeType': mimeType,
+    'size': size,
+    'fileName': fileName,
+    'extension': extension,
+    'canPreview': canPreview,
+    'thumbnailPath': thumbnailPath,
+    'creationDate': creationDate?.toIso8601String(),
+  };
 
   factory RelaxDocumentFile.fromJson(Map<String, dynamic> json) {
     final rawDate = json['creationDate'] as String?;

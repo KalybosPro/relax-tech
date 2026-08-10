@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-08-10
+
+### Changed
+- Packaging only — no API or behaviour change.
+  - The published archive drops from 5 MB to ~440 KB: promo material under
+    `assets/promo/` is now excluded through a `.pubignore`.
+  - Longer package description and `topics` for pub.dev discoverability.
+  - Reformatted the remaining sources with the current Dart formatter.
+
 ## [3.0.0] - 2026-08-10
 
 ### Added

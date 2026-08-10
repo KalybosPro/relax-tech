@@ -31,7 +31,13 @@ class DocumentThumbnail extends StatefulWidget {
   final Color? iconColor;
 
   static const Set<String> imageExtensions = {
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic',
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+    'heic',
   };
 
   @override
@@ -46,8 +52,9 @@ class _DocumentThumbnailState extends State<DocumentThumbnail> {
   Uint8List? _pdfThumb;
   bool _failed = false;
 
-  bool get _isImage =>
-      DocumentThumbnail.imageExtensions.contains(widget.extension.toLowerCase());
+  bool get _isImage => DocumentThumbnail.imageExtensions.contains(
+    widget.extension.toLowerCase(),
+  );
 
   bool get _isPdf => widget.extension.toLowerCase() == 'pdf';
 
@@ -154,7 +161,8 @@ class _DocumentThumbnailState extends State<DocumentThumbnail> {
     return _iconFallback(cs);
   }
 
-  bool get _fileExists => widget.path.isNotEmpty && File(widget.path).existsSync();
+  bool get _fileExists =>
+      widget.path.isNotEmpty && File(widget.path).existsSync();
 
   Widget _iconFallback(ColorScheme cs) {
     return Icon(

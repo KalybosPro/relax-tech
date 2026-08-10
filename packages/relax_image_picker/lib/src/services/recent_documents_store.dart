@@ -66,9 +66,7 @@ class RecentDocumentsStore {
       final file = await _file();
       final trimmed = documents.take(maxEntries).toList();
       await file.writeAsString(
-        jsonEncode({
-          'documents': trimmed.map((d) => d.toJson()).toList(),
-        }),
+        jsonEncode({'documents': trimmed.map((d) => d.toJson()).toList()}),
       );
     } catch (e) {
       debugPrint('RecentDocumentsStore.save failed: $e');

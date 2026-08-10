@@ -26,7 +26,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  relax_image_picker: ^3.0.0
+  relax_image_picker: ^3.0.1
 ```
 
 Then run:

@@ -48,7 +48,16 @@ class DocumentPickerSheet extends StatefulWidget {
 
 class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
   static const List<String> _defaultExtensions = [
-    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar',
+    'pdf',
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+    'ppt',
+    'pptx',
+    'txt',
+    'zip',
+    'rar',
   ];
 
   final RecentDocumentsStore _store = RecentDocumentsStore();
@@ -156,8 +165,14 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
     );
   }
 
-  bool _canPreview(String ext) =>
-      const {'pdf', 'txt', 'md', 'jpg', 'jpeg', 'png'}.contains(ext.toLowerCase());
+  bool _canPreview(String ext) => const {
+    'pdf',
+    'txt',
+    'md',
+    'jpg',
+    'jpeg',
+    'png',
+  }.contains(ext.toLowerCase());
 
   String _mimeType(String ext) {
     switch (ext.toLowerCase()) {
@@ -214,14 +229,18 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
         Expanded(
           child: _initializing || _isLoading
               ? Center(
-                  child: CircularProgressIndicator(color: widget.theme.accentColor))
+                  child: CircularProgressIndicator(
+                    color: widget.theme.accentColor,
+                  ),
+                )
               : _documents.isEmpty
-                  ? _buildEmptyState(cs)
-                  : _buildGrid(cs),
+              ? _buildEmptyState(cs)
+              : _buildGrid(cs),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: widget.theme.browseButtonBuilder?.call(
+          child:
+              widget.theme.browseButtonBuilder?.call(
                 context,
                 label: widget.theme.browseLabel,
                 icon: widget.theme.browseIcon,
@@ -231,7 +250,8 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: _isLoading ? null : _pickDocuments,
-                  style: widget.theme.browseButtonStyle ??
+                  style:
+                      widget.theme.browseButtonStyle ??
                       OutlinedButton.styleFrom(
                         foregroundColor: widget.theme.accentColor,
                         side: BorderSide(color: widget.theme.accentColor),
@@ -252,19 +272,24 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(widget.theme.emptyDocumentsIcon,
-              size: 64, color: cs.onSurface.withValues(alpha: 0.3)),
+          Icon(
+            widget.theme.emptyDocumentsIcon,
+            size: 64,
+            color: cs.onSurface.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             widget.theme.noDocumentsLabel,
-            style: widget.theme.emptyStateTitleStyle ??
+            style:
+                widget.theme.emptyStateTitleStyle ??
                 TextStyle(color: cs.onSurface.withValues(alpha: 0.6)),
           ),
           const SizedBox(height: 4),
           Text(
             widget.theme.noDocumentsHintLabel,
             textAlign: TextAlign.center,
-            style: widget.theme.emptyStateSubtitleStyle ??
+            style:
+                widget.theme.emptyStateSubtitleStyle ??
                 TextStyle(
                   color: cs.onSurface.withValues(alpha: 0.4),
                   fontSize: 12,
@@ -311,7 +336,9 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(widget.theme.tileBorderRadius),
+              borderRadius: BorderRadius.circular(
+                widget.theme.tileBorderRadius,
+              ),
               border: Border.all(
                 color: selected
                     ? widget.theme.accentColor
@@ -326,26 +353,27 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
               children: [
                 Column(
                   children: [
-                    Expanded(
-                      child: Center(child: thumbnail),
-                    ),
+                    Expanded(child: Center(child: thumbnail)),
                     const SizedBox(height: 6),
                     Text(
                       doc.fileName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: (widget.theme.fileNameTextStyle ??
-                              const TextStyle(fontSize: 11))
-                          .copyWith(
-                        fontWeight:
-                            selected ? FontWeight.bold : FontWeight.normal,
-                      ),
+                      style:
+                          (widget.theme.fileNameTextStyle ??
+                                  const TextStyle(fontSize: 11))
+                              .copyWith(
+                                fontWeight: selected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       _formatSize(doc.size),
-                      style: widget.theme.fileSizeTextStyle ??
+                      style:
+                          widget.theme.fileSizeTextStyle ??
                           TextStyle(
                             fontSize: 10,
                             color: cs.onSurface.withValues(alpha: 0.5),
@@ -357,8 +385,11 @@ class _DocumentPickerSheetState extends State<DocumentPickerSheet> {
                   Positioned(
                     top: 0,
                     right: 0,
-                    child: Icon(widget.theme.selectedIcon,
-                        color: widget.theme.accentColor, size: 20),
+                    child: Icon(
+                      widget.theme.selectedIcon,
+                      color: widget.theme.accentColor,
+                      size: 20,
+                    ),
                   ),
               ],
             ),

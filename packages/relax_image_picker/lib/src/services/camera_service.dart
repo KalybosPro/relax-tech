@@ -7,10 +7,7 @@ class CameraService {
   Future<void> initialize() async {
     _cameras = await availableCameras();
     if (_cameras != null && _cameras!.isNotEmpty) {
-      _controller = CameraController(
-        _cameras!.first,
-        ResolutionPreset.high,
-      );
+      _controller = CameraController(_cameras!.first, ResolutionPreset.high);
       await _controller!.initialize();
     }
   }

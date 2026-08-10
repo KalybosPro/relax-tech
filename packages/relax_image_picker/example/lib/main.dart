@@ -97,29 +97,32 @@ class _HomePageState extends State<HomePage> {
       // --- Full widget overrides (builders) ---
 
       // Circular send button with a count bubble.
-      sendButtonBuilder: (
-        context, {
-        required selectedCount,
-        required processing,
-        required onSend,
-      }) {
-        return FilledButton(
-          onPressed: onSend,
-          style: FilledButton.styleFrom(
-            backgroundColor: accent,
-            shape: const StadiumBorder(),
-            padding: const .symmetric(horizontal: 20, vertical: 14),
-          ),
-          child: processing
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
-              : Text('Envoyer ($selectedCount)'),
-        );
-      },
+      sendButtonBuilder:
+          (
+            context, {
+            required selectedCount,
+            required processing,
+            required onSend,
+          }) {
+            return FilledButton(
+              onPressed: onSend,
+              style: FilledButton.styleFrom(
+                backgroundColor: accent,
+                shape: const StadiumBorder(),
+                padding: const .symmetric(horizontal: 20, vertical: 14),
+              ),
+              child: processing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text('Envoyer ($selectedCount)'),
+            );
+          },
 
       // Text cancel button.
       cancelButtonBuilder: (context, {required label, required onPressed}) {
@@ -130,58 +133,58 @@ class _HomePageState extends State<HomePage> {
       },
 
       // Segmented-style tab.
-      tabBuilder: (
-        context, {
-        required label,
-        required icon,
-        required selected,
-        required onTap,
-      }) {
-        return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            margin: const .symmetric(horizontal: 4),
-            padding: const .symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: selected ? accent : accent.withValues(alpha: 0.08),
-              borderRadius: .circular(14),
-            ),
-            child: Row(
-              mainAxisAlignment: .center,
-              children: [
-                Icon(icon,
-                    size: 18, color: selected ? Colors.white : accent),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: selected ? Colors.white : accent,
-                    fontWeight: .w600,
-                  ),
+      tabBuilder:
+          (
+            context, {
+            required label,
+            required icon,
+            required selected,
+            required onTap,
+          }) {
+            return GestureDetector(
+              onTap: onTap,
+              child: Container(
+                margin: const .symmetric(horizontal: 4),
+                padding: const .symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? accent : accent.withValues(alpha: 0.08),
+                  borderRadius: .circular(14),
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+                child: Row(
+                  mainAxisAlignment: .center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 18,
+                      color: selected ? Colors.white : accent,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: selected ? Colors.white : accent,
+                        fontWeight: .w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
 
       // Browse button.
-      browseButtonBuilder: (
-        context, {
-        required label,
-        required icon,
-        required onPressed,
-      }) {
-        return SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(backgroundColor: accent),
-            icon: Icon(icon),
-            label: Text(label),
-          ),
-        );
-      },
+      browseButtonBuilder:
+          (context, {required label, required icon, required onPressed}) {
+            return SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onPressed,
+                style: FilledButton.styleFrom(backgroundColor: accent),
+                icon: Icon(icon),
+                label: Text(label),
+              ),
+            );
+          },
 
       // Camera tile.
       cameraTileBuilder: (context, {required onTap}) {
@@ -201,44 +204,45 @@ class _HomePageState extends State<HomePage> {
       },
 
       // Custom document card reusing the ready-made thumbnail.
-      documentTileBuilder: (
-        context, {
-        required document,
-        required selected,
-        required thumbnail,
-        required onTap,
-      }) {
-        return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: .circular(18),
-              color: selected
-                  ? accent.withValues(alpha: 0.12)
-                  : Colors.grey.withValues(alpha: 0.08),
-              border: .all(
-                color: selected ? accent : Colors.transparent,
-                width: 2,
-              ),
-            ),
-            padding: const .all(8),
-            child: Column(
-              children: [
-                Expanded(child: Center(child: thumbnail)),
-                const SizedBox(height: 6),
-                Text(
-                  document.fileName,
-                  maxLines: 1,
-                  overflow: .ellipsis,
-                  style: const TextStyle(fontSize: 11),
+      documentTileBuilder:
+          (
+            context, {
+            required document,
+            required selected,
+            required thumbnail,
+            required onTap,
+          }) {
+            return GestureDetector(
+              onTap: onTap,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: .circular(18),
+                  color: selected
+                      ? accent.withValues(alpha: 0.12)
+                      : Colors.grey.withValues(alpha: 0.08),
+                  border: .all(
+                    color: selected ? accent : Colors.transparent,
+                    width: 2,
+                  ),
                 ),
-                if (selected)
-                  const Icon(Icons.check_circle, color: accent, size: 18),
-              ],
-            ),
-          ),
-        );
-      },
+                padding: const .all(8),
+                child: Column(
+                  children: [
+                    Expanded(child: Center(child: thumbnail)),
+                    const SizedBox(height: 6),
+                    Text(
+                      document.fileName,
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    if (selected)
+                      const Icon(Icons.check_circle, color: accent, size: 18),
+                  ],
+                ),
+              ),
+            );
+          },
 
       // Empty documents state.
       emptyDocumentsBuilder: (context) {
