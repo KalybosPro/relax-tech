@@ -37,26 +37,38 @@ void main() {
       // Assert
       expect(firstRead['API_KEY'], equals('test123'));
       expect(secondRead['API_KEY'], equals('test123'));
-      expect(firstRead, equals(secondRead),
-          reason: 'Results should be identical');
+      expect(
+        firstRead,
+        equals(secondRead),
+        reason: 'Results should be identical',
+      );
     });
 
-    test('should return different instance from cache (not reference)', () async {
-      // Arrange
-      const envContent = 'KEY=value';
-      final envFile = File(p.join(tempDir.path, '.env'));
-      await envFile.writeAsString(envContent);
+    test(
+      'should return different instance from cache (not reference)',
+      () async {
+        // Arrange
+        const envContent = 'KEY=value';
+        final envFile = File(p.join(tempDir.path, '.env'));
+        await envFile.writeAsString(envContent);
 
-      // Act
-      final firstRead = EnvFileParser.parseEnvFile(envFile);
-      final secondRead = EnvFileParser.parseEnvFile(envFile);
+        // Act
+        final firstRead = EnvFileParser.parseEnvFile(envFile);
+        final secondRead = EnvFileParser.parseEnvFile(envFile);
 
-      // Assert - should be equal but not the same instance
-      expect(firstRead, equals(secondRead),
-          reason: 'Content should be equal');
-      expect(identical(firstRead, secondRead), false,
-          reason: 'Should return different Map instances');
-    });
+        // Assert - should be equal but not the same instance
+        expect(
+          firstRead,
+          equals(secondRead),
+          reason: 'Content should be equal',
+        );
+        expect(
+          identical(firstRead, secondRead),
+          false,
+          reason: 'Should return different Map instances',
+        );
+      },
+    );
 
     test('should invalidate cache when file is modified', () async {
       // Arrange
@@ -76,8 +88,11 @@ void main() {
       final secondRead = EnvFileParser.parseEnvFile(envFile);
 
       // Assert
-      expect(secondRead['KEY'], equals('modified'),
-          reason: 'Cache should be invalidated after file modification');
+      expect(
+        secondRead['KEY'],
+        equals('modified'),
+        reason: 'Cache should be invalidated after file modification',
+      );
     });
 
     test('should handle multiple different files independently', () async {
@@ -119,12 +134,17 @@ void main() {
       final secondReadTime = stopwatch2.elapsedMilliseconds;
 
       // Assert
-      expect(firstRead, equals(secondRead),
-          reason: 'Content should be identical');
-      expect(secondReadTime, lessThanOrEqualTo(firstReadTime),
-          reason: 'Cached read should be faster or equal');
-      print(
-          'First read: ${firstReadTime}ms, Cached read: ${secondReadTime}ms');
+      expect(
+        firstRead,
+        equals(secondRead),
+        reason: 'Content should be identical',
+      );
+      expect(
+        secondReadTime,
+        lessThanOrEqualTo(firstReadTime),
+        reason: 'Cached read should be faster or equal',
+      );
+      print('First read: ${firstReadTime}ms, Cached read: ${secondReadTime}ms');
     });
 
     test('clearCache should remove all cached entries', () async {
@@ -147,8 +167,11 @@ void main() {
       final secondRead = EnvFileParser.parseEnvFile(envFile);
 
       // Assert
-      expect(secondRead['KEY'], equals('value2'),
-          reason: 'After cache clear, should read modified file');
+      expect(
+        secondRead['KEY'],
+        equals('value2'),
+        reason: 'After cache clear, should read modified file',
+      );
     });
 
     test('clearCacheForFile should remove specific file cache', () async {
@@ -175,10 +198,16 @@ void main() {
       final read2 = EnvFileParser.parseEnvFile(envFile2);
 
       // Assert
-      expect(read1['FILE'], equals('1_modified'),
-          reason: 'Cleared cache should cause file re-read');
-      expect(read2['FILE'], equals('2'),
-          reason: 'Non-cleared cache should return cached value');
+      expect(
+        read1['FILE'],
+        equals('1_modified'),
+        reason: 'Cleared cache should cause file re-read',
+      );
+      expect(
+        read2['FILE'],
+        equals('2'),
+        reason: 'Non-cleared cache should return cached value',
+      );
     });
 
     test('should handle file with same path after rewrite', () async {
@@ -199,8 +228,11 @@ void main() {
 
       // Assert
       expect(first['KEY'], equals('first'));
-      expect(second['KEY'], equals('second'),
-          reason: 'Should detect file recreation and reparse');
+      expect(
+        second['KEY'],
+        equals('second'),
+        reason: 'Should detect file recreation and reparse',
+      );
     });
 
     test('should cache files with similar names independently', () async {
@@ -217,8 +249,11 @@ void main() {
 
       // Assert
       expect(baseResult['TYPE'], equals('base'));
-      expect(devResult['TYPE'], equals('dev'),
-          reason: 'Different files should not share cache');
+      expect(
+        devResult['TYPE'],
+        equals('dev'),
+        reason: 'Different files should not share cache',
+      );
     });
 
     test('should handle concurrent access safely', () async {

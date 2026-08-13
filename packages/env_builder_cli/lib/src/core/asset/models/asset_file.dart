@@ -4,7 +4,6 @@ import 'models.dart' show AssetType;
 
 /// Asset file information
 class AssetFile {
-
   AssetFile({
     required this.path,
     required this.name,
@@ -25,10 +24,16 @@ class AssetFile {
     final baseName = p.basenameWithoutExtension(name);
     final parts = baseName.split(RegExp(r'[\s_-]+'));
     final camelCase = parts
-        .map((part) => part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1).toLowerCase())
+        .map(
+          (part) => part.isEmpty
+              ? ''
+              : part[0].toUpperCase() + part.substring(1).toLowerCase(),
+        )
         .join('');
 
     // Ensure it starts with lowercase
-    return camelCase.isNotEmpty ? camelCase[0].toLowerCase() + camelCase.substring(1) : 'asset';
+    return camelCase.isNotEmpty
+        ? camelCase[0].toLowerCase() + camelCase.substring(1)
+        : 'asset';
   }
 }

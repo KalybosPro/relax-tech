@@ -7,8 +7,20 @@ import 'models.dart';
 
 /// Asset reader for scanning and processing assets
 class AssetReader {
-  static const List<String> _imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
-  static const List<String> _videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv'];
+  static const List<String> _imageExtensions = [
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'webp',
+  ];
+  static const List<String> _videoExtensions = [
+    'mp4',
+    'webm',
+    'mov',
+    'avi',
+    'mkv',
+  ];
   static const List<String> _svgExtensions = ['svg'];
 
   /// Scan assets directory and return all valid asset files
@@ -75,7 +87,10 @@ class AssetReader {
   }
 
   /// Read asset file in chunks to avoid memory issues
-  static Stream<List<int>> readAssetInChunks(String path, {int chunkSize = 64 * 1024}) async* {
+  static Stream<List<int>> readAssetInChunks(
+    String path, {
+    int chunkSize = 64 * 1024,
+  }) async* {
     final file = File(path);
     final raf = await file.open();
 

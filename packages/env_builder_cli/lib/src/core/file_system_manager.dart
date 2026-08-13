@@ -93,7 +93,9 @@ ${keepExample ? '!.env.example' : ''}
   /// Writes environment test file
   static void writeEnvTestFile(String path) {
     final testDir = Directory(p.join(path, 'test'));
-    final testFile = File(p.join(testDir.path, '${TextTemplates.packageName}_test.dart'));
+    final testFile = File(
+      p.join(testDir.path, '${TextTemplates.packageName}_test.dart'),
+    );
 
     try {
       if (!testDir.existsSync()) {
@@ -101,7 +103,9 @@ ${keepExample ? '!.env.example' : ''}
       }
 
       testFile.writeAsStringSync(CodeGenerator.generateTestFileContent());
-      CliLogger.success('env_test.dart file created/updated at ${testFile.path}');
+      CliLogger.success(
+        'env_test.dart file created/updated at ${testFile.path}',
+      );
     } catch (e) {
       CliLogger.error('Error writing env_test.dart file: $e');
       exit(1);

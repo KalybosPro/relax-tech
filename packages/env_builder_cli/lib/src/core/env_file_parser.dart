@@ -7,7 +7,6 @@ import 'core.dart';
 
 /// Internal class to store cached parse results with file metadata
 class _CachedParse {
-
   _CachedParse({required this.lastModified, required this.data}) {
     lastAccessTime = DateTime.now();
   }
@@ -34,7 +33,7 @@ class EnvFileParser {
 
   // Cache for parsed files: key = absolute path, value = (lastModified, parsedMap)
   static final Map<String, _CachedParse> _cache = <String, _CachedParse>{};
-  
+
   // Cache statistics for monitoring
   static int _cacheHits = 0;
   static int _cacheMisses = 0;
@@ -95,7 +94,7 @@ class EnvFileParser {
       // Remove least recently used item
       var lruKey = '';
       var lruTime = DateTime.now();
-      
+
       for (final key in _cache.keys) {
         final accessTime = _cache[key]!.lastAccessTime;
         if (accessTime.isBefore(lruTime)) {
@@ -103,23 +102,33 @@ class EnvFileParser {
           lruKey = key;
         }
       }
-      
+
       if (lruKey.isNotEmpty) {
         _cache.remove(lruKey);
       }
     }
-    
+
     // Check memory limit (rough estimate: ~100 bytes per env var)
-    final estimatedMemoryMB = (_cache.values.fold(0, (sum, cached) => sum + (cached.data.length * 100)) / (1024 * 1024)).toInt();
-    
+    final estimatedMemoryMB =
+        (_cache.values.fold(
+                  0,
+                  (sum, cached) => sum + (cached.data.length * 100),
+                ) /
+                (1024 * 1024))
+            .toInt();
+
     if (estimatedMemoryMB > maxCacheMemoryMB) {
       // Clear oldest 20% of cache
-      final itemsToRemove = (_cache.length * 0.2).ceil().clamp(1, _cache.length);
-      final sortedByAccess = _cache.entries
-          .map((e) => MapEntry(e.key, e.value.lastAccessTime))
-          .toList()
-          ..sort((a, b) => a.value.compareTo(b.value));
-      
+      final itemsToRemove = (_cache.length * 0.2).ceil().clamp(
+        1,
+        _cache.length,
+      );
+      final sortedByAccess =
+          _cache.entries
+              .map((e) => MapEntry(e.key, e.value.lastAccessTime))
+              .toList()
+            ..sort((a, b) => a.value.compareTo(b.value));
+
       for (var i = 0; i < itemsToRemove && i < sortedByAccess.length; i++) {
         _cache.remove(sortedByAccess[i].key);
       }
@@ -130,15 +139,20 @@ class EnvFileParser {
   static Map<String, dynamic> getCacheStats() {
     final totalVars = _cache.values.fold(0, (sum, p) => sum + p.data.length);
     final totalHitsMisses = _cacheHits + _cacheMisses;
-    final hitRate = totalHitsMisses > 0 ? (_cacheHits / totalHitsMisses * 100) : 0.0;
-    
+    final hitRate = totalHitsMisses > 0
+        ? (_cacheHits / totalHitsMisses * 100)
+        : 0.0;
+
     return {
       'cacheSize': _cache.length,
       'totalVariables': totalVars,
       'cacheHits': _cacheHits,
       'cacheMisses': _cacheMisses,
       'hitRate': hitRate.toStringAsFixed(2),
-      'estimatedMemoryMB': (_cache.values.fold(0, (sum, p) => sum + (p.data.length * 100)) / (1024 * 1024)).toStringAsFixed(2),
+      'estimatedMemoryMB':
+          (_cache.values.fold(0, (sum, p) => sum + (p.data.length * 100)) /
+                  (1024 * 1024))
+              .toStringAsFixed(2),
     };
   }
 
@@ -222,7 +236,6 @@ class EnvFileParser {
 
 /// Helper class for parsing results
 class _EnvLineParseResult {
-
   _EnvLineParseResult(this.key, this.value);
   final String key;
   final String value;

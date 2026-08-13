@@ -3,9 +3,11 @@
 CLI that generates a typed `env` Flutter package from multiple `.env` files.
 
 ## Critical: NOT a workspace member
-Intentionally excluded from the root pub workspace — it pins `analyzer ^12` while
-`relax_orm_generator` pins `analyzer ^10`, which cannot share one resolution.
-Run its own resolution **inside this dir**, not from repo root:
+Intentionally excluded from the root pub workspace — it needs `test ^1.31`, whose
+`test_api` clashes with the `test_api 0.7.10` that `flutter_test` pins for the
+Flutter members; `test >=1.31.2` also demands `analyzer >=13` while `relax_cli` and
+`relax_orm_generator` cap it at `^10`. Run its own resolution **inside this dir**,
+not from repo root:
 ```bash
 cd packages/env_builder_cli
 dart pub get       # independent of the root workspace

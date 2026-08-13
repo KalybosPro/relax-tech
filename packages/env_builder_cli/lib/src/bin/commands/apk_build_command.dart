@@ -3,7 +3,6 @@ import 'package:env_builder_cli/src/core/core.dart';
 
 /// Command for building Flutter APK
 class ApkBuildCommand extends Command<int> {
-
   ApkBuildCommand() {
     argParser.addOption(
       'target',

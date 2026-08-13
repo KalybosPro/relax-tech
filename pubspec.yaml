@@ -17,6 +17,7 @@ workspace:
   - packages/relax_image_picker
   - packages/relax_pay
   - packages/relax_storage
-# env_builder_cli is intentionally NOT a workspace member: it requires
-# analyzer ^12 while relax_orm_generator pins analyzer ^10, which cannot share a
-# single resolution. It still lives in this monorepo but resolves independently.
+# env_builder_cli is intentionally NOT a workspace member: it needs `test ^1.31`,
+# whose test_api conflicts with the test_api 0.7.10 that flutter_test pins for the
+# Flutter members (and relax_cli/relax_orm_generator cap analyzer at ^10, which
+# test >=1.31.2 also rejects). It lives in this monorepo but resolves independently.

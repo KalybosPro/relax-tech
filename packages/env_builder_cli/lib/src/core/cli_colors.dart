@@ -15,14 +15,17 @@ class CliColors {
 
   static bool _useColors = true;
 
-  static void setUseColors(bool useColors) => _useColors = useColors && stdout.supportsAnsiEscapes;
+  static void setUseColors(bool useColors) =>
+      _useColors = useColors && stdout.supportsAnsiEscapes;
 
   // Colors
   static String red(String text) => _useColors ? '$_red$text$_reset' : text;
   static String green(String text) => _useColors ? '$_green$text$_reset' : text;
-  static String yellow(String text) => _useColors ? '$_yellow$text$_reset' : text;
+  static String yellow(String text) =>
+      _useColors ? '$_yellow$text$_reset' : text;
   static String blue(String text) => _useColors ? '$_blue$text$_reset' : text;
-  static String magenta(String text) => _useColors ? '$_magenta$text$_reset' : text;
+  static String magenta(String text) =>
+      _useColors ? '$_magenta$text$_reset' : text;
   static String cyan(String text) => _useColors ? '$_cyan$text$_reset' : text;
   static String white(String text) => _useColors ? '$_white$text$_reset' : text;
   static String gray(String text) => _useColors ? '$_gray$text$_reset' : text;

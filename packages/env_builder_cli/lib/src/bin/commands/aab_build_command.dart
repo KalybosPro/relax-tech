@@ -3,7 +3,6 @@ import 'package:env_builder_cli/src/core/core.dart';
 
 /// Command for building Flutter AAB
 class AabBuildCommand extends Command<int> {
-
   AabBuildCommand() {
     argParser.addOption(
       'target',

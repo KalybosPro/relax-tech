@@ -74,11 +74,8 @@ class EnvBuilderCli implements EnvBuilder {
     List<String> arguments, {
     String? path,
     String engine = 'flutter',
-  }) async => ProcessRunner.runFlutterCommand(
-    arguments,
-    path: path,
-    engine: engine,
-  );
+  }) async =>
+      ProcessRunner.runFlutterCommand(arguments, path: path, engine: engine);
 
   @override
   String generateEnumClassContent(File file) =>

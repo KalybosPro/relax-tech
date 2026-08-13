@@ -14,7 +14,7 @@ void main() {
     setUp(() {
       tempDir = Directory.systemTemp.createTempSync('env_parser_test_');
       testEnvFile = File(p.join(tempDir.path, '.env.test'));
-      
+
       // Create a test .env file with various entries
       testEnvFile.writeAsStringSync(
         'API_KEY=sk_live_123456\n'
@@ -24,7 +24,7 @@ void main() {
         'UNQUOTED_VALUE=some value\n'
         'SPECIAL_CHARS_ALT=special\n'
         'QUOTED_KEY="quoted_value"\n'
-        '# This is a comment\n'
+        '# This is a comment\n',
       );
 
       // Reset cache and stats before each test
@@ -46,7 +46,11 @@ void main() {
 
       // Get cache stats after first parse
       var stats = EnvFileParser.getCacheStats();
-      expect(stats['cacheHits'], equals(0), reason: 'First parse should miss cache');
+      expect(
+        stats['cacheHits'],
+        equals(0),
+        reason: 'First parse should miss cache',
+      );
       expect(stats['cacheMisses'], equals(1));
 
       // Second parse - should hit cache
@@ -55,16 +59,20 @@ void main() {
 
       // Verify cache hit was recorded
       stats = EnvFileParser.getCacheStats();
-      expect(stats['cacheHits'], equals(1), reason: 'Second parse should hit cache');
+      expect(
+        stats['cacheHits'],
+        equals(1),
+        reason: 'Second parse should hit cache',
+      );
       expect(stats['cacheMisses'], equals(1));
     });
 
     test('Cache statistics are accurate', () {
       // Parse the file
       final result = EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       final stats = EnvFileParser.getCacheStats();
-      
+
       // Verify stats
       expect(stats['cacheSize'], equals(1));
       expect(stats['totalVariables'], equals(result.length));
@@ -81,7 +89,7 @@ void main() {
       }
 
       final stats = EnvFileParser.getCacheStats();
-      
+
       // All except first should be cache hits
       expect(stats['cacheHits'], equals(4));
       expect(stats['cacheMisses'], equals(1));
@@ -102,45 +110,49 @@ void main() {
       // Parse again - should miss cache because file was modified
       final result2 = EnvFileParser.parseEnvFile(testEnvFile);
       stats = EnvFileParser.getCacheStats();
-      
-      expect(result2.length, lessThan(result1.length), reason: 'Results should differ after file modification');
+
+      expect(
+        result2.length,
+        lessThan(result1.length),
+        reason: 'Results should differ after file modification',
+      );
       expect(stats['cacheMisses'], equals(2));
       expect(result2.containsKey('NEW_KEY'), isTrue);
     });
 
     test('Correct parsing of quoted values', () {
       final result = EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       expect(result['DATABASE_URL'], equals('postgres://localhost:5432/mydb'));
       expect(result['SECRET_PASSWORD'], equals('my-secret-password'));
     });
 
     test('Correct parsing of unquoted values', () {
       final result = EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       expect(result['API_KEY'], equals('sk_live_123456'));
       expect(result['UNQUOTED_VALUE'], equals('some value'));
     });
 
     test('Handles special characters correctly', () {
       final result = EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       expect(result['SPECIAL_CHARS_ALT'], equals('special'));
     });
 
     test('Ignores comments and empty lines', () {
       final result = EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       // Comments should not be included as variables
       expect(result.containsKey('This'), isFalse);
       expect(result.containsKey('is'), isFalse);
     });
 
     test('Cache clear works correctly', () {
-      // Parse a file  
+      // Parse a file
       final file1 = File(p.join(tempDir.path, '.test1'));
       file1.writeAsStringSync('KEY1=value1');
-      
+
       EnvFileParser.parseEnvFile(file1);
       var stats = EnvFileParser.getCacheStats();
       final initialSize = stats['cacheSize'] as int;
@@ -165,7 +177,7 @@ void main() {
       // Parse both files
       EnvFileParser.parseEnvFile(testEnvFile);
       EnvFileParser.parseEnvFile(testFile2);
-      
+
       var stats = EnvFileParser.getCacheStats();
       expect(stats['cacheSize'], equals(2));
 
@@ -208,7 +220,7 @@ void main() {
 
       // Warm up cache
       EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       // Measure cache hit time (should be < 1ms)
       final watch = Stopwatch()..start();
       for (var i = 0; i < 100; i++) {
@@ -218,21 +230,24 @@ void main() {
 
       final avgTimeMs = watch.elapsedMilliseconds / 100;
       print('Average cache hit time: ${avgTimeMs.toStringAsFixed(3)}ms');
-      
+
       // Verify reasonable performance (cache hit should be very fast)
-      expect(avgTimeMs, lessThan(5), 
-          reason: 'Cache hit should be much faster than file I/O');
-      
+      expect(
+        avgTimeMs,
+        lessThan(5),
+        reason: 'Cache hit should be much faster than file I/O',
+      );
+
       final stats = EnvFileParser.getCacheStats();
       expect(stats['totalVariables'], equals(5000));
     });
 
     test('Cache stats show correct memory usage estimate', () {
       EnvFileParser.parseEnvFile(testEnvFile);
-      
+
       final stats = EnvFileParser.getCacheStats();
       final memoryMB = double.parse(stats['estimatedMemoryMB'] as String);
-      
+
       // Should be a small number (less than 1MB for test file)
       expect(memoryMB, lessThanOrEqualTo(1.0));
       // For a non-empty cache, should be at least some measurable value
@@ -244,7 +259,7 @@ void main() {
       emptyFile.writeAsStringSync('');
 
       final result = EnvFileParser.parseEnvFile(emptyFile);
-      
+
       expect(result, isEmpty);
       expect(result, isA<Map<String, String>>());
 
@@ -260,7 +275,7 @@ void main() {
 ''');
 
       final result = EnvFileParser.parseEnvFile(commentFile);
-      
+
       expect(result, isEmpty);
 
       commentFile.deleteSync();

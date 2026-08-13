@@ -1,7 +1,2 @@
 /// Supported asset types
-enum AssetType {
-  image,
-  video,
-  svg,
-  unknown,
-}
+enum AssetType { image, video, svg, unknown }

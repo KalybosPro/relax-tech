@@ -7,14 +7,14 @@ import 'cli_config.dart';
 /// Parses command line arguments for the CLI tool, supporting environment
 /// file processing. Validates input and extracts necessary parameters.
 class ArgumentParser {
-
   ArgumentParser(this.args);
   final List<String> args;
 
   /// Validates command line arguments
-  bool isValidArguments() => args.isNotEmpty &&
-        args.length == 1 &&
-        args.first.startsWith(CliConfig.envFilePrefix);
+  bool isValidArguments() =>
+      args.isNotEmpty &&
+      args.length == 1 &&
+      args.first.startsWith(CliConfig.envFilePrefix);
 
   /// Extracts environment file paths from arguments
   List<String> extractEnvFilePaths() {

@@ -35,8 +35,12 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dev_dependencies:
-  env_builder_cli: ^1.1.5
+  env_builder_cli: ^1.4.0
 ```
+
+> **Note:** versions `1.2.0` → `1.3.1` cannot be installed this way — they required
+> `analyzer ^12` (and therefore `meta ^1.18`), which conflicts with the `meta` the
+> Flutter SDK pins. Use `1.4.0` or later, or install globally.
 
 ## Usage
 

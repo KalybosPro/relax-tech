@@ -46,7 +46,9 @@ class EnvCrypto {
   /// Validate password strength
   static bool _isValidPassword(String password) {
     if (password.length < minPasswordLength) {
-      CliLogger.error('Password must be at least $minPasswordLength characters long.');
+      CliLogger.error(
+        'Password must be at least $minPasswordLength characters long.',
+      );
       return false;
     }
     return true;

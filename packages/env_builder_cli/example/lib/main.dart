@@ -36,7 +36,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String baseUrl = '';
-  final appFlavor = AppFlavor.production();
+  final appFlavor = AppFlavor.development();
 
   // Just to simulate the use of EnvValue
   void createUser(EnvValue env) {
@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         actions: [
-          // 
+          //
           Assets.images.icon.svg(width: 24, height: 24),
           const SizedBox(width: 20),
         ],

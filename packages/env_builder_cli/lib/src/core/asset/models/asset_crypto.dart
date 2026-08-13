@@ -21,11 +21,7 @@ class AssetCrypto {
 
     final hash = _calculateHash(data);
 
-    return EncryptedAsset(
-      key: key,
-      data: encrypted,
-      hash: hash,
-    );
+    return EncryptedAsset(key: key, data: encrypted, hash: hash);
   }
 
   /// Encrypt asset data using AES method
@@ -41,11 +37,7 @@ class AssetCrypto {
 
     final hash = _calculateHash(data);
 
-    return EncryptedAsset(
-      key: key.bytes,
-      data: combinedData,
-      hash: hash,
-    );
+    return EncryptedAsset(key: key.bytes, data: combinedData, hash: hash);
   }
 
   /// Decrypt XOR encrypted data
@@ -62,8 +54,12 @@ class AssetCrypto {
   /// Decrypt AES encrypted data
   static List<int> decryptAes(List<int> keyBytes, List<int> data) {
     final key = encrypt.Key(Uint8List.fromList(keyBytes));
-    final iv = encrypt.IV(Uint8List.fromList(data.sublist(0, 16))); // First 16 bytes are IV
-    final encryptedData = encrypt.Encrypted(Uint8List.fromList(data.sublist(16)));
+    final iv = encrypt.IV(
+      Uint8List.fromList(data.sublist(0, 16)),
+    ); // First 16 bytes are IV
+    final encryptedData = encrypt.Encrypted(
+      Uint8List.fromList(data.sublist(16)),
+    );
 
     final encrypter = encrypt.Encrypter(encrypt.AES(key));
     final decrypted = encrypter.decryptBytes(encryptedData, iv: iv);
@@ -124,7 +120,11 @@ class AssetCrypto {
   }
 
   /// Decrypt asset based on method
-  static List<int> decryptAsset(List<int> key, List<int> data, EncryptionMethod method) {
+  static List<int> decryptAsset(
+    List<int> key,
+    List<int> data,
+    EncryptionMethod method,
+  ) {
     switch (method) {
       case EncryptionMethod.xor:
         return decryptXor(key, data);

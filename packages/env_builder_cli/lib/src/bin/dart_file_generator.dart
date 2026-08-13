@@ -17,7 +17,6 @@ import 'directory_manager.dart';
 /// - Library export files for clean imports
 /// - Application flavor classes for runtime configuration switching
 class DartFileGenerator {
-
   DartFileGenerator(this.envBuilder);
   final env_builder_cli.EnvBuilder envBuilder;
 

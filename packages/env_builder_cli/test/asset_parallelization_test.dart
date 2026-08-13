@@ -54,10 +54,16 @@ void main() {
         // Verify generated code contains all assets
         expect(result.isNotEmpty, isTrue);
         // Check for generated constants (naming may vary)
-        expect(result.contains('const List<int>'), isTrue,
-            reason: 'Should have asset constants');
-        expect(result.contains('assetdata'), isTrue,
-            reason: 'Should have asset data variables');
+        expect(
+          result.contains('const List<int>'),
+          isTrue,
+          reason: 'Should have asset constants',
+        );
+        expect(
+          result.contains('assetdata'),
+          isTrue,
+          reason: 'Should have asset data variables',
+        );
 
         // Parallel processing should be faster or at least reasonable
         // (exact timing is flaky, just ensure it completes)
@@ -163,8 +169,11 @@ void main() {
         expect(result.contains('get decrypted'), isTrue);
 
         // Each asset should have key + data + getter
-        expect(result.split('const List<int> _assetkey').length - 1, greaterThanOrEqualTo(1),
-            reason: 'Should have asset keys');
+        expect(
+          result.split('const List<int> _assetkey').length - 1,
+          greaterThanOrEqualTo(1),
+          reason: 'Should have asset keys',
+        );
       } finally {
         Directory.current = originalCwd;
       }
@@ -192,7 +201,7 @@ void main() {
           encryptionMethod: EncryptionMethod.aes,
           chunkSize: 1024,
         );
-        
+
         // Run generation multiple times
         final results = <String>[];
         for (var i = 0; i < 2; i++) {
@@ -201,9 +210,11 @@ void main() {
 
         // Both runs should produce equivalent output (same constants/methods)
         // Content should be identical despite parallel execution
-        expect(results[0].split('const List<int>').length,
-            equals(results[1].split('const List<int>').length),
-            reason: 'Parallel execution should be deterministic');
+        expect(
+          results[0].split('const List<int>').length,
+          equals(results[1].split('const List<int>').length),
+          reason: 'Parallel execution should be deterministic',
+        );
       } finally {
         Directory.current = originalCwd;
       }
@@ -244,8 +255,11 @@ void main() {
 
         // Generation should complete in reasonable time
         // (parallelization should prevent timeout on many assets)
-        expect(stopwatch.elapsedMilliseconds < 30000, isTrue,
-            reason: 'Parallelized asset generation should be fast');
+        expect(
+          stopwatch.elapsedMilliseconds < 30000,
+          isTrue,
+          reason: 'Parallelized asset generation should be fast',
+        );
       } finally {
         Directory.current = originalCwd;
       }

@@ -77,16 +77,16 @@ environment:
   flutter: "${EnvConfig.defaultFlutterVersion}"
 
 dependencies:
-  envied: ^1.3.1
+  envied: ^1.3.8
 
 dev_dependencies:
-  build_runner: ^2.10.3
-  envied_generator: ^1.3.1
+  build_runner: ^2.15.1
+  envied_generator: ^1.3.8
   flutter_test:
     sdk: flutter
 
 
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 
 flutter:

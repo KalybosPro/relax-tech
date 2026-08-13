@@ -39,9 +39,7 @@ class CodeGenerator {
     final suffix = NamingUtils.getEnvironmentSuffix(envFileName);
     final envFileRelative = p.basename(envFileName);
     final className = NamingUtils.capitalizeFirst(suffix);
-    final envFileContent = EnvFileParser.parseEnvFile(
-      envFile,
-    );
+    final envFileContent = EnvFileParser.parseEnvFile(envFile);
     final partOf = _generatePartStatement(suffix);
 
     // Build all field declarations in single pass
@@ -132,9 +130,12 @@ typedef EnvValue = String Function(Env env);
 
     final factories = flavors
         .split(', ')
-        .map((flavor) => '''
+        .map(
+          (flavor) =>
+              '''
 factory AppFlavor.$flavor() => const AppFlavor._(flavor: Flavor.$flavor);
-''')
+''',
+        )
         .join('\n');
 
     return '''

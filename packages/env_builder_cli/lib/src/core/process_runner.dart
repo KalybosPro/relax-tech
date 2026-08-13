@@ -16,12 +16,8 @@ class ProcessRunner {
     List<String> arguments, {
     String? path,
     String engine = 'flutter',
-  }) async => Process.run(
-      engine,
-      arguments,
-      workingDirectory: path,
-      runInShell: true,
-    );
+  }) async =>
+      Process.run(engine, arguments, workingDirectory: path, runInShell: true);
 
   /// Runs a dart command specifically
   static Future<ProcessResult> runDartCommand(

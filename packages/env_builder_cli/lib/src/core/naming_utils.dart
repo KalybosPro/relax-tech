@@ -27,14 +27,24 @@ class NamingUtils {
   static String toCamelCase(String input) {
     // Replace invalid characters with underscores
     final sanitized = input.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
-    
+
     // Convert to camelCase
-    final parts = sanitized.toLowerCase().split('_').where((part) => part.isNotEmpty);
-    final camel = parts.isEmpty ? '_' : parts.first +
-        parts.skip(1).map((word) => word.isNotEmpty
-              ? word[0].toUpperCase() + word.substring(1)
-              : '').join();
-    
+    final parts = sanitized
+        .toLowerCase()
+        .split('_')
+        .where((part) => part.isNotEmpty);
+    final camel = parts.isEmpty
+        ? '_'
+        : parts.first +
+              parts
+                  .skip(1)
+                  .map(
+                    (word) => word.isNotEmpty
+                        ? word[0].toUpperCase() + word.substring(1)
+                        : '',
+                  )
+                  .join();
+
     // If it starts with a digit, prefix with underscore
     return RegExp(r'^\d').hasMatch(camel) ? '_$camel' : camel;
   }

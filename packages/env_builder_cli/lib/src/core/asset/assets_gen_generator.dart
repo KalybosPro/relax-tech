@@ -47,7 +47,9 @@ class AssetsGenGenerator {
     buffer.writeln();
     buffer.writeln("import 'package:flutter/services.dart';");
     buffer.writeln("import 'package:flutter/widgets.dart';");
-    buffer.writeln("import 'package:video_player/video_player.dart' as _video;");
+    buffer.writeln(
+      "import 'package:video_player/video_player.dart' as _video;",
+    );
     buffer.writeln("import 'package:flutter_svg/flutter_svg.dart' as _svg;");
     buffer.writeln(
       "import 'package:flutter_svg_provider/flutter_svg_provider.dart' as p;",
@@ -144,15 +146,16 @@ class AssetsGenGenerator {
 
   // Convert to PascalCase
   String _normalizeGroupName(String name) => name
-        .split(RegExp(r'[\s_-]+'))
-        .map(
-          (part) => part.isEmpty
-              ? ''
-              : part[0].toUpperCase() + part.substring(1).toLowerCase(),
-        )
-        .join('');
+      .split(RegExp(r'[\s_-]+'))
+      .map(
+        (part) => part.isEmpty
+            ? ''
+            : part[0].toUpperCase() + part.substring(1).toLowerCase(),
+      )
+      .join('');
 
-  String _capitalize(String s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s;
+  String _capitalize(String s) =>
+      s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : s;
 
   String _generateAssetGetter(asset_reader.AssetFile asset) {
     final relativePath = p.relative(

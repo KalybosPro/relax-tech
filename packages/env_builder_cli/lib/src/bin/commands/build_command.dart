@@ -15,7 +15,6 @@ import '../package_configurator.dart';
 
 /// Command for building env packages from .env files
 class BuildCommand extends Command<int> {
-
   BuildCommand() {
     argParser.addOption(
       'env-file',
@@ -78,7 +77,9 @@ class BuildCommand extends Command<int> {
             'No .env* files found in current directory and --env-file not specified',
           );
         }
-        CliLogger.success('Found ${envFilePaths.length} .env file(s): ${envFilePaths.join(', ')}');
+        CliLogger.success(
+          'Found ${envFilePaths.length} .env file(s): ${envFilePaths.join(', ')}',
+        );
       } else {
         // Extract environment file paths from argument
         envFilePaths = envFileArg
@@ -94,7 +95,9 @@ class BuildCommand extends Command<int> {
         // Validate environment files exist
         CliLogger.debug('Validating environment files...');
         FileValidator.validateEnvFiles(envFilePaths);
-        CliLogger.success('Validated ${envFilePaths.length} environment file(s)');
+        CliLogger.success(
+          'Validated ${envFilePaths.length} environment file(s)',
+        );
       }
 
       final outputDirArg = argResults!['output-dir'] as String;
@@ -174,7 +177,9 @@ class BuildCommand extends Command<int> {
   void _handleError(dynamic error) {
     if (error is ArgumentError) {
       CliLogger.error(error.message);
-      CliLogger.info('Use --env-file=<file1>,<file2>,... to specify environment files');
+      CliLogger.info(
+        'Use --env-file=<file1>,<file2>,... to specify environment files',
+      );
     } else if (error is FileSystemException) {
       CliLogger.error('File system error: ${error.message}');
     } else if (error is ProcessException) {
@@ -187,10 +192,10 @@ class BuildCommand extends Command<int> {
   Future<void> _runPubGetInEnvPackage(String envPackagePath) async {
     CliLogger.progress('Running flutter pub get in env package...');
 
-    final pubGetResult = await ProcessRunner.runFlutterCommand(
-      ['pub', 'get'],
-      path: envPackagePath,
-    );
+    final pubGetResult = await ProcessRunner.runFlutterCommand([
+      'pub',
+      'get',
+    ], path: envPackagePath);
 
     if (pubGetResult.exitCode == 0) {
       CliLogger.done('flutter pub get succeeded in env package');

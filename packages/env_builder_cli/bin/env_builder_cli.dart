@@ -6,20 +6,23 @@ import 'package:env_builder_cli/env_builder_cli.dart';
 import 'package:env_builder_cli/src/bin/commands/commands.dart';
 import 'package:env_builder_cli/src/core/cli_colors.dart';
 
-
 /// Application entry point
 ///
 /// Initializes and runs the environment builder CLI application,
 /// using the command runner pattern for better command organization.
 Future<void> main(List<String> args) async {
-  final commandRunner = CommandRunner<int>('env_builder', 'Automate Flutter env package creation and asset encryption')
-    ..addCommand(BuildCommand())
-    ..addCommand(ApkBuildCommand())
-    ..addCommand(AabBuildCommand())
-    ..addCommand(AssetsCommand())
-    ..addCommand(EncryptCommand())
-    ..addCommand(DecryptCommand())
-    ..addCommand(VersionCommand());
+  final commandRunner =
+      CommandRunner<int>(
+          'env_builder',
+          'Automate Flutter env package creation and asset encryption',
+        )
+        ..addCommand(BuildCommand())
+        ..addCommand(ApkBuildCommand())
+        ..addCommand(AabBuildCommand())
+        ..addCommand(AssetsCommand())
+        ..addCommand(EncryptCommand())
+        ..addCommand(DecryptCommand())
+        ..addCommand(VersionCommand());
 
   try {
     final exitCode = await commandRunner.run(args);

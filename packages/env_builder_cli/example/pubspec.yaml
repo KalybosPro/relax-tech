@@ -38,9 +38,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   env:
     path: packages/env
+  # Second generated package, produced with `env_builder build --output-dir=custom_env_package`.
+  # Kept as a path dependency so `flutter analyze` resolves it from a clean clone.
+  custom_env_package:
+    path: packages/custom_env_package
 
 dev_dependencies:
-  build_runner: ^2.4.8
+  build_runner: ^2.15.1
   flutter_test:
     sdk: flutter
 
@@ -49,7 +53,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

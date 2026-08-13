@@ -13,7 +13,6 @@ import '../core/core.dart';
 /// managing root project dependencies to properly integrate
 /// the env package.
 class PackageConfigurator {
-
   PackageConfigurator(this.envBuilder);
   final env_builder_cli.EnvBuilder envBuilder;
 

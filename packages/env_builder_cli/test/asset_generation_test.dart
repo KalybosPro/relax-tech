@@ -59,16 +59,31 @@ void main() {
         );
 
         // Assert
-        expect(result, contains('import \'package:envied/envied.dart\';'),
-            reason: 'Should import envied package');
-        expect(result, contains('abstract class EnvProd'),
-            reason: 'Should define EnvProd class');
-        expect(result, contains('@Envied('),
-            reason: 'Should have @Envied annotation');
-        expect(result, contains('static final String apiKey'),
-            reason: 'Should have API_KEY field as apiKey');
-        expect(result, contains('static final String databaseUrl'),
-            reason: 'Should have DATABASE_URL field as databaseUrl');
+        expect(
+          result,
+          contains('import \'package:envied/envied.dart\';'),
+          reason: 'Should import envied package',
+        );
+        expect(
+          result,
+          contains('abstract class EnvProd'),
+          reason: 'Should define EnvProd class',
+        );
+        expect(
+          result,
+          contains('@Envied('),
+          reason: 'Should have @Envied annotation',
+        );
+        expect(
+          result,
+          contains('static final String apiKey'),
+          reason: 'Should have API_KEY field as apiKey',
+        );
+        expect(
+          result,
+          contains('static final String databaseUrl'),
+          reason: 'Should have DATABASE_URL field as databaseUrl',
+        );
       });
 
       test('should handle special characters in keys', () async {
@@ -85,10 +100,16 @@ void main() {
         );
 
         // Assert
-        expect(result, contains('apiKeyV2'),
-            reason: 'Should convert API_KEY_V2 to apiKeyV2');
-        expect(result, contains('dbHostName'),
-            reason: 'Should convert DB_HOST_NAME to dbHostName');
+        expect(
+          result,
+          contains('apiKeyV2'),
+          reason: 'Should convert API_KEY_V2 to apiKeyV2',
+        );
+        expect(
+          result,
+          contains('dbHostName'),
+          reason: 'Should convert DB_HOST_NAME to dbHostName',
+        );
       });
 
       test('should generate obfuscate flag', () async {
@@ -105,8 +126,11 @@ void main() {
         );
 
         // Assert
-        expect(result, contains('obfuscate: true'),
-            reason: 'Should have obfuscate flag set to true');
+        expect(
+          result,
+          contains('obfuscate: true'),
+          reason: 'Should have obfuscate flag set to true',
+        );
       });
 
       test('should handle empty env file', () async {
@@ -122,8 +146,11 @@ void main() {
         );
 
         // Assert
-        expect(result, contains('abstract class EnvProd'),
-            reason: 'Should create class even for empty file');
+        expect(
+          result,
+          contains('abstract class EnvProd'),
+          reason: 'Should create class even for empty file',
+        );
       });
 
       test('should handle multiline env content', () async {
@@ -144,16 +171,31 @@ TIMEOUT_SECONDS=30''';
         );
 
         // Assert
-        expect(result, contains('apiKey'),
-            reason: 'Should have first variable');
-        expect(result, contains('databaseUrl'),
-            reason: 'Should have second variable');
-        expect(result, contains('cacheEnabled'),
-            reason: 'Should have third variable');
-        expect(result, contains('debugLevel'),
-            reason: 'Should have fourth variable');
-        expect(result, contains('timeoutSeconds'),
-            reason: 'Should have fifth variable');
+        expect(
+          result,
+          contains('apiKey'),
+          reason: 'Should have first variable',
+        );
+        expect(
+          result,
+          contains('databaseUrl'),
+          reason: 'Should have second variable',
+        );
+        expect(
+          result,
+          contains('cacheEnabled'),
+          reason: 'Should have third variable',
+        );
+        expect(
+          result,
+          contains('debugLevel'),
+          reason: 'Should have fourth variable',
+        );
+        expect(
+          result,
+          contains('timeoutSeconds'),
+          reason: 'Should have fifth variable',
+        );
       });
     });
   });
@@ -188,24 +230,25 @@ DB_PORT=5432''';
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result.length, equals(2),
-            reason: 'Should ignore comment lines');
+        expect(result.length, equals(2), reason: 'Should ignore comment lines');
         expect(result['API_KEY'], equals('secret123'));
       });
 
       test('should trim whitespace from keys and values', () async {
         // Arrange
         const envContent = '  API_KEY  =  secret123  \nDB_PORT = 5432 ';
-        final envFile =
-            File(p.join(tempDir.path, '.env.whitespace'));
+        final envFile = File(p.join(tempDir.path, '.env.whitespace'));
         await envFile.writeAsString(envContent);
 
         // Act
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result['API_KEY'], equals('secret123'),
-            reason: 'Should trim whitespace from values');
+        expect(
+          result['API_KEY'],
+          equals('secret123'),
+          reason: 'Should trim whitespace from values',
+        );
         expect(result['DB_PORT'], equals('5432'));
       });
 
@@ -221,10 +264,16 @@ NORMAL_VALUE=unquoted''';
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result['API_KEY'], equals('secret123'),
-            reason: 'Should remove double quotes');
-        expect(result['DB_PASSWORD'], equals('pass456'),
-            reason: 'Should remove single quotes');
+        expect(
+          result['API_KEY'],
+          equals('secret123'),
+          reason: 'Should remove double quotes',
+        );
+        expect(
+          result['DB_PASSWORD'],
+          equals('pass456'),
+          reason: 'Should remove single quotes',
+        );
         expect(result['NORMAL_VALUE'], equals('unquoted'));
       });
 
@@ -254,8 +303,11 @@ ANOTHER_VALID=test''';
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result.length, equals(2),
-            reason: 'Should skip lines without equals');
+        expect(
+          result.length,
+          equals(2),
+          reason: 'Should skip lines without equals',
+        );
         expect(result.containsKey('INVALID_LINE_NO_EQUALS'), false);
       });
 
@@ -263,16 +315,17 @@ ANOTHER_VALID=test''';
         // Arrange
         const envContent =
             'DATABASE_URL=postgres://user:p@ss!@localhost:5432/db\nAPI_KEY=sk!@#\$%^&*()';
-        final envFile =
-            File(p.join(tempDir.path, '.env.special'));
+        final envFile = File(p.join(tempDir.path, '.env.special'));
         await envFile.writeAsString(envContent);
 
         // Act
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result['DATABASE_URL'],
-            equals('postgres://user:p@ss!@localhost:5432/db'));
+        expect(
+          result['DATABASE_URL'],
+          equals('postgres://user:p@ss!@localhost:5432/db'),
+        );
         expect(result['API_KEY'], equals(r'sk!@#$%^&*()'));
       });
 
@@ -286,8 +339,11 @@ ANOTHER_VALID=test''';
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result['FORMULA'], equals('E=mc2'),
-            reason: 'Should handle equals in values');
+        expect(
+          result['FORMULA'],
+          equals('E=mc2'),
+          reason: 'Should handle equals in values',
+        );
         expect(result['JWT_TOKEN'], equals('header.payload.signature'));
       });
 
@@ -300,8 +356,11 @@ ANOTHER_VALID=test''';
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result.isEmpty, true,
-            reason: 'Empty file should return empty map');
+        expect(
+          result.isEmpty,
+          true,
+          reason: 'Empty file should return empty map',
+        );
       });
 
       test('should handle file with only comments', () async {
@@ -316,8 +375,11 @@ ANOTHER_VALID=test''';
         final result = EnvFileParser.parseEnvFile(envFile);
 
         // Assert
-        expect(result.isEmpty, true,
-            reason: 'File with only comments should return empty map');
+        expect(
+          result.isEmpty,
+          true,
+          reason: 'File with only comments should return empty map',
+        );
       });
     });
   });
@@ -364,13 +426,16 @@ ANOTHER_VALID=test''';
         expect(result, equals('apiKeyTest'));
       });
 
-      test('should handle invalid characters and make valid Dart identifier', () {
-        // Act & Assert
-        expect(NamingUtils.toCamelCase('API-KEY'), equals('apiKey'));
-        expect(NamingUtils.toCamelCase('1KEY'), equals('_1key'));
-        expect(NamingUtils.toCamelCase('key@value'), equals('keyValue'));
-        expect(NamingUtils.toCamelCase('key.value'), equals('keyValue'));
-      });
+      test(
+        'should handle invalid characters and make valid Dart identifier',
+        () {
+          // Act & Assert
+          expect(NamingUtils.toCamelCase('API-KEY'), equals('apiKey'));
+          expect(NamingUtils.toCamelCase('1KEY'), equals('_1key'));
+          expect(NamingUtils.toCamelCase('key@value'), equals('keyValue'));
+          expect(NamingUtils.toCamelCase('key.value'), equals('keyValue'));
+        },
+      );
     });
 
     group('capitalizeFirst', () {
@@ -411,8 +476,7 @@ ANOTHER_VALID=test''';
 
       test('should generate class name for .env.development', () {
         // Act
-        final result =
-            NamingUtils.getEnvironmentClassName('.env.development');
+        final result = NamingUtils.getEnvironmentClassName('.env.development');
 
         // Assert
         expect(result, equals('EnvDev'));
@@ -420,8 +484,7 @@ ANOTHER_VALID=test''';
 
       test('should generate class name for .env.production', () {
         // Act
-        final result =
-            NamingUtils.getEnvironmentClassName('.env.production');
+        final result = NamingUtils.getEnvironmentClassName('.env.production');
 
         // Assert
         expect(result, equals('EnvProd'));
@@ -467,8 +530,9 @@ ANOTHER_VALID=test''';
 
       test('should generate dart filename for .env.development', () {
         // Act
-        final result =
-            NamingUtils.getEnvironmentDartFileName('.env.development');
+        final result = NamingUtils.getEnvironmentDartFileName(
+          '.env.development',
+        );
 
         // Assert
         expect(result, equals('env.dev.dart'));
@@ -476,8 +540,9 @@ ANOTHER_VALID=test''';
 
       test('should generate dart filename for .env.production', () {
         // Act
-        final result =
-            NamingUtils.getEnvironmentDartFileName('.env.production');
+        final result = NamingUtils.getEnvironmentDartFileName(
+          '.env.production',
+        );
 
         // Assert
         expect(result, equals('env.prod.dart'));

@@ -6,7 +6,6 @@ import '../../core/core.dart';
 
 /// Command for generating encrypted assets
 class AssetsCommand extends Command<int> {
-
   AssetsCommand() {
     argParser.addOption(
       'encrypt',
@@ -199,10 +198,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_svg: ^2.2.3
+  flutter_svg: ^2.3.0
   encrypt: ^5.0.3
-  image: ^4.5.4
-  vector_graphics: ^1.1.19
+  image: ^4.9.1
+  vector_graphics: ^1.2.3
   flutter_svg_provider: ^1.0.7
 
 dev_dependencies:
@@ -238,6 +237,8 @@ flutter:
     final triggerFile = File('packages/app_assets/lib/app_assets.dart');
     const exportedFiles = '''
 /// Assets package built with env_builder
+library;
+
 export 'assets.gen.dart';
 ''';
     await triggerFile.writeAsString(exportedFiles);

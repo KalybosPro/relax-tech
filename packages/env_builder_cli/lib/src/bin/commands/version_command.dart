@@ -21,15 +21,21 @@ class VersionCommand extends Command<int> {
       // Initialize colors (version command doesn't have --no-color flag)
       CliColors.setUseColors(true);
 
-      print('${CliColors.bold(CliColors.cyan('Env Builder CLI'))} v${TextTemplates.cliVersion}');
-      print('${CliColors.gray('Built with Dart SDK')} ${TextTemplates.dartSdkVersion}');
+      print(
+        '${CliColors.bold(CliColors.cyan('Env Builder CLI'))} v${TextTemplates.cliVersion}',
+      );
+      print(
+        '${CliColors.gray('Built with Dart SDK')} ${TextTemplates.dartSdkVersion}',
+      );
       print('');
       print(CliColors.bold('Description:'));
       print('A powerful Dart CLI tool that automates the generation and');
       print('management of environment-specific Flutter packages using Envied');
       print('for type-safe access to environment variables.');
       print('');
-      print('${CliColors.bold('Homepage:')} ${CliColors.blue('https://github.com/KalybosPro/env_builder_cli')}');
+      print(
+        '${CliColors.bold('Homepage:')} ${CliColors.blue('https://github.com/KalybosPro/env_builder_cli')}',
+      );
 
       return 0;
     } catch (e) {

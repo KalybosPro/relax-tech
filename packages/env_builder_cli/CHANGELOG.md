@@ -1,3 +1,24 @@
+## 1.4.0
+
+### 🔗 Compatibilité Flutter (correctif majeur)
+- **Utilisable en `dev_dependency` avec le dernier Flutter** : suppression de la contrainte `analyzer: ^12.1.0`, qui exigeait `meta ^1.18.0` alors que le SDK Flutter épingle `meta 1.17.0`. Depuis la 1.2.0, `flutter pub get` échouait avec `version solving failed` dès que le paquet était ajouté à un projet Flutter (installation via `dart pub global activate` non affectée).
+
+### 🧹 Nettoyage des dépendances
+- Retrait de 6 dépendances déclarées mais jamais importées par le code : `analyzer`, `build`, `build_runner`, `source_gen`, `cli_util`, `xml`. `build_runner` reste invoqué en sous-processus (`dart run build_runner build`) dans le paquet `env` généré, qui déclare sa propre dépendance — aucun changement de comportement.
+- Aucune modification d'API ni du code généré.
+
+### ⬆️ Mise à jour des dépendances
+- Dépendances du CLI : `image` ^4.8.0 → ^4.9.1, `test` ^1.31.0 → ^1.31.2 (les autres étaient déjà à jour).
+- Paquet `env` généré ([`yaml_manager.dart`]) : `envied` / `envied_generator` ^1.3.1 → ^1.3.8, `build_runner` ^2.10.3 → ^2.15.1, `flutter_lints` ^5.0.0 → ^6.0.0.
+- Paquet `app_assets` généré (commande `assets`) : `flutter_svg` ^2.2.3 → ^2.3.0, `image` ^4.5.4 → ^4.9.1, `vector_graphics` ^1.1.19 → ^1.2.3.
+- Projet d'exemple : `build_runner` ^2.4.8 → ^2.15.1, `flutter_lints` ^5.0.0 → ^6.0.0.
+- Toutes les versions ont été validées contre Flutter 3.41.9 / Dart 3.11.5.
+
+### 🧰 Exemple & qualité de code
+- **Exemple réparé** : `flutter analyze` passe désormais sans erreur (16 problèmes pré-existants corrigés) — `main.dart` appelait `AppFlavor.production()` alors que le paquet `env` généré n'expose que `.development()`, `custom_env_package` n'était pas déclaré en dépendance de l'app, et `widget_test.dart` était le test compteur par défaut important `package:example/main.dart` (nom de paquet inexistant). Il est remplacé par un vrai smoke test — 2 tests passent.
+- **Doc comment de bibliothèque** : le fichier `app_assets.dart` généré déclare maintenant `library;`, ce qui supprime l'avertissement `dangling_library_doc_comments` dans les projets utilisateurs.
+- **Formatage** : l'ensemble des sources est repassé au `dart format` du style « tall » (Dart 3.7+). Aucun changement fonctionnel.
+
 ## 1.3.1
 
 ### 🐛 Bug Fixes
