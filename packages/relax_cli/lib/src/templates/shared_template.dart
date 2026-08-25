@@ -139,10 +139,7 @@ abstract final class SharedTemplate {
       p('lib/core/dependency_injection/dependency_injection.dart'),
       diBarrel,
     ),
-    TemplateFile(
-      p('lib/core/dependency_injection/injection.dart'),
-      diSetup,
-    ),
+    TemplateFile(p('lib/core/dependency_injection/injection.dart'), diSetup),
     // ── Env / Flavor ────────────────────────────────────────
     TemplateFile(p('.env.development'), envDevelopment),
     TemplateFile(p('.env.staging'), envStaging),
@@ -2248,10 +2245,7 @@ ENCRYPTION_KEY=encry1234567890ABCDEF12GHIJK34LMNOP098QRSTUVWXYZabcdefghe567ijklm
       p('lib/features/home/domain/usecases/get_home_content_usecase.dart'),
       homeUseCase,
     ),
-    TemplateFile(
-      p('lib/features/home/data/models/home_model.dart'),
-      homeModel,
-    ),
+    TemplateFile(p('lib/features/home/data/models/home_model.dart'), homeModel),
     TemplateFile(
       p('lib/features/home/data/mappers/home_mapper.dart'),
       homeMapper,

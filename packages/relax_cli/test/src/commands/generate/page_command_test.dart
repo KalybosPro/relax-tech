@@ -57,7 +57,10 @@ void main() {
         final barrel = File(
           '${tempDir.path}/app/lib/features/home/home.dart',
         ).readAsStringSync();
-        expect(barrel, contains("export 'presentation/pages/detail_page.dart';"));
+        expect(
+          barrel,
+          contains("export 'presentation/pages/detail_page.dart';"),
+        );
       } finally {
         Directory.current = originalDir;
       }
@@ -81,7 +84,10 @@ void main() {
         final barrel = File(
           '${tempDir.path}/app/lib/features/home/home.dart',
         ).readAsStringSync();
-        expect(barrel, contains("export 'presentation/pages/settings_page.dart';"));
+        expect(
+          barrel,
+          contains("export 'presentation/pages/settings_page.dart';"),
+        );
       } finally {
         Directory.current = originalDir;
       }

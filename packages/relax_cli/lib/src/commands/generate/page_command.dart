@@ -137,8 +137,7 @@ class PageCommand extends Command<int> {
 
       // Auto-export the new page from the feature barrel.
       final barrel = File('${featureDir.path}/$featureName.dart');
-      final exportLine =
-          "export 'presentation/pages/${pageName}_page.dart';";
+      final exportLine = "export 'presentation/pages/${pageName}_page.dart';";
       final export = SourcePatcher.ensureLine(
         barrel,
         line: exportLine,

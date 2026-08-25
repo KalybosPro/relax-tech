@@ -47,7 +47,9 @@ abstract final class FeatureTemplate {
       _mapper,
     ),
     TemplateFile(
-      _p('data/datasources/{{feature_name.snakeCase()}}_remote_datasource.dart'),
+      _p(
+        'data/datasources/{{feature_name.snakeCase()}}_remote_datasource.dart',
+      ),
       _remoteDatasource,
     ),
     TemplateFile(
@@ -679,7 +681,9 @@ class _List extends StatelessWidget {
     ..._shared(),
     TemplateFile(_p('{{feature_name.snakeCase()}}.dart'), _getxBarrel),
     TemplateFile(
-      _p('presentation/controllers/{{feature_name.snakeCase()}}_controller.dart'),
+      _p(
+        'presentation/controllers/{{feature_name.snakeCase()}}_controller.dart',
+      ),
       _getxController,
     ),
     TemplateFile(

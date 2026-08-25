@@ -1,3 +1,10 @@
+## 1.4.0
+
+- **Updated** the dependency set of every generated app (Bloc, Provider, Riverpod, GetX) to the versions that resolve against the current Flutter stable: `get_it` ^8.0.3 → ^9.2.1, `go_router` ^14.6.0 → ^17.5.0, `slang`/`slang_flutter` ^4.14.0 → ^4.19.0, `dio` ^5.7.0 → ^5.11.0, `web_socket_channel` ^3.0.1 → ^3.0.3, `flutter_lints` ^5.0.0 → ^6.0.0, `relax_orm` ^1.0.0 → ^1.2.0, and `relax_orm_generator` ^0.1.7 → ^1.0.1.
+- **Fixed** `cupertino_icons` being emitted as a **top-level pubspec key** instead of an entry under `dependencies:`. `pub` silently ignores unknown top-level keys, so scaffolded projects resolved without the package and would fail to compile on first use of `CupertinoIcons`.
+- **Capped** the generated `build_runner` at `^2.15.1`. `build_runner` >= 2.15.2 requires `analyzer` >= 13.3.0, while `relax_orm_generator` pins `analyzer` ^10 — together they made `flutter pub get` fail with a version-solving error in every generated project. The generated pubspec now carries a comment explaining the cap.
+- **Formatted** the package with the Dart 3.7+ tall-style formatter (no functional change).
+
 ## 1.3.0
 
 - **Changed** the generated app to a full **Clean Architecture** (feature-first) across all four state managers (Bloc→Cubit, Provider, Riverpod, GetX), superseding the 1.2.0 layout.

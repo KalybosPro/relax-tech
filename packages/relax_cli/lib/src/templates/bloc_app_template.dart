@@ -32,7 +32,10 @@ abstract final class BlocAppTemplate {
       SharedTemplate.p('lib/main_production.dart'),
       SharedTemplate.mainProduction,
     ),
-    TemplateFile(SharedTemplate.p('lib/app/app.dart'), SharedTemplate.appBarrel),
+    TemplateFile(
+      SharedTemplate.p('lib/app/app.dart'),
+      SharedTemplate.appBarrel,
+    ),
     TemplateFile(SharedTemplate.p('lib/app/view/app.dart'), _appView),
 
     // ── Router (lives in core/routing) ──────────────────────────
@@ -85,27 +88,29 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  cupertino_icons: ^1.0.8
 
   flutter_bloc: ^9.1.1
   bloc: ^9.2.0
   equatable: ^2.0.7
-  get_it: ^8.0.3
-  go_router: ^14.6.0
-  slang: ^4.14.0
-  slang_flutter: ^4.14.0
-  relax_orm: ^1.0.0
+  get_it: ^9.2.1
+  go_router: ^17.5.0
+  slang: ^4.19.0
+  slang_flutter: ^4.19.0
+  relax_orm: ^1.2.0
   relax_storage: ^1.0.1
-  dio: ^5.7.0
-  web_socket_channel: ^3.0.1
+  dio: ^5.11.0
+  web_socket_channel: ^3.0.3
   env:
     path: packages/env
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
-  build_runner: ^2.4.0
-  relax_orm_generator: ^0.1.7
+  flutter_lints: ^6.0.0
+  # Capped: relax_orm_generator pins analyzer ^10, which build_runner >=2.15.2 rejects.
+  build_runner: ^2.15.1
+  relax_orm_generator: ^1.0.1
 
 flutter:
   uses-material-design: true
