@@ -1,3 +1,9 @@
+## 1.5.0
+
+- **Added** a `--socket` option to `relax create` (`websocket` by default, or `socketio`). With `--socket socketio`, every generated app (Bloc, Provider, Riverpod, GetX) depends on `socket_io_client` ^3.1.6 instead of `web_socket_channel`, and `core/websocket/` becomes a Socket.IO client: handshake `auth`, websocket transport with reconnection, `on(event)` as a `Stream` (handler attached on first listen, detached on last cancel), and `emit(event, data)`. A raw WebSocket cannot talk to a Socket.IO server, so apps backed by Socket.IO no longer need to rewrite this layer.
+- **Changed** the Riverpod app to use **providers as its only DI**: `get_it` is no longer a dependency. `core/dependency_injection/providers.dart` declares every core service as a provider (`apiClientProvider`, `socketServiceProvider`, `appDatabaseProvider` as a `FutureProvider`, …), `envProvider` is overridden in `bootstrap` through `ProviderScope(overrides: [...])`, and `relax generate feature` notifiers resolve the `ApiClient` with `ref.watch(apiClientProvider)`. Bloc, Provider and GetX keep the get_it service locator.
+- **Fixed** generated Riverpod notifiers holding their use case in a `late final` field, which threw `LateInitializationError` when the provider was invalidated and `build()` ran again.
+
 ## 1.4.0
 
 - **Updated** the dependency set of every generated app (Bloc, Provider, Riverpod, GetX) to the versions that resolve against the current Flutter stable: `get_it` ^8.0.3 → ^9.2.1, `go_router` ^14.6.0 → ^17.5.0, `slang`/`slang_flutter` ^4.14.0 → ^4.19.0, `dio` ^5.7.0 → ^5.11.0, `web_socket_channel` ^3.0.1 → ^3.0.3, `flutter_lints` ^5.0.0 → ^6.0.0, `relax_orm` ^1.0.0 → ^1.2.0, and `relax_orm_generator` ^0.1.7 → ^1.0.1.

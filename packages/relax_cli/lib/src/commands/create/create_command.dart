@@ -43,6 +43,16 @@ class CreateCommand extends Command<int> {
         help: 'Font family for the app.',
         allowed: ['Roboto', 'Inter', 'Poppins', 'Lato', 'Montserrat'],
         defaultsTo: 'Roboto',
+      )
+      ..addOption(
+        'socket',
+        help: 'Realtime transport used by core/websocket.',
+        allowed: ['websocket', 'socketio'],
+        allowedHelp: {
+          'websocket': 'Raw WebSocket (web_socket_channel)',
+          'socketio': 'Socket.IO server (socket_io_client)',
+        },
+        defaultsTo: 'websocket',
       );
   }
 
@@ -88,6 +98,7 @@ class CreateCommand extends Command<int> {
     final org = argResults?['org'] as String;
     final primaryColor = argResults?['primary-color'] as String;
     final font = argResults?['font'] as String;
+    final socketIo = argResults?['socket'] == 'socketio';
 
     final generator = ProjectGenerator(logger: _logger);
 
@@ -100,6 +111,7 @@ class CreateCommand extends Command<int> {
         description: description,
         primaryColor: primaryColor,
         fontFamily: font,
+        socketIo: socketIo,
       );
 
       _logger.info('');

@@ -578,13 +578,13 @@ final {{feature_name.camelCase()}}Provider =
 
 /// [Notifier] driving the {{feature_name.titleCase()}} feature.
 class {{feature_name.pascalCase()}}Notifier extends Notifier<{{feature_name.pascalCase()}}State> {
-  late final Get{{feature_name.pascalCase()}}UseCase _getAll;
+  late Get{{feature_name.pascalCase()}}UseCase _getAll;
 
   @override
   {{feature_name.pascalCase()}}State build() {
     _getAll = Get{{feature_name.pascalCase()}}UseCase(
       {{feature_name.pascalCase()}}RepositoryImpl(
-        remote: {{feature_name.pascalCase()}}RemoteDatasource(getIt<ApiClient>()),
+        remote: {{feature_name.pascalCase()}}RemoteDatasource(ref.watch(apiClientProvider)),
         local: {{feature_name.pascalCase()}}LocalDatasource(),
       ),
     );

@@ -156,7 +156,7 @@ relax create my_app -a riverpod \
   --org com.mycompany \
   --description "My awesome app" \
   --primary-color 1565C0 \
-  --font Poppins
+  --font Poppins \n  --socket socketio
 ```
 
 | Option | Default | Description |
@@ -166,6 +166,7 @@ relax create my_app -a riverpod \
 | `-d, --description` | *"A Flutter project…"* | pubspec.yaml description |
 | `--primary-color` | `6750A4` | Hex seed color for the Material 3 palette |
 | `--font` | `Roboto` | `Roboto`, `Inter`, `Poppins`, `Lato`, `Montserrat` |
+| `--socket` | `websocket` | Realtime transport for `core/websocket/`: `websocket` (raw WebSocket, `web_socket_channel`) or `socketio` (Socket.IO server, `socket_io_client`) |
 
 ### `relax generate` — add pieces to an existing project
 
@@ -275,7 +276,7 @@ v1.1.0
 |-------------|:--------:|:------------------:|:---------------:|------------------|
 | **Bloc**    | ✅ | ✅ | ✅ | `flutter_bloc`, `equatable` |
 | **Provider**| ✅ | ✅ | ✅ | `provider`, `ChangeNotifier` |
-| **Riverpod**| ✅ | ✅ | ✅ | `flutter_riverpod`, `Notifier` |
+| **Riverpod**| ✅ | ✅ | ✅ | `flutter_riverpod`, `Notifier` (providers as DI, no get_it) |
 | **GetX**    | ✅ | ✅ | ✅ | `get`, `GetxController`, `Obx` |
 
 ## What you get out of the box

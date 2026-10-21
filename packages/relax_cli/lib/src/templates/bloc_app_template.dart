@@ -100,8 +100,9 @@ dependencies:
   relax_orm: ^1.2.0
   relax_storage: ^1.0.1
   dio: ^5.11.0
-  web_socket_channel: ^3.0.3
-  env:
+{{#socket_io}}  socket_io_client: ^3.1.6
+{{/socket_io}}{{^socket_io}}  web_socket_channel: ^3.0.3
+{{/socket_io}}  env:
     path: packages/env
 
 dev_dependencies:

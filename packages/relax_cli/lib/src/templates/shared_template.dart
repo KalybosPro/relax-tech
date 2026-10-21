@@ -15,7 +15,10 @@ abstract final class SharedTemplate {
 
   /// Returns the common [TemplateFile] list shared by every architecture: the
   /// full `core/` infrastructure layer, env/flavor files, i18n and tooling.
-  static List<TemplateFile> coreFiles() => [
+  ///
+  /// Pass `serviceLocator: false` when the architecture provides its own DI
+  /// files under `lib/core/dependency_injection/` (Riverpod uses providers).
+  static List<TemplateFile> coreFiles({bool serviceLocator = true}) => [
     TemplateFile(p('analysis_options.yaml'), analysisOptions),
     // ── Core barrel ─────────────────────────────────────────
     TemplateFile(p('lib/core/core.dart'), coreBarrel),
@@ -135,11 +138,13 @@ abstract final class SharedTemplate {
     TemplateFile(p('lib/core/utils/debouncer.dart'), debouncer),
     TemplateFile(p('lib/core/utils/formatter.dart'), formatter),
     // ── Dependency injection ────────────────────────────────
-    TemplateFile(
-      p('lib/core/dependency_injection/dependency_injection.dart'),
-      diBarrel,
-    ),
-    TemplateFile(p('lib/core/dependency_injection/injection.dart'), diSetup),
+    if (serviceLocator) ...[
+      TemplateFile(
+        p('lib/core/dependency_injection/dependency_injection.dart'),
+        diBarrel,
+      ),
+      TemplateFile(p('lib/core/dependency_injection/injection.dart'), diSetup),
+    ],
     // ── Env / Flavor ────────────────────────────────────────
     TemplateFile(p('.env.development'), envDevelopment),
     TemplateFile(p('.env.staging'), envStaging),
@@ -206,7 +211,11 @@ targets:
 
   // ─── README helper ─────────────────────────────────────────────
 
-  static String readme(String archName, String featureDir) =>
+  static String readme(
+    String archName,
+    String featureDir, {
+    String di = 'get_it service locator',
+  }) =>
       '''
 # {{project_name.titleCase()}}
 
@@ -248,7 +257,7 @@ lib/
 │   ├── config/          → App config, constants, flavors
 │   ├── network/         → Dio client, ApiClient, interceptors
 │   ├── database/        → RelaxORM local-first database
-│   ├── websocket/       → Realtime socket client + service
+│   ├── websocket/       → Realtime socket client + service{{#socket_io}} (Socket.IO){{/socket_io}}
 │   ├── cache/           → Encrypted storage + in-memory cache
 │   ├── encryption/      → AES encrypt/decrypt helper
 │   ├── storage/         → Secure storage, preferences, files
@@ -261,7 +270,7 @@ lib/
 │   ├── extensions/      → BuildContext / String / DateTime helpers
 │   ├── mixins/          → Reusable mixins
 │   ├── utils/           → Validators, logger, debouncer, formatter
-│   └── dependency_injection/ → get_it service locator
+│   └── dependency_injection/ → $di
 ├── i18n/                → Localization (slang)
 └── features/
     └── home/            → Sample vertical slice
@@ -546,10 +555,11 @@ import 'dio_client.dart';
 
 /// Thin, typed wrapper around [Dio] used by feature datasources.
 ///
-/// Inject it via `getIt<ApiClient>()` and call the verb helpers, e.g.:
+/// Resolve it from the DI layer (`getIt<ApiClient>()`, or
+/// `ref.read(apiClientProvider)` with Riverpod) and call the verb helpers, e.g.:
 ///
 /// ```dart
-/// final res = await getIt<ApiClient>().get<Map<String, dynamic>>('/me');
+/// final res = await apiClient.get<Map<String, dynamic>>('/me');
 /// ```
 class ApiClient {
   ApiClient({required EnvValue env, required CachedStorage storage})
@@ -717,7 +727,7 @@ import 'package:relax_orm/relax_orm.dart';
 /// read/write through typed collections:
 ///
 /// ```dart
-/// final db = await getIt.getAsync<AppDatabase>();
+/// final db = await getIt.getAsync<AppDatabase>(); // Riverpod: ref.read(appDatabaseProvider.future)
 /// final users = db.raw.collection<User>();
 /// await users.add(user);
 /// ```
@@ -750,7 +760,122 @@ export 'socket_client.dart';
 export 'socket_service.dart';
 ''';
 
-  static const socketClient = '''
+  /// Rendered with the `socket_io` mason variable: Socket.IO client when true,
+  /// raw WebSocket otherwise.
+  /// Section tags sit on the content lines: mason keeps standalone tag lines
+  /// as blank lines.
+  static const socketClient =
+      '{{#socket_io}}$_socketIoClient\n{{/socket_io}}'
+      '{{^socket_io}}$_webSocketClient\n{{/socket_io}}';
+
+  /// See [socketClient].
+  static const socketService =
+      '{{#socket_io}}$_socketIoService\n{{/socket_io}}'
+      '{{^socket_io}}$_webSocketService\n{{/socket_io}}';
+
+  static const _socketIoClient = '''
+import 'package:socket_io_client/socket_io_client.dart' as io;
+
+/// Low-level wrapper around a single Socket.IO [io.Socket].
+///
+/// Handlers registered with [on] before [connect] are kept and attached once
+/// the socket exists. [SocketService] builds on top of this; most app code
+/// should depend on the service, not this client.
+class SocketClient {
+  io.Socket? _socket;
+  final _handlers = <String, List<void Function(dynamic data)>>{};
+
+  bool get isConnected => _socket?.connected ?? false;
+
+  /// Opens a connection to [url]. [auth] is sent in the handshake
+  /// (e.g. `{'token': 'Bearer ...'}`).
+  void connect(Uri url, {Map<String, dynamic>? auth}) {
+    if (_socket != null) return;
+
+    final options = io.OptionBuilder()
+        .setTransports(['websocket'])
+        .disableAutoConnect()
+        .enableReconnection();
+    if (auth != null) options.setAuth(auth);
+
+    final socket = io.io(url.toString(), options.build());
+    _handlers.forEach((event, handlers) {
+      for (final handler in handlers) {
+        socket.on(event, handler);
+      }
+    });
+    _socket = socket..connect();
+  }
+
+  void on(String event, void Function(dynamic data) handler) {
+    (_handlers[event] ??= []).add(handler);
+    _socket?.on(event, handler);
+  }
+
+  void off(String event, [void Function(dynamic data)? handler]) {
+    if (handler == null) {
+      _handlers.remove(event);
+    } else {
+      _handlers[event]?.remove(handler);
+    }
+    _socket?.off(event, handler);
+  }
+
+  void emit(String event, [Object? data]) => _socket?.emit(event, data);
+
+  Future<void> close() async {
+    _socket?.dispose();
+    _socket = null;
+  }
+}''';
+
+  static const _socketIoService = '''
+import 'dart:async';
+
+import 'socket_client.dart';
+
+/// App-facing realtime channel (Socket.IO). Every feature that needs realtime
+/// data goes through this service rather than opening its own socket.
+///
+/// ```dart
+/// socketService.connect(
+///   Uri.parse('https://example.com'),
+///   auth: {'token': token},
+/// );
+/// socketService.on('message:new').listen(print);
+/// socketService.emit('user:online');
+/// ```
+class SocketService {
+  SocketService([SocketClient? client]) : _client = client ?? SocketClient();
+
+  final SocketClient _client;
+
+  bool get isConnected => _client.isConnected;
+
+  /// Opens a connection to [url] (e.g. `https://...`).
+  void connect(Uri url, {Map<String, dynamic>? auth}) =>
+      _client.connect(url, auth: auth);
+
+  /// Payloads received for [event]. The handler is attached on first listen
+  /// and detached when the last listener cancels.
+  Stream<dynamic> on(String event) {
+    late final StreamController<dynamic> controller;
+    void handler(dynamic data) => controller.add(data);
+    controller = StreamController<dynamic>.broadcast(
+      onListen: () => _client.on(event, handler),
+      onCancel: () => _client.off(event, handler),
+    );
+    return controller.stream;
+  }
+
+  /// Emits [event] with optional [data]. No-op when disconnected.
+  void emit(String event, [Object? data]) => _client.emit(event, data);
+
+  /// Closes the connection.
+  Future<void> disconnect() => _client.close();
+}''';
+
+  static const _webSocketClient = '''
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Low-level wrapper around a single [WebSocketChannel].
@@ -773,20 +898,18 @@ class SocketClient {
     await _channel?.sink.close();
     _channel = null;
   }
-}
-''';
+}''';
 
-  static const socketService = '''
+  static const _webSocketService = '''
 import 'socket_client.dart';
 
 /// App-facing realtime channel. Every feature that needs realtime data goes
 /// through this service rather than opening its own socket.
 ///
 /// ```dart
-/// final socket = getIt<SocketService>()
-///   ..connect(Uri.parse('wss://example.com/ws'));
-/// socket.messages.listen(print);
-/// socket.send('ping');
+/// socketService.connect(Uri.parse('wss://example.com/ws'));
+/// socketService.messages.listen(print);
+/// socketService.send('ping');
 /// ```
 class SocketService {
   SocketService([SocketClient? client]) : _client = client ?? SocketClient();
@@ -806,8 +929,7 @@ class SocketService {
 
   /// Closes the connection.
   Future<void> disconnect() => _client.close();
-}
-''';
+}''';
 
   // ─── Cache ─────────────────────────────────────────────────────
 
@@ -829,7 +951,7 @@ import '../config/constants/app_constants.dart';
 /// currently used to persist the authentication token in encrypted storage.
 ///
 /// ```dart
-/// final storage = getIt<CachedStorage>();
+/// final storage = getIt<CachedStorage>(); // Riverpod: ref.read(cachedStorageProvider)
 /// await storage.setToken('eyJhbGciOiJIUzI1NiIs');
 /// final token = storage.token;
 /// ```
@@ -852,7 +974,7 @@ class CachedStorage {
 /// reads within a session avoid re-fetching.
 ///
 /// ```dart
-/// final cache = getIt<MemoryCache>();
+/// final cache = getIt<MemoryCache>(); // Riverpod: ref.read(memoryCacheProvider)
 /// cache.put('user_12', user, ttl: const Duration(minutes: 5));
 /// final user = cache.get<User>('user_12');
 /// ```
@@ -905,7 +1027,7 @@ import 'package:relax_storage/relax_storage.dart';
 /// a small, stable surface instead of the crypto package directly.
 ///
 /// ```dart
-/// final enc = getIt<AppEncrypter>();
+/// final enc = getIt<AppEncrypter>(); // Riverpod: ref.read(appEncrypterProvider)
 /// final payload = enc.encrypt('secret');
 /// final clear = enc.decrypt(payload);
 /// ```
@@ -2099,40 +2221,6 @@ Future<void> bootstrap(
     await di.setUpRegister(env);
 
     runApp(builder());
-  }, (error, stack) {
-    log(error.toString(), stackTrace: stack);
-  });
-}
-''';
-
-  // ─── Bootstrap (Riverpod) ─────────────────────────────────────
-
-  static const bootstrapRiverpod = '''
-import 'dart:async';
-import 'dart:developer';
-
-import 'package:env/env.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'core/dependency_injection/injection.dart' as di;
-import 'i18n/slang/translations.g.dart';
-
-Future<void> bootstrap(
-  Widget Function() builder, {
-  required EnvValue env,
-}) async {
-  FlutterError.onError = (details) {
-    log(details.exceptionAsString(), stackTrace: details.stack);
-  };
-
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    LocaleSettings.useDeviceLocale();
-
-    await di.setUpRegister(env);
-
-    runApp(ProviderScope(child: builder()));
   }, (error, stack) {
     log(error.toString(), stackTrace: stack);
   });
